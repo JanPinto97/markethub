@@ -64,13 +64,13 @@ Angular SPA serving the MarketHub UI. Runs on port 4200.
 
 ## Routes
 
-| Path         | Component           | Description                |
-|--------------|---------------------|----------------------------|
-| `/`          | HomeComponent       | Landing page               |
-| `/markets`   | MarketsComponent    | Markets dashboard          |
-| `/community` | CommunityComponent  | Community feed             |
-| `/login`     | LoginComponent      | Login form                 |
-| `/register`  | RegisterComponent   | Registration form          |
+| Path         | Component          | Description       |
+| ------------ | ------------------ | ----------------- |
+| `/`          | HomeComponent      | Landing page      |
+| `/markets`   | MarketsComponent   | Markets dashboard |
+| `/community` | CommunityComponent | Community feed    |
+| `/login`     | LoginComponent     | Login form        |
+| `/register`  | RegisterComponent  | Registration form |
 
 ## Running
 
@@ -95,3 +95,4 @@ Angular SPA serving the MarketHub UI. Runs on port 4200.
 ## Rules
 
 - UPDATE THIS FILE AFTER EVERY SUCCESSFULLY IMPLEMENTED FEATURE OR FUNCTION.
+- EVERY TIME YOU MAKE A CHANGE IN app.routes.ts MENTION IT TO THE USER AND WARN HIM OF THE POSSIBLE MERGE CONFLICT.
