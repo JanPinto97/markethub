@@ -52,12 +52,13 @@ frontend, Node/Express backend, MongoDB, Docker.
 ## Project Status
 
 ✅ Phase 1: Infrastructure
-  ✅ Base folder structure
-  ✅ Backend Express scaffold
-  ✅ Frontend Angular scaffold
-  ✅ Docker setup (docker-compose + Dockerfiles + .dockerignore)
+✅ Base folder structure
+✅ Backend Express scaffold
+✅ Frontend Angular scaffold
+✅ Docker setup (docker-compose + Dockerfiles + .dockerignore)
 
 ## Rules
 
 - ALWAYS REMEMBER THE USER TO COMMIT CHANGES ONCE A FEATURE IS COMPLETED.
 - UPDATE THIS FILE AFTER EVERY SUCCESSFULLY IMPLEMENTED FEATURE OR FUNCTION.
+- EVERY TIME YOU MAKE A CHANGE IN app.routes.ts MENTION IT TO THE USER AND WARN HIM OF THE POSSIBLE MERGE CONFLICT.
