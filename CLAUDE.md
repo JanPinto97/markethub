@@ -34,4 +34,12 @@ frontend, Node/Express backend, MongoDB, Docker.
 - All API routes prefixed with /api/v1
 - TypeScript strict mode on
 
+## Project Status
+
+✅ Phase 1: Infrastructure
+  ✅ Base folder structure
+  ✅ Backend Express scaffold
+  ✅ Frontend Angular scaffold
+  ✅ Docker setup
+
 ALWAYS REMEMBER THE USER TO COMMIT CHANGES ONCE A FEATURE IS COMPLETED.
