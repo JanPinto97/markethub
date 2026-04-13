@@ -33,3 +33,5 @@ frontend, Node/Express backend, MongoDB, Docker.
 - Backend: async/await, no callbacks, errors via next(err)
 - All API routes prefixed with /api/v1
 - TypeScript strict mode on
+
+ALWAYS REMEMBER THE USER TO COMMIT CHANGES ONCE A FEATURE IS COMPLETED.

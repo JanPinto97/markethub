@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(ng version:*)",
+      "Bash(npx @angular/cli version)",
+      "Bash(ng new:*)",
+      "Bash(mkdir -p core/services core/guards core/interceptors features/home features/markets features/community features/auth/login features/auth/register shared/components/navbar)",
+      "Bash(mkdir -p /c/JAN/DAW/CODI/markethub/frontend/src/styles)",
+      "Bash(npx ng:*)",
+      "Bash(curl -s http://localhost:4200)",
+      "Bash(tasklist //FI \"PID eq 2132\")",
+      "Bash(tasklist /FI \"PID eq 2132\")",
+      "Bash(tasklist /FI \"IMAGENAME eq mongod.exe\")",
+      "Bash(taskkill:*)",
+      "Bash(tasklist)",
+      "Bash(netstat -ano)",
+      "Bash(timeout 10 node server.js)"
+    ]
+  }
+}
