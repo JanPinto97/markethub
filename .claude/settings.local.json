@@ -17,7 +17,9 @@
       "Bash(netstat -ano)",
       "Bash(timeout 10 node server.js)",
       "Bash(docker-compose up:*)",
-      "Bash(docker-compose exec:*)"
+      "Bash(docker-compose exec:*)",
+      "Bash(docker-compose restart:*)",
+      "Bash(curl:*)"
     ]
   }
 }

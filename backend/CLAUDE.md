@@ -39,6 +39,16 @@ server.js            → Entry point: loads env, connects DB, starts Express
 
 - `GET /api/v1/health` → `{ success: true, message: "Backend running" }`
 
+## API routes done
+- GET  /api/v1/health
+- POST /api/v1/auth/register
+- POST /api/v1/auth/login
+- POST /api/v1/auth/logout
+- POST /api/v1/auth/refresh
+- GET  /api/v1/auth/me (protected)
+- PUT  /api/v1/profile (protected)
+- PUT  /api/v1/profile/password (protected)
+
 ## Running
 
 - Docker: `docker-compose up` (from project root)
