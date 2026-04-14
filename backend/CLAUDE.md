@@ -50,6 +50,9 @@ server.js            → Entry point: loads env, connects DB, starts Express
 - Volume mount `./backend:/app` for live reload
 - Connects to mongo service via `mongodb://mongo:27017/markethub`
 
+## Models done
+- User: username, email, passwordHash, role, avatar, bio, loginAttempts, lockUntil, createdAt
+
 ## Current Status
 
 ✅ Express scaffold with MVC structure
