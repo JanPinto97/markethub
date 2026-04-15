@@ -82,6 +82,28 @@ Angular SPA serving the MarketHub UI. Runs on port 4200.
 - Dockerfile: Node 20 Alpine, `npx ng serve --host 0.0.0.0`
 - Volume mount `./frontend:/app` for live reload
 
+## Components done
+- HomeComponent, MarketsComponent, CommunityComponent (scaffolds)
+- LoginComponent — email/password form, calls AuthService.login, redirects to /markets, shows API error (incl. 423 lock message)
+- RegisterComponent — username/email/password form with client validation (email regex, username 3-30, password ≥8), calls AuthService.register
+- NavbarComponent — auth-aware: shows username+avatar+logout when authed, login/register links when not
+
+## Core done
+- AuthService — in-memory access token, `currentUser` signal, `isAuthenticated` computed, methods: login, register, logout, refreshToken, getToken, loadCurrentUser (refresh + /me on bootstrap)
+- authInterceptor — functional, attaches Bearer token, retries once on 401 via /auth/refresh, logs out + redirects to /login on failure
+- authGuard — functional, redirects to /login when not authenticated
+- User model interface (/core/models/user.model.ts)
+- app.config.ts — registers interceptor and `provideAppInitializer` to restore session on startup
+
+## Routes done
+| Path         | Component          | Guard     |
+| ------------ | ------------------ | --------- |
+| `/`          | HomeComponent      | —         |
+| `/markets`   | MarketsComponent   | authGuard (placeholder — will be refined per-action) |
+| `/community` | CommunityComponent | authGuard (placeholder — will be refined per-action) |
+| `/login`     | LoginComponent     | —         |
+| `/register`  | RegisterComponent  | —         |
+
 ## Current Status
 
 ✅ Angular scaffold with standalone components
