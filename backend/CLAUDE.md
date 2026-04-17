@@ -48,6 +48,20 @@ server.js            → Entry point: loads env, connects DB, starts Express
 - GET  /api/v1/auth/me (protected)
 - PUT  /api/v1/profile (protected)
 - PUT  /api/v1/profile/password (protected)
+- POST /api/v1/posts (protected, multipart)
+- GET  /api/v1/posts/feed (public, supports ?mode=trending|following&page&limit)
+- GET  /api/v1/posts/:id (public)
+- POST /api/v1/posts/:id/like (protected)
+- DELETE /api/v1/posts/:id (protected)
+- GET  /api/v1/posts/:id/comments (public)
+- POST /api/v1/posts/:id/comments (protected)
+- POST /api/v1/posts/:postId/comments/:commentId/like (protected)
+- DELETE /api/v1/posts/:postId/comments/:commentId (protected)
+
+## Infrastructure
+- multer configured in /backend/config/upload.js
+- uploaded files served at /uploads/images/ and /uploads/videos/
+- trending score job runs every 30 minutes via setInterval in server.js
 
 ## Running
 

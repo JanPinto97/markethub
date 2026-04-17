@@ -1,251 +1,350 @@
-# PROMPT — Fase 3, Part 1: Models
+# PROMPT — Fase 3, Part 2: File Upload + General Feed API
 
-Read `CLAUDE.md` at the project root and `/backend/CLAUDE.md` before starting.
-Read `/COMMUNITY.md` fully before writing any code.
+Read `CLAUDE.md` at the project root, `/backend/CLAUDE.md` and `/COMMUNITY.md`
+fully before writing any code.
 
-**Current task:** Create all the new models required for Phase 3 (Community page) and update the existing User model. No API logic yet, only Mongoose schemas.
-
-**Important architectural decision:** There are two completely separate post types that must NEVER be mixed:
-
-- `PostX` — used in general feed and communities (public and private)
-- `PostReddit` — used exclusively in discussion topics
+**Current task:** Set up file upload infrastructure with multer, then build the
+general feed API and all PostX post endpoints. This covers the general feed only
+(origin: 'general'). Community posts are handled in later prompts.
 
 ---
 
-## 1. Update existing User model (`/backend/models/User.js`)
+## Part A — File Upload Infrastructure
 
-Add these fields to the existing schema:
+### Install dependencies
 
-```javascript
-following; // [{ type: ObjectId, ref: 'User' }], default: []
-followers; // [{ type: ObjectId, ref: 'User' }], default: []
-coverImage; // String, default: ''
+```
+multer
+uuid
 ```
 
-Update `toPublicJSON()` to include: `followingCount`, `followersCount`, `coverImage`.
+### Create `/backend/config/upload.js`
+
+This is the central multer configuration used by all routes that accept file uploads.
+
+```javascript
+// Storage: save files to /backend/uploads/ folder
+// Subfolder by type: /backend/uploads/images/ and /backend/uploads/videos/
+// Filename: uuid + original extension to avoid collisions
+// Allowed image types: image/jpeg, image/png, image/gif, image/webp
+// Allowed video types: video/mp4, video/webm, video/quicktime
+// Max file size: 10MB for images, 100MB for videos
+// If file type is not allowed, return error: { success: false, message: 'File type not allowed', code: 400 }
+```
+
+Export two multer instances:
+
+- `uploadImage` → accepts single file, field name: 'media', images only
+- `uploadVideo` → accepts single file, field name: 'media', videos only
+- `uploadMedia` → accepts single file, field name: 'media', both images and videos
+
+### Create `/backend/uploads/` folder structure
+
+```
+backend/uploads/
+├── images/     → uploaded images
+└── videos/     → uploaded videos
+```
+
+Add `/backend/uploads/` to `/backend/.gitignore` except for the empty folders.
+Create a `.gitkeep` file inside each subfolder so Git tracks the folders.
+
+### Serve static files
+
+In `server.js`, add:
+
+```javascript
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+```
+
+This makes uploaded files accessible at:
+`http://localhost:3000/uploads/images/filename.jpg`
+`http://localhost:3000/uploads/videos/filename.mp4`
+
+### Create `/backend/middleware/uploadHandler.js`
+
+A wrapper middleware that:
+
+- Runs multer upload
+- If multer throws an error (file too large, wrong type), catches it and
+  calls next(err) with a formatted error instead of crashing
+- Sets `req.mediaUrl` and `req.mediaType` based on the uploaded file:
+  - If file uploaded: `req.mediaUrl = '/uploads/images/filename.jpg'`,
+    `req.mediaType = 'image'` or `'video'`
+  - If no file uploaded: `req.mediaUrl = ''`, `req.mediaType = 'none'`
 
 ---
 
-## 2. Create `/backend/models/PostX.js`
+## Part B — General Feed API
 
-This is the Twitter/X style post used in general feed and communities.
+### Create `/backend/controllers/postXController.js`
 
-```javascript
-author; // ObjectId, ref: 'User', required
-text; // String, required, maxLength: 400
-mediaUrl; // String, default: '' (file upload path)
-mediaType; // String, enum: ['none', 'image', 'video'], default: 'none'
-likes; // [{ type: ObjectId, ref: 'User' }], default: []
-commentCount; // Number, default: 0
-origin; // String, enum: ['general', 'public_community', 'private_community'], required
-community; // ObjectId, ref: either CommunityPublic or CommunityPrivate, default: null
-// Only set when origin is 'public_community' or 'private_community'
-communityType; // String, enum: ['public', 'private', null], default: null
-isPinned; // Boolean, default: false
-trendingScore; // Number, default: 0 (calculated field, updated periodically)
-createdAt; // Date, default: Date.now
-```
-
-Add a static method `calculateTrendingScore(post)`:
-
-- Base score = (likes.length × 1) + (commentCount × 2)
-- Apply time decay: if post age < 24h → score × 1, if 24-48h → score × 0.5, if > 48h → score × 0.25
-- Return the calculated score
-
-Add `toPublicJSON()` returning: `{ id, author, text, mediaUrl, mediaType, likesCount, commentCount, origin, community, communityType, isPinned, trendingScore, createdAt }`
+All controller functions use async/await and pass errors to next(err).
 
 ---
 
-## 3. Create `/backend/models/PostReddit.js`
+#### `createPost`
 
-This is the Reddit style post used exclusively in discussion topics.
-
-```javascript
-author; // ObjectId, ref: 'User', required
-title; // String, required, maxLength: 300
-text; // String, default: '', maxLength: 2000
-mediaUrl; // String, default: ''
-mediaType; // String, enum: ['none', 'image', 'video'], default: 'none'
-upvotes; // [{ type: ObjectId, ref: 'User' }], default: []
-downvotes; // [{ type: ObjectId, ref: 'User' }], default: []
-commentCount; // Number, default: 0
-topic; // ObjectId, ref: 'DiscussionTopic', required
-createdAt; // Date, default: Date.now
-```
-
-Add a virtual field `voteScore` = `upvotes.length - downvotes.length`.
-
-Add `toPublicJSON()` returning: `{ id, author, title, text, mediaUrl, mediaType, upvotes: upvotes.length, downvotes: downvotes.length, voteScore, commentCount, topic, createdAt }`
+- Route: `POST /api/v1/posts`
+- Auth: required
+- Accepts: multipart/form-data with fields `text` and optional `media` file
+- Validation:
+  - `text` is required, max 400 chars
+  - If text exceeds 400 chars return 400 error
+- Creates a PostX with:
+  - `author`: req.user.id
+  - `text`: req.body.text
+  - `mediaUrl`: req.mediaUrl (from uploadHandler)
+  - `mediaType`: req.mediaType (from uploadHandler)
+  - `origin`: 'general'
+  - `community`: null
+  - `communityType`: null
+- Returns: `{ success: true, post: post.toPublicJSON() }`
 
 ---
 
-## 4. Create `/backend/models/Comment.js`
+#### `getFeed`
 
-Shared by both PostX and PostReddit. Supports one level of nesting (reply to a comment).
+- Route: `GET /api/v1/posts/feed`
+- Auth: optional (public route)
+- Query params:
+  - `mode`: 'trending' (default) or 'following'
+  - `page`: number, default 1
+  - `limit`: number, default 20, max 50
+- If `mode === 'following'`:
+  - Requires auth. If not authenticated return 401.
+  - Fetch posts where `author` is in `req.user.following` AND
+    `origin` is 'general' or 'public_community'
+  - Never include posts with `origin: 'private_community'`
+  - Sort by `createdAt` descending
+- If `mode === 'trending'` (default, public):
+  - Fetch posts where `origin` is 'general' or 'public_community'
+  - Never include posts with `origin: 'private_community'`
+  - Sort by `trendingScore` descending, then `createdAt` descending as tiebreaker
+- Populate `author` with: `username avatar role`
+- Populate `community` with: `name` (only when communityType is set)
+- Apply pagination with `page` and `limit`
+- Returns:
 
 ```javascript
-author; // ObjectId, ref: 'User', required
-text; // String, required, maxLength: 400
-postId; // ObjectId, required (references either PostX or PostReddit)
-postType; // String, enum: ['PostX', 'PostReddit'], required
-parentComment; // ObjectId, ref: 'Comment', default: null
-// If set, this comment is a reply to another comment
-replyingTo; // ObjectId, ref: 'User', default: null
-// The author of the parent comment (for "replying to X's comment" label)
-likes; // [{ type: ObjectId, ref: 'User' }], default: []
-// Only used when postType is 'PostX'
-createdAt; // Date, default: Date.now
+{
+  success: true,
+  posts: [post.toPublicJSON(), ...],
+  pagination: {
+    page,
+    limit,
+    total,
+    totalPages,
+    hasNextPage,
+    hasPrevPage
+  }
+}
 ```
-
-Add `toPublicJSON()` returning: `{ id, author, text, postId, postType, parentComment, replyingTo, likesCount: likes.length, createdAt }`
 
 ---
 
-## 5. Create `/backend/models/CommunityPublic.js`
+#### `getPostById`
 
-```javascript
-name; // String, required, unique, trim, maxLength: 50
-description; // String, default: '', maxLength: 300
-avatar; // String, default: ''
-members; // [{ type: ObjectId, ref: 'User' }], default: []
-// No roles in public communities
-postCount; // Number, default: 0
-createdAt; // Date, default: Date.now
-```
-
-Important business rules to enforce via schema methods:
-
-- `isEmpty()` → returns true if `members.length === 0`
-- When `isEmpty()` is true the community must be deleted automatically. Add a post-save hook that checks this and deletes the document if empty.
-
-Add `toPublicJSON()` returning: `{ id, name, description, avatar, memberCount: members.length, postCount, createdAt }`
+- Route: `GET /api/v1/posts/:id`
+- Auth: optional
+- Fetch PostX by id
+- Populate `author` with: `username avatar role`
+- If post has `origin: 'private_community'`, return 403 unless:
+  - req.user exists AND is a member of that community (check via CommunityPrivate)
+- Returns: `{ success: true, post: post.toPublicJSON() }`
 
 ---
 
-## 6. Create `/backend/models/CommunityPrivate.js`
+#### `likePost`
 
-More complex schema with roles and join requests.
-
-```javascript
-name; // String, required, unique, trim, maxLength: 50
-description; // String, default: '', maxLength: 300
-avatar; // String, default: ''
-members; // Array of objects:
-// [{
-//   user: ObjectId ref 'User', required
-//   role: String, enum: ['leader', 'moderator', 'little_whale', 'member']
-//        default: 'member'
-// }]
-joinRequests; // Array of objects:
-// [{
-//   user: ObjectId ref 'User'
-//   message: String, maxLength: 150
-//   createdAt: Date, default: Date.now
-//   status: String, enum: ['pending', 'accepted', 'rejected']
-//           default: 'pending'
-// }]
-pinnedPosts; // [{ type: ObjectId, ref: 'PostX' }], default: []
-postCount; // Number, default: 0
-createdAt; // Date, default: Date.now
-```
-
-Add these schema methods:
-
-`getLeader()` → returns the member object with role 'leader', or null if none.
-
-`getMemberRole(userId)` → returns the role of a given user, or null if not a member.
-
-`isMember(userId)` → returns true if user is in members array.
-
-`promoteNewLeader()` → implements the leader succession logic:
-
-1. Find a random moderator → promote to leader
-2. If no moderators, find a random little_whale → promote to leader
-3. If no little_whales, find a random member → promote to leader
-4. If no members at all → return null (community should be deleted)
-
-`getRoleWeight(role)` → returns trending weight bonus by role:
-
-```javascript
-// leader: 50, moderator: 20, little_whale: 10, member: 0
-```
-
-Add a post-save hook: if `members.length === 0`, delete the community automatically.
-
-Add `toPublicJSON()` returning: `{ id, name, description, avatar, memberCount: members.length, postCount, createdAt }`
-
-Add `toDetailJSON()` (for members only) returning: `{ ...toPublicJSON(), members: [{ user: toPublicJSON(), role }], pinnedPosts }`
+- Route: `POST /api/v1/posts/:id/like`
+- Auth: required
+- Toggle like:
+  - If user already liked → remove from likes array (unlike)
+  - If user has not liked → add to likes array (like)
+- Recalculate and update `trendingScore` using `PostX.calculateTrendingScore(post)`
+- Returns: `{ success: true, liked: true/false, likesCount: post.likes.length }`
 
 ---
 
-## 7. Create `/backend/models/DiscussionTopic.js`
+#### `deletePost`
 
-```javascript
-name; // String, required, unique
-slug; // String, required, unique (URL-friendly version of name)
-category; // String, required, enum of all category names (see list below)
-description; // String, default: ''
-postCount; // Number, default: 0
-createdAt; // Date, default: Date.now
-```
-
-Category enum values:
-
-```javascript
-["CORE_MARKETS", "ECONOMIA_I_MACRO", "ASSETS_ESPECIFICS", "TRADING_I_INVERSIO"];
-```
-
-Add `toPublicJSON()` returning: `{ id, name, slug, category, description, postCount }`
+- Route: `DELETE /api/v1/posts/:id`
+- Auth: required
+- Rules:
+  - Author can always delete their own post
+  - Platform moderator (User.role === 'moderator') can delete any PostX
+  - Platform superadmin (User.role === 'superadmin') can delete any PostX
+  - No one else can delete
+- If post has a mediaUrl, delete the file from disk using `fs.unlink`
+- Decrement `commentCount` tracking is not needed here (comments are cascade-deleted)
+- Delete all comments where `postId === post._id` AND `postType === 'PostX'`
+- Returns: `{ success: true, message: 'Post deleted' }`
 
 ---
 
-## 8. Create the seed script (`/backend/scripts/seedTopics.js`)
+#### `getComments`
 
-This script creates all the fixed discussion topics. They are hardcoded and never change.
+- Route: `GET /api/v1/posts/:id/comments`
+- Auth: optional
+- Fetch all comments where `postId === id` AND `postType === 'PostX'`
+  AND `parentComment === null` (top-level comments only)
+- Populate `author` with: `username avatar`
+- Populate `replyingTo` with: `username`
+- For each top-level comment, also fetch its replies:
+  - Find comments where `parentComment === comment._id`
+  - Populate `author` and `replyingTo` the same way
+  - Sort replies by `createdAt` ascending
+- Sort top-level comments by `createdAt` ascending
+- Returns:
 
-Topics to seed, organized by category:
+```javascript
+{
+  success: true,
+  comments: [
+    {
+      ...comment.toPublicJSON(),
+      replies: [comment.toPublicJSON(), ...]
+    }
+  ]
+}
+```
 
-`CORE_MARKETS`: Forex, Crypto, Stocks, Indices, ETFs, Bonds, Commodities, Metals, Energy
+---
 
-`ECONOMIA_I_MACRO`: Macro Economics, Central Banks, Interest Rates, Inflation, GDP & Economic Data, Monetary Policy, Fiscal Policy, Geopolitics, Global Economy
+#### `createComment`
 
-`ASSETS_ESPECIFICS`: Large Cap Stocks, Small Cap & Penny Stocks, Growth Stocks, Value Investing, Dividend Investing, IPOs, SPACs, Startups & Venture Capital, Real Estate & REITs
+- Route: `POST /api/v1/posts/:id/comments`
+- Auth: required
+- Body: `{ text, parentCommentId? }`
+- Validation: `text` required, max 400 chars
+- If `parentCommentId` is provided:
+  - Fetch the parent comment
+  - If not found return 404
+  - If parent comment already has a parent (depth > 1) return 400 error:
+    `'Cannot reply to a reply'`
+  - Set `parentComment: parentCommentId`
+  - Set `replyingTo: parentComment.author`
+- Create comment with `postType: 'PostX'`
+- Increment `post.commentCount` by 1 and save post
+- Recalculate and update post `trendingScore`
+- Returns: `{ success: true, comment: comment.toPublicJSON() }`
 
-`TRADING_I_INVERSIO`: Day Trading, Swing Trading, Position Trading, Long-term Investing, Scalping, Algorithmic Trading, Quant Trading, High Frequency Trading
+---
 
-The slug must be auto-generated from the name: lowercase, spaces replaced with hyphens, special characters removed.
-Example: "Large Cap Stocks" → "large-cap-stocks", "GDP & Economic Data" → "gdp-economic-data".
+#### `likeComment`
 
-The script must:
+- Route: `POST /api/v1/posts/:postId/comments/:commentId/like`
+- Auth: required
+- Only works for comments with `postType: 'PostX'`
+- Toggle like on the comment (same logic as likePost)
+- Returns: `{ success: true, liked: true/false, likesCount: comment.likes.length }`
 
-- Load dotenv from `../.env`
-- Connect to MongoDB
-- Check if topics already exist before inserting to avoid duplicates
-- Log how many topics were created or skipped
-- Disconnect and exit when done
+---
 
-Add to `package.json`:
+#### `deleteComment`
 
-```json
-"seed:topics": "node scripts/seedTopics.js"
+- Route: `DELETE /api/v1/posts/:postId/comments/:commentId`
+- Auth: required
+- Rules:
+  - Author can delete their own comment
+  - Platform moderator or superadmin can delete any comment
+  - Community moderator/leader can delete comments in their community's posts
+    (handle this in community-specific routes later, not here)
+- If comment has replies, delete the replies too
+- Decrement `post.commentCount` by the number of deleted comments (comment + replies)
+- Returns: `{ success: true, message: 'Comment deleted' }`
+
+---
+
+### Trending score recalculation job
+
+Create `/backend/jobs/updateTrendingScores.js`:
+
+- Exports a function `updateTrendingScores()`
+- Fetches all PostX documents
+- For each post, calls `PostX.calculateTrendingScore(post)` and updates `trendingScore`
+- Uses `bulkWrite` for efficiency, not individual saves
+- Logs how many posts were updated
+
+In `server.js`, schedule this job to run every 30 minutes using `setInterval`:
+
+```javascript
+const { updateTrendingScores } = require("./jobs/updateTrendingScores");
+// Run once on startup, then every 30 minutes
+updateTrendingScores();
+setInterval(updateTrendingScores, 30 * 60 * 1000);
+```
+
+---
+
+### Create `/backend/routes/posts.js`
+
+Mount all PostX routes. Apply `authMiddleware` only where required (marked above).
+Apply `uploadHandler` middleware before `createPost`.
+
+```javascript
+POST   /                          → uploadHandler + createPost
+GET    /feed                      → getFeed
+GET    /:id                       → getPostById
+POST   /:id/like                  → authMiddleware + likePost
+DELETE /:id                       → authMiddleware + deletePost
+GET    /:id/comments              → getComments
+POST   /:id/comments              → authMiddleware + createComment
+POST   /:postId/comments/:commentId/like → authMiddleware + likeComment
+DELETE /:postId/comments/:commentId      → authMiddleware + deleteComment
+```
+
+Mount in `/backend/routes/index.js`:
+
+```javascript
+router.use("/posts", postsRouter);
 ```
 
 ---
 
 ## When done
 
-1. Run `npm run seed:topics` and confirm all topics are created in MongoDB
-2. Run it again and confirm it skips creation without errors
-3. Confirm the post-save hook works on CommunityPublic and CommunityPrivate by writing a quick test in the terminal
-4. Update `/backend/CLAUDE.md` — Models done section:
+1. Test file upload: `POST /api/v1/posts` with multipart/form-data containing
+   text and an image file. Confirm the file appears in `/backend/uploads/images/`
+   and the response contains the correct `mediaUrl`.
+
+2. Test feed: `GET /api/v1/posts/feed` returns empty array (no posts yet is fine).
+
+3. Test full flow with Postman or curl:
+   - Create a post with text only
+   - Create a post with an image
+   - Like the post → confirm liked: true
+   - Like again → confirm liked: false (toggle)
+   - Comment on the post → confirm commentCount increments
+   - Reply to the comment → confirm replyingTo is set
+   - Try to reply to a reply → confirm 400 error
+   - Delete the post → confirm file is removed from disk
+
+4. Update `/backend/CLAUDE.md`:
 
 ```
-## Models done
-- User: updated with following, followers, coverImage
-- PostX: Twitter/X style post for general feed and communities (max 400 chars)
-- PostReddit: Reddit style post for discussion topics only (title + text + votes)
-- Comment: shared by both post types, supports one nesting level, likes only on PostX comments
-- CommunityPublic: no roles, auto-delete when empty
-- CommunityPrivate: roles (leader, moderator, little_whale, member), join requests (max 150 chars), auto-delete when empty, leader succession logic
-- DiscussionTopic: fixed topics, hardcoded via seed, never change
+## API routes done
+- GET  /api/v1/health
+- POST /api/v1/auth/register
+- POST /api/v1/auth/login
+- POST /api/v1/auth/logout
+- POST /api/v1/auth/refresh
+- GET  /api/v1/auth/me (protected)
+- PUT  /api/v1/profile (protected)
+- PUT  /api/v1/profile/password (protected)
+- POST /api/v1/posts (protected, multipart)
+- GET  /api/v1/posts/feed (public, supports ?mode=trending|following&page&limit)
+- GET  /api/v1/posts/:id (public)
+- POST /api/v1/posts/:id/like (protected)
+- DELETE /api/v1/posts/:id (protected)
+- GET  /api/v1/posts/:id/comments (public)
+- POST /api/v1/posts/:id/comments (protected)
+- POST /api/v1/posts/:postId/comments/:commentId/like (protected)
+- DELETE /api/v1/posts/:postId/comments/:commentId (protected)
+
+## Infrastructure
+- multer configured in /backend/config/upload.js
+- uploaded files served at /uploads/images/ and /uploads/videos/
+- trending score job runs every 30 minutes via setInterval in server.js
 ```
