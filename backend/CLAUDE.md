@@ -61,7 +61,13 @@ server.js            → Entry point: loads env, connects DB, starts Express
 - Connects to mongo service via `mongodb://mongo:27017/markethub`
 
 ## Models done
-- User: username, email, passwordHash, role, avatar, bio, loginAttempts, lockUntil, createdAt
+- User: updated with following, followers, coverImage
+- PostX: Twitter/X style post for general feed and communities (max 400 chars)
+- PostReddit: Reddit style post for discussion topics only (title + text + votes)
+- Comment: shared by both post types, supports one nesting level, likes only on PostX comments
+- CommunityPublic: no roles, auto-delete when empty
+- CommunityPrivate: roles (leader, moderator, little_whale, member), join requests (max 150 chars), auto-delete when empty, leader succession logic
+- DiscussionTopic: fixed topics, hardcoded via seed, never change
 
 ## Current Status
 
