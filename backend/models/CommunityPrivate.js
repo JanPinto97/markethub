@@ -98,8 +98,12 @@ communityPrivateSchema.methods.toDetailJSON = async function () {
   };
 };
 
+communityPrivateSchema.pre('save', function () {
+  this.$locals.wasNew = this.isNew;
+});
+
 communityPrivateSchema.post('save', async function (doc) {
-  if (doc.members.length === 0) {
+  if (!doc.$locals.wasNew && doc.members.length === 0) {
     await doc.constructor.deleteOne({ _id: doc._id });
   }
 });

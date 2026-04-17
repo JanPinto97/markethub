@@ -58,6 +58,15 @@ server.js            → Entry point: loads env, connects DB, starts Express
 - POST /api/v1/posts/:postId/comments/:commentId/like (protected)
 - DELETE /api/v1/posts/:postId/comments/:commentId (protected)
 
+- GET    /api/v1/communities/public (public, supports ?search&page&limit)
+- POST   /api/v1/communities/public (protected, multipart)
+- GET    /api/v1/communities/public/:id (public)
+- POST   /api/v1/communities/public/:id/join (protected)
+- POST   /api/v1/communities/public/:id/leave (protected)
+- GET    /api/v1/communities/public/:id/feed (public, supports ?page&limit)
+- POST   /api/v1/communities/public/:id/posts (protected, multipart, members only)
+- DELETE /api/v1/communities/public/:id/posts/:postId (protected)
+
 ## Infrastructure
 - multer configured in /backend/config/upload.js
 - uploaded files served at /uploads/images/ and /uploads/videos/

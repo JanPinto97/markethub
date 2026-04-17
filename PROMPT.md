@@ -1,350 +1,229 @@
-# PROMPT — Fase 3, Part 2: File Upload + General Feed API
+# PROMPT — Fase 3, Part 3: API Comunitats Públiques
 
 Read `CLAUDE.md` at the project root, `/backend/CLAUDE.md` and `/COMMUNITY.md`
 fully before writing any code.
 
-**Current task:** Set up file upload infrastructure with multer, then build the
-general feed API and all PostX post endpoints. This covers the general feed only
-(origin: 'general'). Community posts are handled in later prompts.
+**Current task:** Build the full API for public communities. File upload infrastructure
+(multer, uploadHandler) and PostX post/comment endpoints already exist and must be reused.
 
 ---
 
-## Part A — File Upload Infrastructure
+## Context: Public Community rules (from COMMUNITY.md)
 
-### Install dependencies
-
-```
-multer
-uuid
-```
-
-### Create `/backend/config/upload.js`
-
-This is the central multer configuration used by all routes that accept file uploads.
-
-```javascript
-// Storage: save files to /backend/uploads/ folder
-// Subfolder by type: /backend/uploads/images/ and /backend/uploads/videos/
-// Filename: uuid + original extension to avoid collisions
-// Allowed image types: image/jpeg, image/png, image/gif, image/webp
-// Allowed video types: video/mp4, video/webm, video/quicktime
-// Max file size: 10MB for images, 100MB for videos
-// If file type is not allowed, return error: { success: false, message: 'File type not allowed', code: 400 }
-```
-
-Export two multer instances:
-
-- `uploadImage` → accepts single file, field name: 'media', images only
-- `uploadVideo` → accepts single file, field name: 'media', videos only
-- `uploadMedia` → accepts single file, field name: 'media', both images and videos
-
-### Create `/backend/uploads/` folder structure
-
-```
-backend/uploads/
-├── images/     → uploaded images
-└── videos/     → uploaded videos
-```
-
-Add `/backend/uploads/` to `/backend/.gitignore` except for the empty folders.
-Create a `.gitkeep` file inside each subfolder so Git tracks the folders.
-
-### Serve static files
-
-In `server.js`, add:
-
-```javascript
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-```
-
-This makes uploaded files accessible at:
-`http://localhost:3000/uploads/images/filename.jpg`
-`http://localhost:3000/uploads/videos/filename.mp4`
-
-### Create `/backend/middleware/uploadHandler.js`
-
-A wrapper middleware that:
-
-- Runs multer upload
-- If multer throws an error (file too large, wrong type), catches it and
-  calls next(err) with a formatted error instead of crashing
-- Sets `req.mediaUrl` and `req.mediaType` based on the uploaded file:
-  - If file uploaded: `req.mediaUrl = '/uploads/images/filename.jpg'`,
-    `req.mediaType = 'image'` or `'video'`
-  - If no file uploaded: `req.mediaUrl = ''`, `req.mediaType = 'none'`
+- Any authenticated user can join directly, no approval needed.
+- No roles exist. All members are equal.
+- No moderation. Nobody can delete posts inside a public community except
+  the post's own author, or a platform moderator/superadmin.
+- Posts from public communities appear in the general feed Trending mode
+  with a community label. They must have `origin: 'public_community'`.
+- A public community cannot be converted to private. Ever.
+- When the last member leaves, the community is deleted automatically and silently.
+- The auto-delete post-save hook already exists in CommunityPublic model.
 
 ---
 
-## Part B — General Feed API
+## Create `/backend/controllers/communityPublicController.js`
 
-### Create `/backend/controllers/postXController.js`
-
-All controller functions use async/await and pass errors to next(err).
+All functions use async/await and pass errors to next(err).
 
 ---
 
-#### `createPost`
+### `createCommunity`
 
-- Route: `POST /api/v1/posts`
+- Route: `POST /api/v1/communities/public`
 - Auth: required
-- Accepts: multipart/form-data with fields `text` and optional `media` file
+- Body: `{ name, description?, avatar? }` (multipart/form-data, avatar is optional file upload)
 - Validation:
-  - `text` is required, max 400 chars
-  - If text exceeds 400 chars return 400 error
-- Creates a PostX with:
-  - `author`: req.user.id
-  - `text`: req.body.text
-  - `mediaUrl`: req.mediaUrl (from uploadHandler)
-  - `mediaType`: req.mediaType (from uploadHandler)
-  - `origin`: 'general'
-  - `community`: null
-  - `communityType`: null
-- Returns: `{ success: true, post: post.toPublicJSON() }`
+  - `name` required, 3–50 chars
+  - `name` must be unique across BOTH CommunityPublic and CommunityPrivate.
+    Check both collections before creating. If taken, return 409:
+    `'Community name already taken'`
+  - `description` max 300 chars
+- Create community with:
+  - `name`, `description`, `avatar` (from uploadHandler if file uploaded, else '')
+  - `members`: [] — creator is NOT automatically added as member and has no special role.
+    The creator can join like any other user after creation if they want.
+- Returns: `{ success: true, community: community.toPublicJSON() }`
 
 ---
 
-#### `getFeed`
+### `getCommunity`
 
-- Route: `GET /api/v1/posts/feed`
-- Auth: optional (public route)
-- Query params:
-  - `mode`: 'trending' (default) or 'following'
-  - `page`: number, default 1
-  - `limit`: number, default 20, max 50
-- If `mode === 'following'`:
-  - Requires auth. If not authenticated return 401.
-  - Fetch posts where `author` is in `req.user.following` AND
-    `origin` is 'general' or 'public_community'
-  - Never include posts with `origin: 'private_community'`
-  - Sort by `createdAt` descending
-- If `mode === 'trending'` (default, public):
-  - Fetch posts where `origin` is 'general' or 'public_community'
-  - Never include posts with `origin: 'private_community'`
-  - Sort by `trendingScore` descending, then `createdAt` descending as tiebreaker
+- Route: `GET /api/v1/communities/public/:id`
+- Auth: optional
+- Fetch CommunityPublic by id
+- Populate nothing (toPublicJSON is enough)
+- Returns: `{ success: true, community: community.toPublicJSON() }`
+
+---
+
+### `joinCommunity`
+
+- Route: `POST /api/v1/communities/public/:id/join`
+- Auth: required
+- Check if user is already a member → return 400: `'Already a member'`
+- Add `req.user.id` to `community.members`
+- Save community (post-save hook will NOT trigger auto-delete since we are adding, not removing)
+- Returns: `{ success: true, message: 'Joined community', memberCount: community.members.length }`
+
+---
+
+### `leaveCommunity`
+
+- Route: `POST /api/v1/communities/public/:id/leave`
+- Auth: required
+- Check if user is a member → return 400: `'Not a member'`
+- Remove `req.user.id` from `community.members`
+- Save community
+- The post-save hook on CommunityPublic will automatically delete the community
+  if members.length === 0 after saving. No extra logic needed here.
+- If the community still exists after save:
+  Returns: `{ success: true, message: 'Left community' }`
+- If the community was deleted (catch the case where it no longer exists):
+  Returns: `{ success: true, message: 'Left community. Community deleted as it had no members.' }`
+
+---
+
+### `getCommunityFeed`
+
+- Route: `GET /api/v1/communities/public/:id/feed`
+- Auth: optional
+- Query params: `page` (default 1), `limit` (default 20, max 50)
+- Fetch PostX posts where:
+  - `origin: 'public_community'`
+  - `community: id`
+  - `communityType: 'public'`
+- Sort by `trendingScore` descending, then `createdAt` descending as tiebreaker
 - Populate `author` with: `username avatar role`
-- Populate `community` with: `name` (only when communityType is set)
-- Apply pagination with `page` and `limit`
 - Returns:
 
 ```javascript
 {
   success: true,
   posts: [post.toPublicJSON(), ...],
-  pagination: {
-    page,
-    limit,
-    total,
-    totalPages,
-    hasNextPage,
-    hasPrevPage
-  }
+  pagination: { page, limit, total, totalPages, hasNextPage, hasPrevPage }
 }
 ```
 
 ---
 
-#### `getPostById`
+### `createCommunityPost`
 
-- Route: `GET /api/v1/posts/:id`
-- Auth: optional
-- Fetch PostX by id
-- Populate `author` with: `username avatar role`
-- If post has `origin: 'private_community'`, return 403 unless:
-  - req.user exists AND is a member of that community (check via CommunityPrivate)
+- Route: `POST /api/v1/communities/public/:id/posts`
+- Auth: required
+- User must be a member of the community → return 403 if not: `'You must be a member to post'`
+- Accepts: multipart/form-data with fields `text` and optional `media` file
+- Validation: `text` required, max 400 chars
+- Create PostX with:
+  - `author`: req.user.id
+  - `text`: req.body.text
+  - `mediaUrl`, `mediaType`: from uploadHandler
+  - `origin`: 'public_community'
+  - `community`: community.\_id
+  - `communityType`: 'public'
+- Increment `community.postCount` by 1 and save
 - Returns: `{ success: true, post: post.toPublicJSON() }`
 
 ---
 
-#### `likePost`
+### `deleteCommunityPost`
 
-- Route: `POST /api/v1/posts/:id/like`
+- Route: `DELETE /api/v1/communities/public/:id/posts/:postId`
 - Auth: required
-- Toggle like:
-  - If user already liked → remove from likes array (unlike)
-  - If user has not liked → add to likes array (like)
-- Recalculate and update `trendingScore` using `PostX.calculateTrendingScore(post)`
-- Returns: `{ success: true, liked: true/false, likesCount: post.likes.length }`
-
----
-
-#### `deletePost`
-
-- Route: `DELETE /api/v1/posts/:id`
-- Auth: required
+- Fetch the post and verify it belongs to this community
 - Rules:
-  - Author can always delete their own post
-  - Platform moderator (User.role === 'moderator') can delete any PostX
-  - Platform superadmin (User.role === 'superadmin') can delete any PostX
-  - No one else can delete
-- If post has a mediaUrl, delete the file from disk using `fs.unlink`
-- Decrement `commentCount` tracking is not needed here (comments are cascade-deleted)
+  - Post author can delete their own post
+  - Platform moderator (User.role === 'moderator') can delete any post
+  - Platform superadmin (User.role === 'superadmin') can delete any post
+  - No one else can delete (public communities have no community-level moderation)
+- If post has mediaUrl, delete the file from disk using `fs.unlink`
 - Delete all comments where `postId === post._id` AND `postType === 'PostX'`
+- Decrement `community.postCount` by 1 (min 0) and save
 - Returns: `{ success: true, message: 'Post deleted' }`
 
 ---
 
-#### `getComments`
+### `listCommunities`
 
-- Route: `GET /api/v1/posts/:id/comments`
+- Route: `GET /api/v1/communities/public`
 - Auth: optional
-- Fetch all comments where `postId === id` AND `postType === 'PostX'`
-  AND `parentComment === null` (top-level comments only)
-- Populate `author` with: `username avatar`
-- Populate `replyingTo` with: `username`
-- For each top-level comment, also fetch its replies:
-  - Find comments where `parentComment === comment._id`
-  - Populate `author` and `replyingTo` the same way
-  - Sort replies by `createdAt` ascending
-- Sort top-level comments by `createdAt` ascending
+- Query params:
+  - `search`: string, optional — filter by name (case-insensitive partial match)
+  - `page`: default 1
+  - `limit`: default 20, max 50
+- Sort by `members.length` descending (most popular first)
 - Returns:
 
 ```javascript
 {
   success: true,
-  comments: [
-    {
-      ...comment.toPublicJSON(),
-      replies: [comment.toPublicJSON(), ...]
-    }
-  ]
+  communities: [community.toPublicJSON(), ...],
+  pagination: { page, limit, total, totalPages, hasNextPage, hasPrevPage }
 }
 ```
 
 ---
 
-#### `createComment`
-
-- Route: `POST /api/v1/posts/:id/comments`
-- Auth: required
-- Body: `{ text, parentCommentId? }`
-- Validation: `text` required, max 400 chars
-- If `parentCommentId` is provided:
-  - Fetch the parent comment
-  - If not found return 404
-  - If parent comment already has a parent (depth > 1) return 400 error:
-    `'Cannot reply to a reply'`
-  - Set `parentComment: parentCommentId`
-  - Set `replyingTo: parentComment.author`
-- Create comment with `postType: 'PostX'`
-- Increment `post.commentCount` by 1 and save post
-- Recalculate and update post `trendingScore`
-- Returns: `{ success: true, comment: comment.toPublicJSON() }`
-
----
-
-#### `likeComment`
-
-- Route: `POST /api/v1/posts/:postId/comments/:commentId/like`
-- Auth: required
-- Only works for comments with `postType: 'PostX'`
-- Toggle like on the comment (same logic as likePost)
-- Returns: `{ success: true, liked: true/false, likesCount: comment.likes.length }`
-
----
-
-#### `deleteComment`
-
-- Route: `DELETE /api/v1/posts/:postId/comments/:commentId`
-- Auth: required
-- Rules:
-  - Author can delete their own comment
-  - Platform moderator or superadmin can delete any comment
-  - Community moderator/leader can delete comments in their community's posts
-    (handle this in community-specific routes later, not here)
-- If comment has replies, delete the replies too
-- Decrement `post.commentCount` by the number of deleted comments (comment + replies)
-- Returns: `{ success: true, message: 'Comment deleted' }`
-
----
-
-### Trending score recalculation job
-
-Create `/backend/jobs/updateTrendingScores.js`:
-
-- Exports a function `updateTrendingScores()`
-- Fetches all PostX documents
-- For each post, calls `PostX.calculateTrendingScore(post)` and updates `trendingScore`
-- Uses `bulkWrite` for efficiency, not individual saves
-- Logs how many posts were updated
-
-In `server.js`, schedule this job to run every 30 minutes using `setInterval`:
+## Create `/backend/routes/communitiesPublic.js`
 
 ```javascript
-const { updateTrendingScores } = require("./jobs/updateTrendingScores");
-// Run once on startup, then every 30 minutes
-updateTrendingScores();
-setInterval(updateTrendingScores, 30 * 60 * 1000);
-```
-
----
-
-### Create `/backend/routes/posts.js`
-
-Mount all PostX routes. Apply `authMiddleware` only where required (marked above).
-Apply `uploadHandler` middleware before `createPost`.
-
-```javascript
-POST   /                          → uploadHandler + createPost
-GET    /feed                      → getFeed
-GET    /:id                       → getPostById
-POST   /:id/like                  → authMiddleware + likePost
-DELETE /:id                       → authMiddleware + deletePost
-GET    /:id/comments              → getComments
-POST   /:id/comments              → authMiddleware + createComment
-POST   /:postId/comments/:commentId/like → authMiddleware + likeComment
-DELETE /:postId/comments/:commentId      → authMiddleware + deleteComment
+GET    /                    → listCommunities
+POST   /                    → authMiddleware + uploadHandler + createCommunity
+GET    /:id                 → getCommunity
+POST   /:id/join            → authMiddleware + joinCommunity
+POST   /:id/leave           → authMiddleware + leaveCommunity
+GET    /:id/feed            → getCommunityFeed
+POST   /:id/posts           → authMiddleware + uploadHandler + createCommunityPost
+DELETE /:id/posts/:postId   → authMiddleware + deleteCommunityPost
 ```
 
 Mount in `/backend/routes/index.js`:
 
 ```javascript
-router.use("/posts", postsRouter);
+router.use("/communities/public", communitiesPublicRouter);
 ```
+
+---
+
+## Important: comments on community posts
+
+Comments on PostX posts inside public communities use the SAME comment endpoints
+already built in Part 2:
+
+```
+GET    /api/v1/posts/:id/comments
+POST   /api/v1/posts/:id/comments
+POST   /api/v1/posts/:postId/comments/:commentId/like
+DELETE /api/v1/posts/:postId/comments/:commentId
+```
+
+Do NOT create new comment routes for communities. The existing ones already
+handle all PostX comments regardless of origin.
 
 ---
 
 ## When done
 
-1. Test file upload: `POST /api/v1/posts` with multipart/form-data containing
-   text and an image file. Confirm the file appears in `/backend/uploads/images/`
-   and the response contains the correct `mediaUrl`.
+1. Test full flow with Postman or curl:
+   - Create a public community (with and without avatar)
+   - Join the community as a different user
+   - Create a post inside the community
+   - Confirm the post appears in `GET /api/v1/posts/feed` (general feed, trending mode)
+     with `communityType: 'public'` and community name populated
+   - Comment on the community post using the existing `/posts/:id/comments` endpoint
+   - Leave the community as the only member → confirm community is auto-deleted
+   - Try to create a community with a duplicate name → confirm 409 error
 
-2. Test feed: `GET /api/v1/posts/feed` returns empty array (no posts yet is fine).
-
-3. Test full flow with Postman or curl:
-   - Create a post with text only
-   - Create a post with an image
-   - Like the post → confirm liked: true
-   - Like again → confirm liked: false (toggle)
-   - Comment on the post → confirm commentCount increments
-   - Reply to the comment → confirm replyingTo is set
-   - Try to reply to a reply → confirm 400 error
-   - Delete the post → confirm file is removed from disk
-
-4. Update `/backend/CLAUDE.md`:
+2. Update `/backend/CLAUDE.md` — API routes done section:
 
 ```
-## API routes done
-- GET  /api/v1/health
-- POST /api/v1/auth/register
-- POST /api/v1/auth/login
-- POST /api/v1/auth/logout
-- POST /api/v1/auth/refresh
-- GET  /api/v1/auth/me (protected)
-- PUT  /api/v1/profile (protected)
-- PUT  /api/v1/profile/password (protected)
-- POST /api/v1/posts (protected, multipart)
-- GET  /api/v1/posts/feed (public, supports ?mode=trending|following&page&limit)
-- GET  /api/v1/posts/:id (public)
-- POST /api/v1/posts/:id/like (protected)
-- DELETE /api/v1/posts/:id (protected)
-- GET  /api/v1/posts/:id/comments (public)
-- POST /api/v1/posts/:id/comments (protected)
-- POST /api/v1/posts/:postId/comments/:commentId/like (protected)
-- DELETE /api/v1/posts/:postId/comments/:commentId (protected)
-
-## Infrastructure
-- multer configured in /backend/config/upload.js
-- uploaded files served at /uploads/images/ and /uploads/videos/
-- trending score job runs every 30 minutes via setInterval in server.js
+## API routes done (add these)
+- GET    /api/v1/communities/public (public, supports ?search&page&limit)
+- POST   /api/v1/communities/public (protected, multipart)
+- GET    /api/v1/communities/public/:id (public)
+- POST   /api/v1/communities/public/:id/join (protected)
+- POST   /api/v1/communities/public/:id/leave (protected)
+- GET    /api/v1/communities/public/:id/feed (public, supports ?page&limit)
+- POST   /api/v1/communities/public/:id/posts (protected, multipart, members only)
+- DELETE /api/v1/communities/public/:id/posts/:postId (protected)
 ```

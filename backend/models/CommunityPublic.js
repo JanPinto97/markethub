@@ -25,8 +25,12 @@ communityPublicSchema.methods.toPublicJSON = function () {
   };
 };
 
+communityPublicSchema.pre('save', function () {
+  this.$locals.wasNew = this.isNew;
+});
+
 communityPublicSchema.post('save', async function (doc) {
-  if (doc.members.length === 0) {
+  if (!doc.$locals.wasNew && doc.members.length === 0) {
     await doc.constructor.deleteOne({ _id: doc._id });
   }
 });
