@@ -20,7 +20,10 @@
       "Bash(docker-compose exec:*)",
       "Bash(docker-compose restart:*)",
       "Bash(curl:*)",
-      "Bash(docker-compose logs:*)"
+      "Bash(docker-compose logs:*)",
+      "Bash(mkdir -p C:/JAN/DAW/CODI/markethub/backend/uploads/images C:/JAN/DAW/CODI/markethub/backend/uploads/videos C:/JAN/DAW/CODI/markethub/backend/jobs C:/JAN/DAW/CODI/markethub/backend/controllers)",
+      "Bash(touch C:/JAN/DAW/CODI/markethub/backend/uploads/images/.gitkeep C:/JAN/DAW/CODI/markethub/backend/uploads/videos/.gitkeep)",
+      "Bash(python3 -m json.tool)"
     ]
   }
 }

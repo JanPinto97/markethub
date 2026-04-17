@@ -23,7 +23,10 @@ const userSchema = new mongoose.Schema({
     default: 'user',
   },
   avatar: { type: String, default: '' },
+  coverImage: { type: String, default: '' },
   bio: { type: String, default: '', maxLength: 300 },
+  following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User', default: [] }],
+  followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User', default: [] }],
   loginAttempts: { type: Number, default: 0 },
   lockUntil: { type: Date, default: null },
   createdAt: { type: Date, default: Date.now },
@@ -53,8 +56,11 @@ userSchema.methods.toPublicJSON = function () {
     id: this._id,
     username: this.username,
     avatar: this.avatar,
+    coverImage: this.coverImage,
     bio: this.bio,
     role: this.role,
+    followingCount: this.following ? this.following.length : 0,
+    followersCount: this.followers ? this.followers.length : 0,
     createdAt: this.createdAt,
   };
 };

@@ -48,6 +48,29 @@ server.js            → Entry point: loads env, connects DB, starts Express
 - GET  /api/v1/auth/me (protected)
 - PUT  /api/v1/profile (protected)
 - PUT  /api/v1/profile/password (protected)
+- POST /api/v1/posts (protected, multipart)
+- GET  /api/v1/posts/feed (public, supports ?mode=trending|following&page&limit)
+- GET  /api/v1/posts/:id (public)
+- POST /api/v1/posts/:id/like (protected)
+- DELETE /api/v1/posts/:id (protected)
+- GET  /api/v1/posts/:id/comments (public)
+- POST /api/v1/posts/:id/comments (protected)
+- POST /api/v1/posts/:postId/comments/:commentId/like (protected)
+- DELETE /api/v1/posts/:postId/comments/:commentId (protected)
+
+- GET    /api/v1/communities/public (public, supports ?search&page&limit)
+- POST   /api/v1/communities/public (protected, multipart)
+- GET    /api/v1/communities/public/:id (public)
+- POST   /api/v1/communities/public/:id/join (protected)
+- POST   /api/v1/communities/public/:id/leave (protected)
+- GET    /api/v1/communities/public/:id/feed (public, supports ?page&limit)
+- POST   /api/v1/communities/public/:id/posts (protected, multipart, members only)
+- DELETE /api/v1/communities/public/:id/posts/:postId (protected)
+
+## Infrastructure
+- multer configured in /backend/config/upload.js
+- uploaded files served at /uploads/images/ and /uploads/videos/
+- trending score job runs every 30 minutes via setInterval in server.js
 
 ## Running
 
@@ -61,7 +84,13 @@ server.js            → Entry point: loads env, connects DB, starts Express
 - Connects to mongo service via `mongodb://mongo:27017/markethub`
 
 ## Models done
-- User: username, email, passwordHash, role, avatar, bio, loginAttempts, lockUntil, createdAt
+- User: updated with following, followers, coverImage
+- PostX: Twitter/X style post for general feed and communities (max 400 chars)
+- PostReddit: Reddit style post for discussion topics only (title + text + votes)
+- Comment: shared by both post types, supports one nesting level, likes only on PostX comments
+- CommunityPublic: no roles, auto-delete when empty
+- CommunityPrivate: roles (leader, moderator, little_whale, member), join requests (max 150 chars), auto-delete when empty, leader succession logic
+- DiscussionTopic: fixed topics, hardcoded via seed, never change
 
 ## Current Status
 
