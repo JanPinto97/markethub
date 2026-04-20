@@ -67,6 +67,20 @@ server.js            → Entry point: loads env, connects DB, starts Express
 - POST   /api/v1/communities/public/:id/posts (protected, multipart, members only)
 - DELETE /api/v1/communities/public/:id/posts/:postId (protected)
 
+- GET    /api/v1/communities/private (public)
+- POST   /api/v1/communities/private (protected, multipart)
+- GET    /api/v1/communities/private/:id (protected, members only)
+- POST   /api/v1/communities/private/:id/request (protected)
+- POST   /api/v1/communities/private/:id/requests/:requestId (protected, leader/moderator)
+- DELETE /api/v1/communities/private/:id/members/:userId (protected, leader only)
+- PUT    /api/v1/communities/private/:id/members/:userId/role (protected, leader only)
+- POST   /api/v1/communities/private/:id/leave (protected)
+- DELETE /api/v1/communities/private/:id (protected, leader only)
+- GET    /api/v1/communities/private/:id/feed (protected, members only)
+- POST   /api/v1/communities/private/:id/posts (protected, members only, multipart)
+- DELETE /api/v1/communities/private/:id/posts/:postId (protected)
+- POST   /api/v1/communities/private/:id/posts/:postId/pin (protected, leader only)
+
 ## Infrastructure
 - multer configured in /backend/config/upload.js
 - uploaded files served at /uploads/images/ and /uploads/videos/

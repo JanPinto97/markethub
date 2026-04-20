@@ -12,19 +12,16 @@ const memberSchema = new mongoose.Schema(
   { _id: false }
 );
 
-const joinRequestSchema = new mongoose.Schema(
-  {
-    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    message: { type: String, maxLength: 150, default: '' },
-    createdAt: { type: Date, default: Date.now },
-    status: {
-      type: String,
-      enum: ['pending', 'accepted', 'rejected'],
-      default: 'pending',
-    },
+const joinRequestSchema = new mongoose.Schema({
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  message: { type: String, maxLength: 150, default: '' },
+  createdAt: { type: Date, default: Date.now },
+  status: {
+    type: String,
+    enum: ['pending', 'accepted', 'rejected'],
+    default: 'pending',
   },
-  { _id: false }
-);
+});
 
 const communityPrivateSchema = new mongoose.Schema({
   name: { type: String, required: true, unique: true, trim: true, maxLength: 50 },
