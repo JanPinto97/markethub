@@ -2,6 +2,32 @@
   display: block;
 }
 
+body {
+  background-color: #f7f9fb;
+  color: #191c1e;
+  font-family: 'Inter', sans-serif;
+}
+
+h1, h2, h3, .display-text {
+  font-family: 'Manrope', sans-serif;
+  letter-spacing: -0.02em;
+}
+
+/* Regulatory rules: No borders, only shadows or tonal changes */
+.card-premium {
+  background: #ffffff;
+  border: none !important;
+  box-shadow: 0 20px 40px rgba(13, 28, 50, 0.04);
+  border-radius: 0.75rem;
+}
+
+/* Glassmorphism for floating elements */
+.glass-element {
+  background: rgba(247, 249, 251, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -17,22 +43,37 @@
   -webkit-backdrop-filter: blur(20px);
 }
 
-@keyframes scroll {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
+/* Ticker Styles */
+.ticker-wrap {
+  width: 100%;
+  overflow: hidden;
+  background: #ffffff;
+  padding: 10px 0;
 }
 
-.animate-scroll {
+.ticker-move {
   display: flex;
   width: max-content;
-  animation: scroll 40s linear infinite;
+  animation: ticker-animation 30s linear infinite;
 }
 
-.animate-scroll:hover {
+.ticker-item {
+  padding: 0 2rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-right: 1px solid #f2f4f6;
+}
+
+@keyframes ticker-animation {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.ticker-move:hover {
   animation-play-state: paused;
 }
 
@@ -44,13 +85,4 @@
     'GRAD' 0,
     'opsz' 24;
   vertical-align: middle;
-}
-
-/* Ticker color helpers */
-.text-secondary-fixed-dim {
-  color: #4edea3;
-}
-
-.text-error {
-  color: #ba1a1a;
 }
