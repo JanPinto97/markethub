@@ -1,850 +1,553 @@
-# PROMPT — Fase 3, Part 4: API Comunitats Privades
+# PROMPT — Fase 3, Part 5: API Temes de Discussió + Perfils + Seguidors + Cerca
 
 Read `CLAUDE.md` at the project root, `/backend/CLAUDE.md` and `/COMMUNITY.md`
 fully before writing any code.
 
-**Current task:** Build the full API for private communities. This is the most complex
-part of the project. Read COMMUNITY.md carefully before writing any code — all business
-rules for roles, succession, feed scoring and join requests are defined there.
+**Current task:** Build the API for discussion topics (PostReddit), public user profiles,
+the following system, and the general search. These are four independent features grouped
+together because none of them is complex enough to warrant its own prompt.
 
 ---
 
-## Context: Private Community rules (from COMMUNITY.md)
+## Part A — Discussion Topics API
 
-**Roles and their powers:**
+### Context (from COMMUNITY.md)
 
-| Role         | Powers                                                                                                                          |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| Leader       | Accept/reject join requests, expel members, promote members to any role, delete any post, pin/unpin posts, delete the community |
-| Moderator    | Accept/reject join requests, delete any post                                                                                    |
-| Little Whale | Feed positioning bonus only                                                                                                     |
-| Member       | No special powers                                                                                                               |
-
-**Role constraints:**
-
-- Leader: exactly 1 at all times. Cannot be removed unless they leave.
-- Moderator, Little Whale, Member: multiple allowed.
-
-**Leader succession when leader leaves:**
-
-1. Random moderator → promoted to leader
-2. If none, random little_whale → promoted to leader
-3. If none, random member → promoted to leader
-4. If no members at all → community is deleted automatically (post-save hook handles this)
-
-**Feed trending score for private communities:**
-
-- Base score: (likes × 1) + (commentCount × 2) with time decay (same as general feed)
-- Role bonus added on top:
-  - Leader posts: +50
-  - Moderator posts: +20
-  - Little Whale posts: +10
-  - Member posts: +0
-- The role bonus is added when calculating the feed, NOT stored in trendingScore field.
-  trendingScore on PostX stores the base score only (calculated by the existing job).
-  The role bonus is applied at query time when sorting the private community feed.
-
-**Post visibility:**
-
-- Posts from private communities NEVER appear in the general feed.
-- Posts from private communities are NOT visible on the author's public profile.
-- Only members of the community can see its posts.
-
-**Join requests:**
-
-- Message max 150 chars.
-- Status: pending → accepted or rejected by leader or moderator.
-- Accepted users are added as members with role 'member'.
-
-**Auto-deletion:**
-
-- When members.length === 0 after a save, the post-save hook deletes the community.
-- This is already implemented in CommunityPrivate model.
+- Discussion topics are fixed and hardcoded. They are never created or deleted via API.
+- Posts inside topics use PostReddit format: title (max 300 chars) + text (max 2000 chars)
+  - optional image or video.
+- Voting: users can upvote OR downvote independently. Voting the opposite removes the
+  previous vote. A user cannot have both an upvote and a downvote on the same post.
+- Displayed score = upvotes.length - downvotes.length (net score).
+- Feed ordering: by net vote score (default) or by most recent.
+- PostReddit posts NEVER appear in the general feed and are NOT shown on user profiles.
+- Comments on PostReddit posts do NOT have likes (postType check handles this already
+  in the existing comment endpoints).
 
 ---
 
-## Create `/backend/controllers/communityPrivateController.js`
-
-All functions use async/await and pass errors to next(err).
-
-**Helper function** (define at the top of the controller, not exported):
-
-```javascript
-// Returns the role of req.user in the community, or null if not a member
-function getUserRole(community, userId) {
-  const member = community.members.find(
-    (m) => m.user.toString() === userId.toString(),
-  );
-  return member ? member.role : null;
-}
-```
+### Create `/backend/controllers/discussionTopicController.js`
 
 ---
 
-### `createCommunity`
+#### `listTopics`
 
-- Route: `POST /api/v1/communities/private`
-- Auth: required
-- Body: multipart/form-data with `name`, `description?`, `avatar?` (optional file)
-- Validation:
-  - `name` required, 3–50 chars
-  - `name` must be unique across BOTH CommunityPublic and CommunityPrivate.
-    Check both collections. If taken, return 409: `'Community name already taken'`
-  - `description` max 300 chars
-- Create community with:
-  - `name`, `description`, `avatar` (from uploadHandler or '')
-  - `members`: [{ user: req.user.id, role: 'leader' }]
-    The creator is automatically added as the leader.
-- Returns: `{ success: true, community: community.toPublicJSON() }`
-
----
-
-### `getCommunity`
-
-- Route: `GET /api/v1/communities/private/:id`
-- Auth: required — only members can access any data about a private community
-- Check if req.user is a member using `community.isMember(req.user.id)`
-- If not a member: return 403: `'This is a private community'`
-- Get the user's role using `getUserRole(community, req.user.id)`
-- Populate `members.user` with: `username avatar`
-- Populate `pinnedPosts` with: `text mediaUrl mediaType author createdAt`
-  and populate `pinnedPosts.author` with `username avatar`
-- Response depends on role:
-  - If role is 'leader' or 'moderator':
-    Returns: `{ success: true, community: community.toDetailJSON(), userRole, pendingRequests: joinRequests where status === 'pending' }`
-  - If role is 'little_whale' or 'member':
-    Returns: `{ success: true, community: community.toDetailJSON(), userRole }`
-    (no pendingRequests)
-
----
-
-### `requestToJoin`
-
-- Route: `POST /api/v1/communities/private/:id/request`
-- Auth: required
-- Body: `{ message }` — max 150 chars, required
-- Check if user is already a member → return 400: `'Already a member'`
-- Check if user already has a pending request → return 400: `'Request already pending'`
-- Add to `community.joinRequests`:
-  `{ user: req.user.id, message, status: 'pending', createdAt: now }`
-- Returns: `{ success: true, message: 'Join request sent' }`
-
----
-
-### `handleJoinRequest`
-
-- Route: `POST /api/v1/communities/private/:id/requests/:requestId`
-- Auth: required — leader or moderator only
-- Body: `{ action }` — 'accept' or 'reject'
-- Check user role → if not leader or moderator, return 403: `'Insufficient permissions'`
-- Find the join request by requestId in `community.joinRequests`
-- If not found → return 404: `'Request not found'`
-- If request status is not 'pending' → return 400: `'Request already handled'`
-- If `action === 'accept'`:
-  - Update request status to 'accepted'
-  - Add user to `community.members` with role 'member'
-- If `action === 'reject'`:
-  - Update request status to 'rejected'
-- Save community
-- Returns: `{ success: true, action, message: 'Request accepted/rejected' }`
-
----
-
-### `expelMember`
-
-- Route: `DELETE /api/v1/communities/private/:id/members/:userId`
-- Auth: required — leader only
-- Check user role → if not leader, return 403: `'Only the leader can expel members'`
-- Cannot expel yourself → return 400: `'Cannot expel yourself. Leave the community instead.'`
-- Cannot expel another leader (there should only be one, but guard anyway)
-- Find the target user in members → return 404 if not found: `'Member not found'`
-- Remove target user from `community.members`
-- Save community (post-save hook handles auto-delete if empty, but leader is still there so it won't trigger)
-- Returns: `{ success: true, message: 'Member expelled' }`
-
----
-
-### `promoteMember`
-
-- Route: `PUT /api/v1/communities/private/:id/members/:userId/role`
-- Auth: required — leader only
-- Body: `{ role }` — must be one of: 'moderator', 'little_whale', 'member'
-  (leader cannot be assigned via this endpoint — succession is automatic)
-- Check user role → if not leader, return 403: `'Only the leader can promote members'`
-- Cannot promote yourself → return 400
-- Find the target user in members → return 404 if not found
-- Target cannot already be the leader → return 400
-- Update target member's role to the new role
-- Save community
-- Returns: `{ success: true, message: 'Member role updated', newRole: role }`
-
----
-
-### `leaveCommunity`
-
-- Route: `POST /api/v1/communities/private/:id/leave`
-- Auth: required
-- Check if user is a member → return 400 if not: `'Not a member'`
-- Get user's current role
-- Remove user from `community.members`
-- If the leaving user was the leader:
-  - Call `community.promoteNewLeader()`
-  - If it returns null → community has no members, post-save hook will delete it
-  - If it returns a member → log who was promoted (no need to return this in response)
-- Save community
-- If community still exists:
-  Returns: `{ success: true, message: 'Left community' }`
-- If community was deleted:
-  Returns: `{ success: true, message: 'Left community. Community deleted as it had no members.' }`
-
----
-
-### `deleteCommunity`
-
-- Route: `DELETE /api/v1/communities/private/:id`
-- Auth: required — leader only
-- Check user role → if not leader, return 403: `'Only the leader can delete the community'`
-- Delete all PostX posts where `community: id` AND `communityType: 'private'`
-  - For each post, delete media files from disk if mediaUrl is set
-- Delete all comments where postType is 'PostX' and postId is in the deleted posts
-- Delete the community document
-- Returns: `{ success: true, message: 'Community deleted' }`
-
----
-
-### `getCommunityFeed`
-
-- Route: `GET /api/v1/communities/private/:id/feed`
-- Auth: required — members only
-- Query params: `page` (default 1), `limit` (default 20, max 50)
-- Check membership → return 403 if not a member
-- Fetch PostX posts where:
-  - `origin: 'private_community'`
-  - `community: id`
-  - `communityType: 'private'`
-  - `isPinned: false` (pinned posts are handled separately)
-- For each post, calculate the effective feed score:
-  ```javascript
-  // Fetch the author's role in this community
-  // effectiveScore = post.trendingScore + community.getRoleWeight(authorRole)
-  ```
-  To do this efficiently:
-  - Fetch all posts and populate `author` with `username avatar role _id`
-  - Build a map of { userId → communityRole } from `community.members`
-  - For each post, look up the author's community role and add the weight bonus
-  - Sort by effectiveScore descending, then createdAt descending
-  - Apply pagination manually after sorting (since the bonus is applied in JS, not MongoDB)
-    Note: for large communities this is acceptable for now. Document this as a known
-    limitation in a code comment.
-- Fetch pinned posts separately (already populated in getCommunity, but re-fetch here):
-  - `PostX.find({ _id: { $in: community.pinnedPosts } })`
-  - Populate author with `username avatar`
-  - Pinned posts always appear FIRST, before trending posts
+- Route: `GET /api/v1/topics`
+- Auth: optional
+- Query params:
+  - `category`: optional, filter by category enum value
+    ('CORE_MARKETS', 'ECONOMIA_I_MACRO', 'ASSETS_ESPECIFICS', 'TRADING_I_INVERSIO')
+  - `search`: optional, case-insensitive partial match on `name`
+- Sort by `name` ascending within each category
 - Returns:
 
 ```javascript
 {
   success: true,
-  pinnedPosts: [post.toPublicJSON(), ...],
-  posts: [post.toPublicJSON(), ...], // trending posts with role bonus applied
+  topics: [topic.toPublicJSON(), ...]
+}
+```
+
+No pagination — there are few enough fixed topics to return all at once.
+
+---
+
+#### `getTopicBySlug`
+
+- Route: `GET /api/v1/topics/:slug`
+- Auth: optional
+- Fetch DiscussionTopic by `slug` field (not \_id)
+- Returns: `{ success: true, topic: topic.toPublicJSON() }`
+
+---
+
+#### `getTopicFeed`
+
+- Route: `GET /api/v1/topics/:slug/feed`
+- Auth: optional
+- Query params:
+  - `sort`: 'top' (default, by net vote score desc) or 'new' (by createdAt desc)
+  - `page`: default 1
+  - `limit`: default 20, max 50
+- Fetch PostReddit posts where `topic` matches the topic's \_id
+- Populate `author` with: `username avatar role`
+- If `sort === 'top'`:
+  - Cannot sort by voteScore directly in MongoDB because it's a virtual field.
+  - Use aggregation pipeline:
+    ```javascript
+    // Add a computed field: voteScore = size(upvotes) - size(downvotes)
+    // Sort by voteScore desc, then createdAt desc as tiebreaker
+    { $addFields: { voteScore: { $subtract: [{ $size: '$upvotes' }, { $size: '$downvotes' }] } } },
+    { $sort: { voteScore: -1, createdAt: -1 } }
+    ```
+- If `sort === 'new'`: simple sort by `createdAt` descending
+- Returns:
+
+```javascript
+{
+  success: true,
+  posts: [post.toPublicJSON(), ...],
   pagination: { page, limit, total, totalPages, hasNextPage, hasPrevPage }
 }
 ```
 
 ---
 
-### `createCommunityPost`
+#### `createTopicPost`
 
-- Route: `POST /api/v1/communities/private/:id/posts`
-- Auth: required — members only
-- Check membership → return 403 if not a member: `'You must be a member to post'`
-- Accepts: multipart/form-data with `text` and optional `media` file
-- Validation: `text` required, max 400 chars
-- Create PostX with:
+- Route: `POST /api/v1/topics/:slug/posts`
+- Auth: required
+- Accepts: multipart/form-data with `title`, `text?`, and optional `media` file
+- Validation:
+  - `title` required, max 300 chars
+  - `text` optional, max 2000 chars
+  - At least one of `title` or `text` must be meaningful content (title alone is enough)
+- Create PostReddit with:
   - `author`: req.user.id
-  - `text`, `mediaUrl`, `mediaType`: from body and uploadHandler
-  - `origin`: 'private_community'
-  - `community`: community.\_id
-  - `communityType`: 'private'
-- Increment `community.postCount` by 1 and save
+  - `title`, `text`, `mediaUrl`, `mediaType`: from body and uploadHandler
+  - `topic`: topic.\_id
+- Increment `topic.postCount` by 1 and save
 - Returns: `{ success: true, post: post.toPublicJSON() }`
 
 ---
 
-### `deleteCommunityPost`
+#### `getPostById`
 
-- Route: `DELETE /api/v1/communities/private/:id/posts/:postId`
-- Auth: required
-- Fetch the post and verify it belongs to this community
-- Check permissions:
-  - Post author can delete their own post
-  - Community leader can delete any post in their community
-  - Community moderator can delete any post in their community
-  - Platform moderator (User.role === 'moderator') can delete any post
-  - Platform superadmin (User.role === 'superadmin') can delete any post
-  - Everyone else → return 403
-- If post has mediaUrl, delete the file from disk
-- Delete all comments where `postId === post._id` AND `postType === 'PostX'`
-- If post was pinned, remove it from `community.pinnedPosts`
-- Decrement `community.postCount` by 1 (min 0) and save
-- Returns: `{ success: true, message: 'Post deleted' }`
-
----
-
-### `pinPost`
-
-- Route: `POST /api/v1/communities/private/:id/posts/:postId/pin`
-- Auth: required — leader only
-- Check user role → if not leader, return 403: `'Only the leader can pin posts'`
-- Fetch the post and verify it belongs to this community
-- Toggle pin:
-  - If post is already in `community.pinnedPosts` → remove it (unpin)
-  - If not → add it (pin)
-- Update `post.isPinned` accordingly and save post
-- Save community
-- Returns: `{ success: true, pinned: true/false, message: 'Post pinned/unpinned' }`
-
----
-
-### `listCommunities`
-
-- Route: `GET /api/v1/communities/private`
+- Route: `GET /api/v1/topics/:slug/posts/:postId`
 - Auth: optional
-- Query params:
-  - `search`: string, optional — filter by name (case-insensitive partial match)
-  - `page`: default 1
-  - `limit`: default 20, max 50
-- Returns basic info only (toPublicJSON) — content is private but the community
-  itself is discoverable in search
-- Sort by `members.length` descending
+- Fetch PostReddit by id, verify it belongs to this topic
+- Populate `author` with: `username avatar role`
+- Returns: `{ success: true, post: post.toPublicJSON() }`
+
+---
+
+#### `votePost`
+
+- Route: `POST /api/v1/topics/:slug/posts/:postId/vote`
+- Auth: required
+- Body: `{ vote }` — must be 'up' or 'down'
+- Logic:
+
+  ```
+  If vote === 'up':
+    If user is already in upvotes → remove from upvotes (toggle off)
+    Else → add to upvotes AND remove from downvotes (if present)
+
+  If vote === 'down':
+    If user is already in downvotes → remove from downvotes (toggle off)
+    Else → add to downvotes AND remove from upvotes (if present)
+  ```
+
 - Returns:
 
 ```javascript
 {
   success: true,
-  communities: [community.toPublicJSON(), ...],
-  pagination: { page, limit, total, totalPages, hasNextPage, hasPrevPage }
+  upvotes: post.upvotes.length,
+  downvotes: post.downvotes.length,
+  voteScore: post.upvotes.length - post.downvotes.length,
+  userVote: 'up' | 'down' | null  // current state of this user's vote after the action
 }
 ```
 
 ---
 
-## Create `/backend/routes/communitiesPrivate.js`
+#### `deleteTopicPost`
+
+- Route: `DELETE /api/v1/topics/:slug/posts/:postId`
+- Auth: required
+- Rules:
+  - Post author can delete their own post
+  - Platform moderator (User.role === 'moderator') can delete any post
+  - Platform superadmin (User.role === 'superadmin') can delete any post
+  - No one else can delete
+- If post has mediaUrl, delete the file from disk using `fs.unlink`
+- Delete all comments where `postId === post._id` AND `postType === 'PostReddit'`
+- Decrement `topic.postCount` by 1 (min 0) and save topic
+- Returns: `{ success: true, message: 'Post deleted' }`
+
+---
+
+#### Comments on PostReddit posts
+
+PostReddit comments use the SAME existing comment endpoints:
+
+```
+GET    /api/v1/posts/:id/comments
+POST   /api/v1/posts/:id/comments
+DELETE /api/v1/posts/:postId/comments/:commentId
+```
+
+The `likeComment` endpoint already rejects likes on PostReddit comments
+(postType check). Do NOT create new comment routes for topics.
+
+---
+
+### Create `/backend/routes/topics.js`
 
 ```javascript
-GET    /                              → listCommunities
-POST   /                              → authMiddleware + uploadHandler + createCommunity
-GET    /:id                           → authMiddleware + getCommunity
-POST   /:id/request                   → authMiddleware + requestToJoin
-POST   /:id/requests/:requestId       → authMiddleware + handleJoinRequest
-DELETE /:id/members/:userId           → authMiddleware + expelMember
-PUT    /:id/members/:userId/role      → authMiddleware + promoteMember
-POST   /:id/leave                     → authMiddleware + leaveCommunity
-DELETE /:id                           → authMiddleware + deleteCommunity
-GET    /:id/feed                      → authMiddleware + getCommunityFeed
-POST   /:id/posts                     → authMiddleware + uploadHandler + createCommunityPost
-DELETE /:id/posts/:postId             → authMiddleware + deleteCommunityPost
-POST   /:id/posts/:postId/pin         → authMiddleware + pinPost
+GET    /                          → listTopics
+GET    /:slug                     → getTopicBySlug
+GET    /:slug/feed                → getTopicFeed
+POST   /:slug/posts               → authMiddleware + uploadHandler + createTopicPost
+GET    /:slug/posts/:postId       → getPostById
+POST   /:slug/posts/:postId/vote  → authMiddleware + votePost
+DELETE /:slug/posts/:postId       → authMiddleware + deleteTopicPost
 ```
 
 Mount in `/backend/routes/index.js`:
 
 ```javascript
-router.use("/communities/private", communitiesPrivateRouter);
+router.use("/topics", topicsRouter);
 ```
 
 ---
 
-## Important: comments on private community posts
+## Part B — User Profiles & Following API
 
-Comments use the same existing endpoints as all other PostX posts:
+### Context (from COMMUNITY.md)
 
-```
-GET    /api/v1/posts/:id/comments
-POST   /api/v1/posts/:id/comments
-POST   /api/v1/posts/:postId/comments/:commentId/like
-DELETE /api/v1/posts/:postId/comments/:commentId
-```
-
-Do NOT create new comment routes. The existing delete comment endpoint already
-handles community moderator/leader permissions via the community membership check.
+- Public profile shows: avatar, coverImage, username, follower count, following count,
+  bio, list of public communities the user is a member of, and the user's public PostX posts.
+- Public posts = PostX posts with `origin: 'general'` OR `origin: 'public_community'`.
+  NEVER shows posts with `origin: 'private_community'` or PostReddit posts.
+- Following a user makes their posts appear in the Following feed.
+- Following does NOT grant access to private community posts.
 
 ---
 
-## When done
-
-1. Test full flow with Postman or curl:
-
-   **Community lifecycle:**
-   - Create a private community → confirm creator is added as leader
-   - Try to GET the community as a non-member → confirm 403
-   - Send a join request as another user → confirm pending status
-   - Accept the request as leader → confirm user is added as member
-   - Reject a request → confirm status changes to rejected
-   - Try to send another request from same user → confirm 400 (already member)
-
-   **Role management:**
-   - Promote a member to moderator → confirm role change
-   - Promote a member to little_whale → confirm role change
-   - Try to promote as a non-leader → confirm 403
-   - Expel a member as leader → confirm removal
-   - Try to expel as a non-leader → confirm 403
-
-   **Leader succession:**
-   - Create community, add members with different roles
-   - Leave as leader when moderators exist → confirm a moderator becomes leader
-   - Leave as leader with only little_whales → confirm a little_whale becomes leader
-   - Leave as leader with only base members → confirm a member becomes leader
-   - Leave as the only member → confirm community is deleted
-
-   **Feed and posts:**
-   - Create posts as leader, moderator, little_whale and member
-   - GET /:id/feed → confirm pinned posts appear first
-   - Confirm leader posts appear above moderator posts above little_whale posts
-   - Pin a post as leader → confirm it appears in pinnedPosts
-   - Unpin → confirm it returns to normal feed position
-   - Confirm private community posts do NOT appear in GET /api/v1/posts/feed
-
-   **Deletion:**
-   - Delete a post as author → confirm success
-   - Delete a post as community moderator → confirm success
-   - Delete the community as leader → confirm all posts and comments are removed
-
-2. Update `/backend/CLAUDE.md` — API routes done section:
-
-````
-## API routes done (add these)
-- GET    /api/v1/communities/private (public)
-- POST   /api/v1/communities/private (protected, multipart)
-- GET    /api/v1/communities/private/:id (protected, members only)
-- POST   /api/v1/communities/private/:id/request (protected)
-- POST   /api/v1/communities/private/:id/requests/:requestId (protected, leader/moderator)
-- DELETE /api/v1/communities/private/:id/members/:userId (protected, leader only)
-- PUT    /api/v1/communities/private/:id/members/:userId/role (protected, leader only)
-- POST   /api/v1/communities/private/:id/leave (protected)
-- DELETE /api/v1/communities/private/:id (protected, leader only)
-- GET    /api/v1/communities/private/:id/feed (protected, members only)
-- POST   /api/v1/communities/private/:id/posts (protected, members only, multipart)
-- DELETE /api/v1/communities/private/:id/posts/:postId (protected)
-- POST   /api/v1/communities/private/:id/posts/:postId/pin (protected, leader only)
-```# PROMPT — Fase 3, Part 4: API Comunitats Privades
-
-Read `CLAUDE.md` at the project root, `/backend/CLAUDE.md` and `/COMMUNITY.md`
-fully before writing any code.
-
-**Current task:** Build the full API for private communities. This is the most complex
-part of the project. Read COMMUNITY.md carefully before writing any code — all business
-rules for roles, succession, feed scoring and join requests are defined there.
+### Create `/backend/controllers/userController.js`
 
 ---
 
-## Context: Private Community rules (from COMMUNITY.md)
+#### `getPublicProfile`
 
-**Roles and their powers:**
-
-| Role | Powers |
-|------|--------|
-| Leader | Accept/reject join requests, expel members, promote members to any role, delete any post, pin/unpin posts, delete the community |
-| Moderator | Accept/reject join requests, delete any post |
-| Little Whale | Feed positioning bonus only |
-| Member | No special powers |
-
-**Role constraints:**
-- Leader: exactly 1 at all times. Cannot be removed unless they leave.
-- Moderator, Little Whale, Member: multiple allowed.
-
-**Leader succession when leader leaves:**
-1. Random moderator → promoted to leader
-2. If none, random little_whale → promoted to leader
-3. If none, random member → promoted to leader
-4. If no members at all → community is deleted automatically (post-save hook handles this)
-
-**Feed trending score for private communities:**
-- Base score: (likes × 1) + (commentCount × 2) with time decay (same as general feed)
-- Role bonus added on top:
-  - Leader posts: +50
-  - Moderator posts: +20
-  - Little Whale posts: +10
-  - Member posts: +0
-- The role bonus is added when calculating the feed, NOT stored in trendingScore field.
-  trendingScore on PostX stores the base score only (calculated by the existing job).
-  The role bonus is applied at query time when sorting the private community feed.
-
-**Post visibility:**
-- Posts from private communities NEVER appear in the general feed.
-- Posts from private communities are NOT visible on the author's public profile.
-- Only members of the community can see its posts.
-
-**Join requests:**
-- Message max 150 chars.
-- Status: pending → accepted or rejected by leader or moderator.
-- Accepted users are added as members with role 'member'.
-
-**Auto-deletion:**
-- When members.length === 0 after a save, the post-save hook deletes the community.
-- This is already implemented in CommunityPrivate model.
-
----
-
-## Create `/backend/controllers/communityPrivateController.js`
-
-All functions use async/await and pass errors to next(err).
-
-**Helper function** (define at the top of the controller, not exported):
-```javascript
-// Returns the role of req.user in the community, or null if not a member
-function getUserRole(community, userId) {
-  const member = community.members.find(m => m.user.toString() === userId.toString());
-  return member ? member.role : null;
-}
-````
-
----
-
-### `createCommunity`
-
-- Route: `POST /api/v1/communities/private`
-- Auth: required
-- Body: multipart/form-data with `name`, `description?`, `avatar?` (optional file)
-- Validation:
-  - `name` required, 3–50 chars
-  - `name` must be unique across BOTH CommunityPublic and CommunityPrivate.
-    Check both collections. If taken, return 409: `'Community name already taken'`
-  - `description` max 300 chars
-- Create community with:
-  - `name`, `description`, `avatar` (from uploadHandler or '')
-  - `members`: [{ user: req.user.id, role: 'leader' }]
-    The creator is automatically added as the leader.
-- Returns: `{ success: true, community: community.toPublicJSON() }`
-
----
-
-### `getCommunity`
-
-- Route: `GET /api/v1/communities/private/:id`
-- Auth: required — only members can access any data about a private community
-- Check if req.user is a member using `community.isMember(req.user.id)`
-- If not a member: return 403: `'This is a private community'`
-- Get the user's role using `getUserRole(community, req.user.id)`
-- Populate `members.user` with: `username avatar`
-- Populate `pinnedPosts` with: `text mediaUrl mediaType author createdAt`
-  and populate `pinnedPosts.author` with `username avatar`
-- Response depends on role:
-  - If role is 'leader' or 'moderator':
-    Returns: `{ success: true, community: community.toDetailJSON(), userRole, pendingRequests: joinRequests where status === 'pending' }`
-  - If role is 'little_whale' or 'member':
-    Returns: `{ success: true, community: community.toDetailJSON(), userRole }`
-    (no pendingRequests)
-
----
-
-### `requestToJoin`
-
-- Route: `POST /api/v1/communities/private/:id/request`
-- Auth: required
-- Body: `{ message }` — max 150 chars, required
-- Check if user is already a member → return 400: `'Already a member'`
-- Check if user already has a pending request → return 400: `'Request already pending'`
-- Add to `community.joinRequests`:
-  `{ user: req.user.id, message, status: 'pending', createdAt: now }`
-- Returns: `{ success: true, message: 'Join request sent' }`
-
----
-
-### `handleJoinRequest`
-
-- Route: `POST /api/v1/communities/private/:id/requests/:requestId`
-- Auth: required — leader or moderator only
-- Body: `{ action }` — 'accept' or 'reject'
-- Check user role → if not leader or moderator, return 403: `'Insufficient permissions'`
-- Find the join request by requestId in `community.joinRequests`
-- If not found → return 404: `'Request not found'`
-- If request status is not 'pending' → return 400: `'Request already handled'`
-- If `action === 'accept'`:
-  - Update request status to 'accepted'
-  - Add user to `community.members` with role 'member'
-- If `action === 'reject'`:
-  - Update request status to 'rejected'
-- Save community
-- Returns: `{ success: true, action, message: 'Request accepted/rejected' }`
-
----
-
-### `expelMember`
-
-- Route: `DELETE /api/v1/communities/private/:id/members/:userId`
-- Auth: required — leader only
-- Check user role → if not leader, return 403: `'Only the leader can expel members'`
-- Cannot expel yourself → return 400: `'Cannot expel yourself. Leave the community instead.'`
-- Cannot expel another leader (there should only be one, but guard anyway)
-- Find the target user in members → return 404 if not found: `'Member not found'`
-- Remove target user from `community.members`
-- Save community (post-save hook handles auto-delete if empty, but leader is still there so it won't trigger)
-- Returns: `{ success: true, message: 'Member expelled' }`
-
----
-
-### `promoteMember`
-
-- Route: `PUT /api/v1/communities/private/:id/members/:userId/role`
-- Auth: required — leader only
-- Body: `{ role }` — must be one of: 'moderator', 'little_whale', 'member'
-  (leader cannot be assigned via this endpoint — succession is automatic)
-- Check user role → if not leader, return 403: `'Only the leader can promote members'`
-- Cannot promote yourself → return 400
-- Find the target user in members → return 404 if not found
-- Target cannot already be the leader → return 400
-- Update target member's role to the new role
-- Save community
-- Returns: `{ success: true, message: 'Member role updated', newRole: role }`
-
----
-
-### `leaveCommunity`
-
-- Route: `POST /api/v1/communities/private/:id/leave`
-- Auth: required
-- Check if user is a member → return 400 if not: `'Not a member'`
-- Get user's current role
-- Remove user from `community.members`
-- If the leaving user was the leader:
-  - Call `community.promoteNewLeader()`
-  - If it returns null → community has no members, post-save hook will delete it
-  - If it returns a member → log who was promoted (no need to return this in response)
-- Save community
-- If community still exists:
-  Returns: `{ success: true, message: 'Left community' }`
-- If community was deleted:
-  Returns: `{ success: true, message: 'Left community. Community deleted as it had no members.' }`
-
----
-
-### `deleteCommunity`
-
-- Route: `DELETE /api/v1/communities/private/:id`
-- Auth: required — leader only
-- Check user role → if not leader, return 403: `'Only the leader can delete the community'`
-- Delete all PostX posts where `community: id` AND `communityType: 'private'`
-  - For each post, delete media files from disk if mediaUrl is set
-- Delete all comments where postType is 'PostX' and postId is in the deleted posts
-- Delete the community document
-- Returns: `{ success: true, message: 'Community deleted' }`
-
----
-
-### `getCommunityFeed`
-
-- Route: `GET /api/v1/communities/private/:id/feed`
-- Auth: required — members only
-- Query params: `page` (default 1), `limit` (default 20, max 50)
-- Check membership → return 403 if not a member
-- Fetch PostX posts where:
-  - `origin: 'private_community'`
-  - `community: id`
-  - `communityType: 'private'`
-  - `isPinned: false` (pinned posts are handled separately)
-- For each post, calculate the effective feed score:
-  ```javascript
-  // Fetch the author's role in this community
-  // effectiveScore = post.trendingScore + community.getRoleWeight(authorRole)
-  ```
-  To do this efficiently:
-  - Fetch all posts and populate `author` with `username avatar role _id`
-  - Build a map of { userId → communityRole } from `community.members`
-  - For each post, look up the author's community role and add the weight bonus
-  - Sort by effectiveScore descending, then createdAt descending
-  - Apply pagination manually after sorting (since the bonus is applied in JS, not MongoDB)
-    Note: for large communities this is acceptable for now. Document this as a known
-    limitation in a code comment.
-- Fetch pinned posts separately (already populated in getCommunity, but re-fetch here):
-  - `PostX.find({ _id: { $in: community.pinnedPosts } })`
-  - Populate author with `username avatar`
-  - Pinned posts always appear FIRST, before trending posts
-- Returns:
-
-```javascript
-{
-  success: true,
-  pinnedPosts: [post.toPublicJSON(), ...],
-  posts: [post.toPublicJSON(), ...], // trending posts with role bonus applied
-  pagination: { page, limit, total, totalPages, hasNextPage, hasPrevPage }
-}
-```
-
----
-
-### `createCommunityPost`
-
-- Route: `POST /api/v1/communities/private/:id/posts`
-- Auth: required — members only
-- Check membership → return 403 if not a member: `'You must be a member to post'`
-- Accepts: multipart/form-data with `text` and optional `media` file
-- Validation: `text` required, max 400 chars
-- Create PostX with:
-  - `author`: req.user.id
-  - `text`, `mediaUrl`, `mediaType`: from body and uploadHandler
-  - `origin`: 'private_community'
-  - `community`: community.\_id
-  - `communityType`: 'private'
-- Increment `community.postCount` by 1 and save
-- Returns: `{ success: true, post: post.toPublicJSON() }`
-
----
-
-### `deleteCommunityPost`
-
-- Route: `DELETE /api/v1/communities/private/:id/posts/:postId`
-- Auth: required
-- Fetch the post and verify it belongs to this community
-- Check permissions:
-  - Post author can delete their own post
-  - Community leader can delete any post in their community
-  - Community moderator can delete any post in their community
-  - Platform moderator (User.role === 'moderator') can delete any post
-  - Platform superadmin (User.role === 'superadmin') can delete any post
-  - Everyone else → return 403
-- If post has mediaUrl, delete the file from disk
-- Delete all comments where `postId === post._id` AND `postType === 'PostX'`
-- If post was pinned, remove it from `community.pinnedPosts`
-- Decrement `community.postCount` by 1 (min 0) and save
-- Returns: `{ success: true, message: 'Post deleted' }`
-
----
-
-### `pinPost`
-
-- Route: `POST /api/v1/communities/private/:id/posts/:postId/pin`
-- Auth: required — leader only
-- Check user role → if not leader, return 403: `'Only the leader can pin posts'`
-- Fetch the post and verify it belongs to this community
-- Toggle pin:
-  - If post is already in `community.pinnedPosts` → remove it (unpin)
-  - If not → add it (pin)
-- Update `post.isPinned` accordingly and save post
-- Save community
-- Returns: `{ success: true, pinned: true/false, message: 'Post pinned/unpinned' }`
-
----
-
-### `listCommunities`
-
-- Route: `GET /api/v1/communities/private`
+- Route: `GET /api/v1/users/:username`
 - Auth: optional
-- Query params:
-  - `search`: string, optional — filter by name (case-insensitive partial match)
-  - `page`: default 1
-  - `limit`: default 20, max 50
-- Returns basic info only (toPublicJSON) — content is private but the community
-  itself is discoverable in search
-- Sort by `members.length` descending
+- Fetch user by `username` field (case-insensitive)
+- If user not found → return 404: `'User not found'`
+- Fetch public communities where `members` contains user.\_id:
+  - Query CommunityPublic where `members: user._id`
+  - Return only `toPublicJSON()` for each
+- If req.user exists, also return whether the requesting user follows this profile:
+  `isFollowing: req.user.following.includes(user._id)`
 - Returns:
 
 ```javascript
 {
   success: true,
+  user: user.toPublicJSON(),  // includes followingCount, followersCount, coverImage
   communities: [community.toPublicJSON(), ...],
+  isFollowing: true/false  // only if req.user exists, otherwise omit
+}
+```
+
+---
+
+#### `getUserPosts`
+
+- Route: `GET /api/v1/users/:username/posts`
+- Auth: optional
+- Fetch user by username
+- Fetch PostX posts where:
+  - `author: user._id`
+  - `origin: { $in: ['general', 'public_community'] }`
+  - NEVER include `origin: 'private_community'`
+- Sort by `createdAt` descending
+- Populate `author` with: `username avatar`
+- Populate `community` with: `name` (when communityType is set)
+- Query params: `page` (default 1), `limit` (default 20, max 50)
+- Returns:
+
+```javascript
+{
+  success: true,
+  posts: [post.toPublicJSON(), ...],
   pagination: { page, limit, total, totalPages, hasNextPage, hasPrevPage }
 }
 ```
 
 ---
 
-## Create `/backend/routes/communitiesPrivate.js`
+#### `followUser`
+
+- Route: `POST /api/v1/users/:username/follow`
+- Auth: required
+- Cannot follow yourself → return 400: `'Cannot follow yourself'`
+- Fetch target user by username → 404 if not found
+- Toggle follow:
+  - If req.user already follows target → unfollow:
+    - Remove target.\_id from req.user.following
+    - Remove req.user.\_id from target.followers
+  - If not following → follow:
+    - Add target.\_id to req.user.following
+    - Add req.user.\_id to target.followers
+- Save both users
+- Returns:
 
 ```javascript
-GET    /                              → listCommunities
-POST   /                              → authMiddleware + uploadHandler + createCommunity
-GET    /:id                           → authMiddleware + getCommunity
-POST   /:id/request                   → authMiddleware + requestToJoin
-POST   /:id/requests/:requestId       → authMiddleware + handleJoinRequest
-DELETE /:id/members/:userId           → authMiddleware + expelMember
-PUT    /:id/members/:userId/role      → authMiddleware + promoteMember
-POST   /:id/leave                     → authMiddleware + leaveCommunity
-DELETE /:id                           → authMiddleware + deleteCommunity
-GET    /:id/feed                      → authMiddleware + getCommunityFeed
-POST   /:id/posts                     → authMiddleware + uploadHandler + createCommunityPost
-DELETE /:id/posts/:postId             → authMiddleware + deleteCommunityPost
-POST   /:id/posts/:postId/pin         → authMiddleware + pinPost
+{
+  success: true,
+  following: true/false,  // current state after the action
+  followersCount: target.followers.length
+}
+```
+
+---
+
+#### `getFollowers`
+
+- Route: `GET /api/v1/users/:username/followers`
+- Auth: optional
+- Fetch user by username
+- Populate `user.followers` with: `username avatar bio`
+- Query params: `page` (default 1), `limit` (default 20, max 50)
+- Returns:
+
+```javascript
+{
+  success: true,
+  followers: [user.toPublicJSON(), ...],
+  pagination: { ... }
+}
+```
+
+---
+
+#### `getFollowing`
+
+- Route: `GET /api/v1/users/:username/following`
+- Auth: optional
+- Same as getFollowers but for `user.following`
+- Returns:
+
+```javascript
+{
+  success: true,
+  following: [user.toPublicJSON(), ...],
+  pagination: { ... }
+}
+```
+
+---
+
+### Create `/backend/routes/users.js`
+
+```javascript
+GET    /:username               → getPublicProfile
+GET    /:username/posts         → getUserPosts
+POST   /:username/follow        → authMiddleware + followUser
+GET    /:username/followers     → getFollowers
+GET    /:username/following     → getFollowing
 ```
 
 Mount in `/backend/routes/index.js`:
 
 ```javascript
-router.use("/communities/private", communitiesPrivateRouter);
+router.use("/users", usersRouter);
 ```
 
 ---
 
-## Important: comments on private community posts
+## Part C — General Search API
 
-Comments use the same existing endpoints as all other PostX posts:
+### Context (from COMMUNITY.md)
 
-```
-GET    /api/v1/posts/:id/comments
-POST   /api/v1/posts/:id/comments
-POST   /api/v1/posts/:postId/comments/:commentId/like
-DELETE /api/v1/posts/:postId/comments/:commentId
-```
-
-Do NOT create new comment routes. The existing delete comment endpoint already
-handles community moderator/leader permissions via the community membership check.
+General search covers: users, PostX posts (general + public communities only),
+public communities and private communities (name only, not content).
+Does NOT search: PostReddit posts, discussion topics (those have their own search).
 
 ---
 
-## When done
+### Create `/backend/controllers/searchController.js`
 
-1. Test full flow with Postman or curl:
+---
 
-   **Community lifecycle:**
-   - Create a private community → confirm creator is added as leader
-   - Try to GET the community as a non-member → confirm 403
-   - Send a join request as another user → confirm pending status
-   - Accept the request as leader → confirm user is added as member
-   - Reject a request → confirm status changes to rejected
-   - Try to send another request from same user → confirm 400 (already member)
+#### `search`
 
-   **Role management:**
-   - Promote a member to moderator → confirm role change
-   - Promote a member to little_whale → confirm role change
-   - Try to promote as a non-leader → confirm 403
-   - Expel a member as leader → confirm removal
-   - Try to expel as a non-leader → confirm 403
+- Route: `GET /api/v1/search`
+- Auth: optional
+- Query params:
+  - `q`: required, search string, min 2 chars. Return 400 if shorter.
+  - `type`: optional, filter by 'users', 'posts', or 'communities'.
+    If omitted, search all three types.
+  - `page`: default 1
+  - `limit`: default 20, max 50 (applied per type)
 
-   **Leader succession:**
-   - Create community, add members with different roles
-   - Leave as leader when moderators exist → confirm a moderator becomes leader
-   - Leave as leader with only little_whales → confirm a little_whale becomes leader
-   - Leave as leader with only base members → confirm a member becomes leader
-   - Leave as the only member → confirm community is deleted
+Run searches in parallel using `Promise.all` for efficiency.
 
-   **Feed and posts:**
-   - Create posts as leader, moderator, little_whale and member
-   - GET /:id/feed → confirm pinned posts appear first
-   - Confirm leader posts appear above moderator posts above little_whale posts
-   - Pin a post as leader → confirm it appears in pinnedPosts
-   - Unpin → confirm it returns to normal feed position
-   - Confirm private community posts do NOT appear in GET /api/v1/posts/feed
+**Users search** (if type is 'users' or not specified):
 
-   **Deletion:**
-   - Delete a post as author → confirm success
-   - Delete a post as community moderator → confirm success
-   - Delete the community as leader → confirm all posts and comments are removed
+- Match `username` case-insensitive partial: `{ username: { $regex: q, $options: 'i' } }`
+- Return `toPublicJSON()` for each result
 
-2. Update `/backend/CLAUDE.md` — API routes done section:
+**Posts search** (if type is 'posts' or not specified):
+
+- Match PostX posts where `text` contains query (case-insensitive)
+  AND `origin: { $in: ['general', 'public_community'] }`
+  NEVER include `origin: 'private_community'`
+- Populate `author` with: `username avatar`
+- Populate `community` with: `name`
+- Return `toPublicJSON()` for each result
+
+**Communities search** (if type is 'communities' or not specified):
+
+- Search both CommunityPublic and CommunityPrivate
+- Match `name` case-insensitive partial
+- For CommunityPrivate: return `toPublicJSON()` only (name, description, memberCount)
+  — do NOT expose any member list or content
+- Merge and sort results by memberCount descending
+
+- Returns:
+
+```javascript
+{
+  success: true,
+  query: q,
+  results: {
+    users: {
+      items: [user.toPublicJSON(), ...],
+      total: number
+    },
+    posts: {
+      items: [post.toPublicJSON(), ...],
+      total: number
+    },
+    communities: {
+      items: [community.toPublicJSON(), ...],
+      total: number
+    }
+  }
+}
+```
+
+If `type` is specified, only the relevant key is included in `results`.
+
+---
+
+### Create `/backend/routes/search.js`
+
+```javascript
+GET /    → search
+```
+
+Mount in `/backend/routes/index.js`:
+
+```javascript
+router.use("/search", searchRouter);
+```
+
+---
+
+## When done — Full test suite
+
+### Part A: Discussion Topics
+
+**Topics listing:**
+
+- `GET /api/v1/topics` → confirm all seeded topics are returned
+- `GET /api/v1/topics?category=CORE_MARKETS` → confirm only core markets topics
+- `GET /api/v1/topics?search=crypto` → confirm filtered results
+- `GET /api/v1/topics/crypto` → confirm topic returned by slug
+
+**Post creation and feed:**
+
+- `POST /api/v1/topics/crypto/posts` with title only → confirm success
+- `POST /api/v1/topics/crypto/posts` with title + text + image → confirm mediaUrl set
+- `POST /api/v1/topics/crypto/posts` without title → confirm 400 error
+- `GET /api/v1/topics/crypto/feed` → confirm posts returned sorted by net score
+- `GET /api/v1/topics/crypto/feed?sort=new` → confirm sorted by createdAt
+
+**Voting:**
+
+- Upvote a post → confirm `{ upvotes: 1, downvotes: 0, voteScore: 1, userVote: 'up' }`
+- Upvote same post again → confirm toggle off: `{ upvotes: 0, voteScore: 0, userVote: null }`
+- Upvote then downvote → confirm upvotes: 0, downvotes: 1, voteScore: -1, userVote: 'down'
+- Downvote then upvote → confirm downvotes: 0, upvotes: 1, voteScore: 1, userVote: 'up'
+- Try to like a comment on a PostReddit post → confirm the existing endpoint rejects it
+
+**Deletion:**
+
+- Delete own post → confirm success and file removed from disk
+- Try to delete another user's post → confirm 403
+- Delete as platform moderator → confirm success
+- Confirm all comments of the deleted post are also deleted
+
+---
+
+### Part B: User Profiles & Following
+
+**Public profile:**
+
+- `GET /api/v1/users/testuser` → confirm returns avatar, bio, followingCount, followersCount, coverImage, communities
+- `GET /api/v1/users/nonexistent` → confirm 404
+- Request as authenticated user → confirm `isFollowing` field is present
+- Request as unauthenticated → confirm `isFollowing` is absent
+
+**User posts:**
+
+- `GET /api/v1/users/testuser/posts` → confirm only PostX posts with origin 'general' or 'public_community'
+- Create a post in a private community as testuser → confirm it does NOT appear in `GET /api/v1/users/testuser/posts`
+- Create a PostReddit post as testuser → confirm it does NOT appear in user posts
+
+**Following:**
+
+- Follow a user → confirm `{ following: true, followersCount: 1 }`
+- Follow same user again → confirm toggle off: `{ following: false, followersCount: 0 }`
+- Try to follow yourself → confirm 400 error
+- Follow a user → `GET /api/v1/posts/feed?mode=following` → confirm their posts appear
+- Unfollow → confirm their posts no longer appear in following feed
+- `GET /api/v1/users/testuser/followers` → confirm paginated list
+- `GET /api/v1/users/testuser/following` → confirm paginated list
+
+---
+
+### Part C: Search
+
+**Basic search:**
+
+- `GET /api/v1/search?q=a` → confirm 400 (too short)
+- `GET /api/v1/search?q=test` → confirm results for users, posts and communities
+
+**Users search:**
+
+- Create user with username 'financeguru' → `GET /api/v1/search?q=finance&type=users` → confirm appears
+- `GET /api/v1/search?q=finance&type=posts` → confirm users key is absent in results
+
+**Posts search:**
+
+- Create a general post with text 'Bitcoin analysis' → search for 'bitcoin' → confirm appears
+- Create a private community post with same text → confirm it does NOT appear in search
+- Create a PostReddit post with same text → confirm it does NOT appear in search
+
+**Communities search:**
+
+- `GET /api/v1/search?q=crypto&type=communities` → confirm both public and private communities match
+- Confirm private community results only show toPublicJSON() (no members list, no posts)
+
+---
+
+## Update `/backend/CLAUDE.md` when done
 
 ```
 ## API routes done (add these)
-- GET    /api/v1/communities/private (public)
-- POST   /api/v1/communities/private (protected, multipart)
-- GET    /api/v1/communities/private/:id (protected, members only)
-- POST   /api/v1/communities/private/:id/request (protected)
-- POST   /api/v1/communities/private/:id/requests/:requestId (protected, leader/moderator)
-- DELETE /api/v1/communities/private/:id/members/:userId (protected, leader only)
-- PUT    /api/v1/communities/private/:id/members/:userId/role (protected, leader only)
-- POST   /api/v1/communities/private/:id/leave (protected)
-- DELETE /api/v1/communities/private/:id (protected, leader only)
-- GET    /api/v1/communities/private/:id/feed (protected, members only)
-- POST   /api/v1/communities/private/:id/posts (protected, members only, multipart)
-- DELETE /api/v1/communities/private/:id/posts/:postId (protected)
-- POST   /api/v1/communities/private/:id/posts/:postId/pin (protected, leader only)
+
+### Discussion Topics
+- GET    /api/v1/topics (public, supports ?category&search)
+- GET    /api/v1/topics/:slug (public)
+- GET    /api/v1/topics/:slug/feed (public, supports ?sort=top|new&page&limit)
+- POST   /api/v1/topics/:slug/posts (protected, multipart)
+- GET    /api/v1/topics/:slug/posts/:postId (public)
+- POST   /api/v1/topics/:slug/posts/:postId/vote (protected)
+- DELETE /api/v1/topics/:slug/posts/:postId (protected)
+
+### Users & Following
+- GET    /api/v1/users/:username (public)
+- GET    /api/v1/users/:username/posts (public)
+- POST   /api/v1/users/:username/follow (protected, toggle)
+- GET    /api/v1/users/:username/followers (public)
+- GET    /api/v1/users/:username/following (public)
+
+### Search
+- GET    /api/v1/search (public, supports ?q&type=users|posts|communities&page&limit)
 ```

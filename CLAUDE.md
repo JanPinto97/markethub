@@ -84,15 +84,16 @@ loginAttempts, lockUntil, createdAt)
 ✅ Auth-aware Navbar
 
 🔄 Phase 3: Community
-🔄 Models: PostX, PostReddit, Comment, CommunityPublic,
+✅ Models: PostX, PostReddit, Comment, CommunityPublic,
 CommunityPrivate, DiscussionTopic + User model updated
-⬜ Seed: discussion topics
-⬜ File upload setup (multer)
-⬜ API: general feed and PostX
-⬜ API: public communities
-⬜ API: private communities
-⬜ API: discussion topics
-⬜ API: user profiles and following
+✅ Seed: discussion topics
+✅ File upload setup (multer)
+✅ API: general feed and PostX
+✅ API: public communities
+✅ API: private communities
+✅ API: discussion topics
+✅ API: user profiles and following
+✅ API: general search
 ⬜ Frontend: Community page
 
 ⬜ Phase 4: Markets

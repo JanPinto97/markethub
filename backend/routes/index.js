@@ -5,6 +5,9 @@ const postsRouter = require('./posts');
 const communitiesPublicRouter = require('./communitiesPublic');
 const communitiesPrivateRouter = require('./communitiesPrivate');
 const marketRouter = require('./markets');
+const topicsRouter = require('./topics');
+const usersRouter = require('./users');
+const searchRouter = require('./search');
 
 router.get('/health', (req, res) => {
   res.json({ success: true, message: 'Backend running' });
@@ -16,5 +19,8 @@ router.use('/posts', postsRouter);
 router.use('/communities/public', communitiesPublicRouter);
 router.use('/communities/private', communitiesPrivateRouter);
 router.use('/markets', marketRouter);
+router.use('/topics', topicsRouter);
+router.use('/users', usersRouter);
+router.use('/search', searchRouter);
 
 module.exports = router;
