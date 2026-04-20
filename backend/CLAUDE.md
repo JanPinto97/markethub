@@ -81,6 +81,22 @@ server.js            → Entry point: loads env, connects DB, starts Express
 - DELETE /api/v1/communities/private/:id/posts/:postId (protected)
 - POST   /api/v1/communities/private/:id/posts/:postId/pin (protected, leader only)
 
+- GET    /api/v1/topics (public, supports ?category filter)
+- GET    /api/v1/topics/:slug (public)
+- GET    /api/v1/topics/:slug/feed (public, supports ?sort=recent|top&page&limit)
+- POST   /api/v1/topics/:slug/posts (protected, multipart)
+- GET    /api/v1/topics/:slug/posts/:postId (public)
+- POST   /api/v1/topics/:slug/posts/:postId/vote (protected, body: {vote: "up"|"down"|"none"})
+- DELETE /api/v1/topics/:slug/posts/:postId (protected)
+
+- GET    /api/v1/users/:username (public, optionalAuth for isFollowing)
+- GET    /api/v1/users/:username/posts (public, supports ?page&limit)
+- POST   /api/v1/users/:username/follow (protected, toggle)
+- GET    /api/v1/users/:username/followers (public, supports ?page&limit)
+- GET    /api/v1/users/:username/following (public, supports ?page&limit)
+
+- GET    /api/v1/search (public, supports ?q&type=users|posts|communities&limit)
+
 ## Infrastructure
 - multer configured in /backend/config/upload.js
 - uploaded files served at /uploads/images/ and /uploads/videos/

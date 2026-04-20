@@ -1,9 +1,18 @@
 const fs = require('fs');
 const path = require('path');
 const PostX = require('../models/PostX');
+const PostReddit = require('../models/PostReddit');
 const Comment = require('../models/Comment');
 const User = require('../models/User');
 const CommunityPrivate = require('../models/CommunityPrivate');
+
+async function findAnyPost(id) {
+  const px = await PostX.findById(id);
+  if (px) return { post: px, postType: 'PostX' };
+  const pr = await PostReddit.findById(id);
+  if (pr) return { post: pr, postType: 'PostReddit' };
+  return null;
+}
 
 function fail(res, code, message) {
   return res.status(code).json({ success: false, message, code });
@@ -122,7 +131,10 @@ exports.deletePost = async (req, res, next) => {
 
 exports.getComments = async (req, res, next) => {
   try {
-    const topLevel = await Comment.find({ postId: req.params.id, postType: 'PostX', parentComment: null })
+    const found = await findAnyPost(req.params.id);
+    if (!found) return fail(res, 404, 'Post not found');
+
+    const topLevel = await Comment.find({ postId: req.params.id, postType: found.postType, parentComment: null })
       .sort({ createdAt: 1 })
       .populate('author', 'username avatar')
       .populate('replyingTo', 'username');
@@ -154,10 +166,11 @@ exports.createComment = async (req, res, next) => {
     if (!text) return fail(res, 400, 'Text is required');
     if (text.length > 400) return fail(res, 400, 'Text max 400 characters');
 
-    const post = await PostX.findById(req.params.id);
-    if (!post) return fail(res, 404, 'Post not found');
+    const found = await findAnyPost(req.params.id);
+    if (!found) return fail(res, 404, 'Post not found');
+    const { post, postType } = found;
 
-    const data = { author: req.user.id, text, postId: post._id, postType: 'PostX' };
+    const data = { author: req.user.id, text, postId: post._id, postType };
 
     if (parentCommentId) {
       const parent = await Comment.findById(parentCommentId);
@@ -169,7 +182,7 @@ exports.createComment = async (req, res, next) => {
 
     const comment = await Comment.create(data);
     post.commentCount += 1;
-    post.trendingScore = PostX.calculateTrendingScore(post);
+    if (postType === 'PostX') post.trendingScore = PostX.calculateTrendingScore(post);
     await post.save();
 
     res.status(201).json({ success: true, comment: comment.toPublicJSON() });
@@ -205,10 +218,10 @@ exports.deleteComment = async (req, res, next) => {
     await Comment.deleteMany({ parentComment: comment._id });
     await comment.deleteOne();
 
-    const post = await PostX.findById(comment.postId);
-    if (post) {
-      post.commentCount = Math.max(0, post.commentCount - (1 + replyCount));
-      await post.save();
+    const found = await findAnyPost(comment.postId);
+    if (found) {
+      found.post.commentCount = Math.max(0, found.post.commentCount - (1 + replyCount));
+      await found.post.save();
     }
 
     res.json({ success: true, message: 'Comment deleted' });
