@@ -15,10 +15,7 @@ export const routes: Routes = [
     loadComponent: () => import('./features/markets/markets.component').then(m => m.MarketsComponent)
   },
   {
-    // NOTE: same as /markets — visible publicly eventually, but gated for now
-    // until the community component implements per-action auth checks.
     path: 'community',
-    canActivate: [authGuard],
     loadComponent: () => import('./features/community/community.component').then(m => m.CommunityComponent)
   },
   {

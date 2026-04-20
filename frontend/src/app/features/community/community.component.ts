@@ -1,8 +1,20 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-community',
   standalone: true,
-  template: `<h1>Community</h1><p>Community page — coming soon</p>`
+  imports: [RouterLink],
+  templateUrl: './community.component.html',
+  styleUrl: './community.component.css'
 })
-export class CommunityComponent {}
+export class CommunityComponent {
+  auth = inject(AuthService);
+
+  activeTab: 'trending' | 'following' = 'trending';
+
+  setTab(tab: 'trending' | 'following') {
+    this.activeTab = tab;
+  }
+}
