@@ -487,3 +487,27 @@
   text-align: center;
   padding: var(--spacing-4) 0;
 }
+
+/* ── SKELETON & EMPTY STATES ── */
+.skeleton-item {
+  height: 32px;
+  background-color: var(--surface-container-low);
+  border-radius: var(--radius-default);
+  margin-bottom: var(--spacing-2);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-item.short {
+  width: 60%;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.sidebar-empty {
+  font-size: var(--text-body-sm);
+  color: var(--on-surface-variant);
+  padding: var(--spacing-2) var(--spacing-3);
+}

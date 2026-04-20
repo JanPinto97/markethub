@@ -84,7 +84,7 @@ Angular SPA serving the MarketHub UI. Runs on port 4200.
 
 ## Components done
 - HomeComponent, MarketsComponent (scaffolds)
-- CommunityComponent — full 3-column layout with header, left sidebar (nav, communities, topics), central feed (tabs, create post, placeholder posts), right sidebar (copyright). Own header replaces global navbar.
+- CommunityComponent — full 3-column layout with header, left sidebar (nav, communities, topics), central feed (tabs, create post, placeholder posts), right sidebar (copyright). Own header replaces global navbar. Sidebar left is fully functional: loads user communities from API, loads pinned topics from localStorage, skeleton/empty states, auth-aware visibility.
 - LoginComponent — email/password form, calls AuthService.login, redirects to /markets, shows API error (incl. 423 lock message)
 - RegisterComponent — username/email/password form with client validation (email regex, username 3-30, password ≥8), calls AuthService.register
 - NavbarComponent — auth-aware: shows username+avatar+logout when authed, login/register links when not
@@ -95,6 +95,7 @@ Angular SPA serving the MarketHub UI. Runs on port 4200.
 - authGuard — functional, redirects to /login when not authenticated
 - User model interface (/core/models/user.model.ts)
 - app.config.ts — registers interceptor and `provideAppInitializer` to restore session on startup
+- CommunityService — getMyCommunities(), getTopicsByIds(), pinned topics localStorage helpers
 
 ## Routes done
 | Path         | Component          | Guard     |

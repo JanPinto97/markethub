@@ -1,183 +1,195 @@
-# PROMPT 1 — Community Frontend: Scaffold + Layout
+# PROMPT 2 — Community Frontend: Sidebar Esquerra
 
-## Context del projecte
+## Context
 
-Estem construint **MarketHub**, un portal financer i xarxa social. El stack és:
+Continuem amb el frontend de `/community` de **MarketHub**. El Prompt 1 ja ha creat
+l'esquelet de la pàgina amb el layout de 3 columnes. Ara implementem la **sidebar esquerra**
+amb lògica real: dades de l'API, navegació funcional i interaccions.
 
-- **Frontend:** Angular 17+ amb standalone components, CSS custom pur (sense Bootstrap ni Tailwind), TypeScript strict.
-- **Rutes:** `/community` és la pàgina que ara construïm.
-
-Tens disponible el fitxer `frontend/DESIGN.md` amb tots els tokens de disseny globals del projecte (colors, tipografia, espaiat, variables CSS). **Llegeix-lo completament abans d'escriure cap línia de codi.** Tot el CSS d'aquesta pàgina ha d'usar les variables definides allà.
-
-La imatge adjunta és una referència visual aproximada de l'estructura. **No la copiïs literalment:** és només per entendre la distribució general de columnes. El que mana és la descripció d'aquest prompt.
+Llegeix `frontend/DESIGN.md` i `frontend/CLAUDE.md` abans d'escriure cap línia de codi.
+Tot el CSS ha d'usar les variables del sistema de disseny.
 
 ---
 
-## Objectiu d'aquest prompt
+## Objectiu
 
-Crear l'**esquelet complet de la pàgina `/community`** amb el layout de 3 columnes i totes les seccions buides però presents, amb dimensions i posicionament correctes.
-
-**No implementis lògica ni dades reals en aquest prompt.** Tot el contingut és estàtic o placeholder.
+Implementar la sidebar esquerra completament funcional, connectada a l'API,
+amb els estats corresponents (autenticat / no autenticat, comunitats buides, topics buits).
 
 ---
 
-## Estructura general de la pàgina
-
-La pàgina té **4 zones principals:**
+## Estructura de la sidebar
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                     HEADER                          │ ← fixed, full width
-├──────────────┬──────────────────────┬───────────────┤
-│              │                      │               │
-│   SIDEBAR    │    FEED CENTRAL      │   SIDEBAR     │
-│  ESQUERRA    │                      │   DRETA       │
-│   ~240px     │       flex: 1        │   ~300px      │
-│              │                      │               │
-│   (scroll)   │      (scroll)        │   (fixed)     │
-│              │                      │               │
-└──────────────┴──────────────────────┴───────────────┘
+┌─────────────────────────┐
+│  🏠 Home                │  ← Navegació principal
+├─────────────────────────┤
+│  MY COMMUNITIES         │  ← Secció 2
+│  · Gold Bugs [Public]   │
+│  · Whale Alerts [Priv.] │
+├─────────────────────────┤
+│  TOPICS                 │  ← Secció 3
+│  · Gold                 │
+│  · Crypto               │
+│  [+ Add Topics]         │
+├─────────────────────────┤
+│                         │
+│  [Create Community]     │  ← Zona inferior
+└─────────────────────────┘
 ```
 
-- El **header** és `position: fixed`, `top: 0`, `z-index` alt.
-- El contingut principal comença amb un `padding-top` igual a l'alçada del header.
-- La **sidebar esquerra** i el **feed central** fan scroll.
-- La **sidebar dreta** és `position: sticky, top: [header height]` i NO fa scroll.
+---
+
+## Secció 1 — Navegació principal
+
+Un sol element de navegació:
+
+- **Home** amb icona de casa. Sempre visible. `routerLink="/community"`.
+- Estil "actiu" quan estem a la ruta `/community` (usa `routerLinkActive`).
 
 ---
 
-## 1. Header
+## Secció 2 — My Communities
 
-Barra superior fixa que ocupa tota l'amplada.
+**Títol:** `MY COMMUNITIES`
 
-**Elements (d'esquerra a dreta):**
+**Dades:** Crida a l'API per obtenir les comunitats de l'usuari autenticat.
 
-1. Nom de la plataforma: `MarketHub` (text, no logo)
-2. Barra de cerca: `<input>` amb placeholder `"Search communities, topics..."`
-3. Icona de configuració (⚙️ o similar, routerLink a `/settings`)
-4. Avatar de l'usuari (cercle, placeholder gris si no hi ha avatar, routerLink a `/profile/:username`)
+- Endpoint: `GET /api/communities/my` (retorna llista de comunitats públiques
+  i privades de les quals l'usuari és membre).
+- Cada item mostra:
+  - Cercle de color amb la inicial del nom de la comunitat (color generat
+    a partir del nom, consistent, no aleatori en cada render).
+  - Nom de la comunitat.
+  - Etiqueta `[Public]` o `[Private]` al costat del nom, en text petit i discret.
+  - `routerLink` a `/community/c/:communityId` (ruta que no implementem ara,
+    però el link ha d'existir).
 
-**Comportament:**
+**Estats:**
 
-- La barra de cerca ocupa l'espai central i és la més ampla.
-- Les icones de la dreta estan alineades verticalment al centre.
-
----
-
-## 2. Sidebar esquerra
-
-Columna fixa a l'esquerra (~240px). Té scroll propi si el contingut és llarg.
-
-Conté **4 seccions**, separades visualment (pot ser amb un petit espai o un separador subtil):
-
-### Secció 1 — Navegació principal
-
-Un sol botó/link actiu:
-
-- 🏠 `Home` (és la vista per defecte, la que estem construint)
-
-### Secció 2 — My Communities
-
-Títol de secció: `MY COMMUNITIES`
-Llista de comunitats de l'usuari (de moment, 2-3 items placeholder):
-
-- Cada item: `[Inicial en cercle de color] Nom de la comunitat`
-- Exemple: `G  Gold Bugs [Public]` / `W  Whale Alerts [Private]`
-
-### Secció 3 — Topics
-
-Títol de secció: `TOPICS`
-
-- Si no hi ha topics afegits: mostra un botó `+ Add Topics`
-- Si n'hi ha: llista de topics, cadascun amb una icona/logo de la seva categoria a l'esquerra, i al final de la llista el botó `+ Add Topics`
-- De moment posa 2-3 topics placeholder (ex: Gold, Crypto, Macro)
-
-### Secció 4 — Zona inferior
-
-A la part inferior de la sidebar (pot ser `margin-top: auto` si la sidebar és flex column):
-
-- Botó prominent: `Create Community`
+- **Carregant:** placeholder/skeleton de 2-3 items.
+- **Sense comunitats:** text discret "You haven't joined any community yet."
+- **Amb comunitats:** llista completa sense límit de scroll.
+- **No autenticat:** no es mostra aquesta secció.
 
 ---
 
-## 3. Feed central
+## Secció 3 — Topics
 
-La columna central, la més ampla. Té scroll propi.
+**Títol:** `TOPICS`
 
-### 3.1 — Selector Trending / Following
+**Dades:** Els topics els gestiona l'usuari localment (quins ha ancorat a la sidebar).
+Es guarden a `localStorage` com a llista d'IDs. En carregar, es fa una crida
+per obtenir els detalls d'aquests topics.
 
-Dues pestanyes o botons toggle a la part superior:
+- Endpoint: `GET /api/topics?ids=id1,id2,id3`
 
-- `Trending` (activa per defecte)
-- `Following`
+Cada topic a la llista mostra:
 
-### 3.2 — Caixa de creació de post
+- **Icona de categoria** a l'esquerra. Assigna una icona o color per categoria:
+  - `CORE_MARKETS` → 📈 o color blau
+  - `ECONOMIA_I_MACRO` → 🏦 o color verd
+  - `ASSETS_ESPECIFICS` → 💼 o color taronja
+  - `TRADING_I_INVERSIO` → ⚡ o color groc
+  - Pots usar emojis, SVG inline simples o lletres amb color de fons. El que
+    quedi més net visualment.
+- Nom del topic.
+- `routerLink` a `/community/t/:topicId` (ruta futura, el link ha d'existir).
 
-Targeta amb:
+**Botó "+ Add Topics":**
 
-- Avatar de l'usuari (petit, a l'esquerra)
-- Input de text amb placeholder `"What's on your mind regarding the markets?"`
-- Fila d'accions:
-  - Icona d'imatge
-  - Icona d'emoji
-  - Botó `Post` (a la dreta)
+- Apareix sempre: si no hi ha topics, és l'únic element de la secció;
+  si n'hi ha, apareix al final de la llista.
+- De moment, en clicar, mostra un `console.log('open topic search')`.
+  El modal/popup el farem en un prompt posterior.
 
-### 3.3 — Feed de posts (placeholder)
+**Estats:**
 
-2-3 targetes de post estàtiques per veure com quedaran. Cada targeta té:
-
-- **Capçalera:** Avatar + Nom + Handle (@username) + temps (ex: "4h ago")
-- **Cos:** Text del post (lorem ipsum financer)
-- **Peu:** Icona like + número | Icona comentari + número
-
----
-
-## 4. Sidebar dreta
-
-Columna dreta (~300px), `position: sticky`.
-
-**De moment BUIDA**, només amb:
-
-- Text de copyright a la part inferior: `MarketHub © 2026. All rights reserved.`
+- **Sense topics ancorats:** mostra directament el botó `+ Add Topics`.
+- **Amb topics:** llista + botó al final.
+- **No autenticat:** la secció es mostra igual (els topics son públics),
+  però el botó "+ Add Topics" no apareix.
 
 ---
 
-## Fitxers a crear
+## Secció 4 — Zona inferior
 
-Crea o modifica únicament els fitxers necessaris per a aquest layout. L'estructura esperada és la d'Angular standalone components:
+Situada a la part baixa de la sidebar (`margin-top: auto` si la sidebar
+és un flex container en columna).
+
+**Contingut:**
+
+- Botó `Create Community` prominent, estil CTA (call to action).
+- En clicar obre un modal/formulari. **De moment:** `console.log('open create community modal')`.
+- **Visibilitat:** Només visible si l'usuari està autenticat. Si no ho està,
+  no es mostra res en aquesta zona (o es pot mostrar un missatge "Join to create communities").
+
+---
+
+## Servei Angular a crear o ampliar
+
+Crea o amplia `CommunityService` a `frontend/src/app/features/community/`:
+
+```typescript
+// Mètodes necessaris per a aquest prompt:
+getMyCommunitites(): Observable<Community[]>
+getTopicsByIds(ids: string[]): Observable<Topic[]>
+```
+
+Usa `ApiService` existent per fer les crides HTTP. No implementis la lògica
+de gestió d'errors complexa, però sí que el component mostri l'estat de
+"carregant" i "error genèric" si la crida falla.
+
+---
+
+## Topics al localStorage
+
+```typescript
+// Clau: 'mh_pinned_topics'
+// Valor: JSON array d'strings amb els IDs, ex: '["id1","id2"]'
+
+// Helpers a implementar (poden ser mètodes del servei o utils):
+getPinnedTopicIds(): string[]
+addPinnedTopic(id: string): void
+removePinnedTopic(id: string): void
+```
+
+---
+
+## Fitxers a crear o modificar
 
 ```
 frontend/src/app/features/community/
-├── community.component.ts
-├── community.component.html
-└── community.component.css
+├── community.component.ts         → injecta CommunityService, crida getMyCommunitites()
+├── community.component.html       → afegeix la lògica @if/@for a la sidebar
+├── community.component.css        → estils de la sidebar
+└── services/
+    └── community.service.ts       → nou, amb els mètodes descrits
 ```
 
-Si cal crear subcarpetes per a components fills (header, sidebar, etc.), fes-ho, però en aquest primer prompt pot ser tot en un sol component per simplicitat.
-
-Assegura't que la ruta `/community` ja existeix al router d'Angular (`app.routes.ts`). Si no existeix, afegeix-la.
+Si en el Prompt 1 la sidebar era un component fill separat, modifica'l.
+Si era tot en un sol component, pot continuar sent-ho.
 
 ---
 
-## Regles de CSS
+## Regles
 
-- **Només CSS custom.** Cap framework extern.
-- **Totes les variables** de color, tipografia i espaiat han de venir del `DESIGN.md` / `variables.css` del projecte.
-- El layout principal s'ha de fer amb **CSS Grid o Flexbox** (tria el que millor s'adapti).
-- **Responsive:** de moment no cal fer-lo completament responsive, però el layout no ha de trencar-se en pantalles de ≥1200px. Per sota de 768px pot col·lapsar a una sola columna si vols, però no és prioritari ara.
-- No usar `!important` llevat que sigui estrictament necessari.
+- CSS custom pur, variables del `DESIGN.md`.
+- Usa `@if` i `@for` d'Angular 17+ (sintaxi nova, no `*ngIf` ni `*ngFor`).
+- Usa `inject()` en comptes de constructor injection on sigui possible.
+- El component ha de ser `standalone: true`.
+- No implementis cap modal ni popup real en aquest prompt (només `console.log`).
+- No implementis la pàgina de detall de comunitat ni de topic.
 
 ---
 
 ## Resultat esperat
 
-Al final d'aquest prompt ha d'existir una pàgina `/community` visible al navegador amb:
+Al final d'aquest prompt, la sidebar esquerra ha de:
 
-- ✅ Header fix amb nom, cerca, icona config i avatar
-- ✅ Layout de 3 columnes correctament posicionat
-- ✅ Sidebar esquerra amb les 4 seccions (placeholder)
-- ✅ Feed central amb selector, caixa de post i 2-3 posts placeholder
-- ✅ Sidebar dreta buida amb copyright
-- ✅ Tot el CSS usant les variables del sistema de disseny
-
-**No implementis cap crida a l'API, cap servei Angular ni cap lògica en aquest prompt.**
+- ✅ Mostrar les comunitats reals de l'usuari (o estat buit)
+- ✅ Mostrar els topics ancorats des de localStorage (o botó si no n'hi ha)
+- ✅ Tenir el botó "Create Community" visible només si autenticat
+- ✅ Gestionar correctament els estats: carregant, buit, amb dades, no autenticat
+- ✅ Tots els links creats amb `routerLink` (encara que la ruta destí no existeixi)
+- ✅ CSS cohesiu amb el sistema de disseny del projecte

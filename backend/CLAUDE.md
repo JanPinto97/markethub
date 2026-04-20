@@ -81,7 +81,9 @@ server.js            → Entry point: loads env, connects DB, starts Express
 - DELETE /api/v1/communities/private/:id/posts/:postId (protected)
 - POST   /api/v1/communities/private/:id/posts/:postId/pin (protected, leader only)
 
-- GET    /api/v1/topics (public, supports ?category filter)
+- GET    /api/v1/communities/my (protected, returns user's public+private communities)
+
+- GET    /api/v1/topics (public, supports ?category&search&ids filter)
 - GET    /api/v1/topics/:slug (public)
 - GET    /api/v1/topics/:slug/feed (public, supports ?sort=recent|top&page&limit)
 - POST   /api/v1/topics/:slug/posts (protected, multipart)

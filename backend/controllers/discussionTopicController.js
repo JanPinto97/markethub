@@ -12,6 +12,10 @@ function fail(res, code, message) {
 exports.listTopics = async (req, res, next) => {
   try {
     const filter = {};
+    if (req.query.ids) {
+      const ids = req.query.ids.split(',').filter(id => mongoose.Types.ObjectId.isValid(id));
+      filter._id = { $in: ids };
+    }
     if (req.query.category) filter.category = req.query.category;
     if (req.query.search) filter.name = { $regex: req.query.search, $options: 'i' };
 
