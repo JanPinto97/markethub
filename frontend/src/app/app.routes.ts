@@ -11,7 +11,7 @@ export const routes: Routes = [
     // require login. For now we gate the whole route as a placeholder — refine
     // when the markets feature is implemented.
     path: 'markets',
-    canActivate: [authGuard],
+    // canActivate: [authGuard],
     loadComponent: () => import('./features/markets/markets.component').then(m => m.MarketsComponent)
   },
   {
