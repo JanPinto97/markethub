@@ -83,7 +83,8 @@ Angular SPA serving the MarketHub UI. Runs on port 4200.
 - Volume mount `./frontend:/app` for live reload
 
 ## Components done
-- HomeComponent, MarketsComponent, CommunityComponent (scaffolds)
+- HomeComponent, MarketsComponent (scaffolds)
+- CommunityComponent — full 3-column layout with header, left sidebar (nav, communities, topics), central feed (tabs, create post, placeholder posts), right sidebar (copyright). Own header replaces global navbar.
 - LoginComponent — email/password form, calls AuthService.login, redirects to /markets, shows API error (incl. 423 lock message)
 - RegisterComponent — username/email/password form with client validation (email regex, username 3-30, password ≥8), calls AuthService.register
 - NavbarComponent — auth-aware: shows username+avatar+logout when authed, login/register links when not
@@ -100,7 +101,7 @@ Angular SPA serving the MarketHub UI. Runs on port 4200.
 | ------------ | ------------------ | --------- |
 | `/`          | HomeComponent      | —         |
 | `/markets`   | MarketsComponent   | authGuard (placeholder — will be refined per-action) |
-| `/community` | CommunityComponent | authGuard (placeholder — will be refined per-action) |
+| `/community` | CommunityComponent | — (visible to all, actions require login) |
 | `/login`     | LoginComponent     | —         |
 | `/register`  | RegisterComponent  | —         |
 
@@ -111,8 +112,10 @@ Angular SPA serving the MarketHub UI. Runs on port 4200.
 ✅ Core services structure (api, auth)
 ✅ Auth guard and interceptor scaffolded
 ✅ Shared navbar component
-✅ CSS variables system (no framework)
+✅ CSS variables system (no framework) — fully populated with design tokens
 ✅ Docker containerized
+✅ Community page scaffold: 3-column layout, header, sidebars, feed with placeholders
+✅ App root hides global navbar on /community (community has its own header)
 
 ## Rules
 

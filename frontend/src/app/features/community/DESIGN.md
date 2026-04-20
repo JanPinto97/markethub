@@ -86,3 +86,44 @@ Traditional drop shadows are too "heavy" for a precision financial tool. We use 
 - **Don’t** use pure black (#000000) for text. Use `on_surface` (#191c1e) to reduce eye strain.
 - **Don’t** use 100% opaque borders. They clutter the UI and break the "Architectural Pulse" feel.
 - **Don’t** use standard "FinTech Blue." Stick to our Deep Navy and Vibrant Green to maintain our unique brand identity.
+
+---
+
+## 7. Community Page — Specific Tokens & Decisions
+
+These extend the global system above for the Community page layout.
+
+### Layout
+
+- **3-column layout** using flexbox within `max-width: 1280px`.
+- Left sidebar: 240px (`--sidebar-left-width`), sticky with own scroll.
+- Right sidebar: 300px (`--sidebar-right-width`), sticky, no scroll.
+- Center feed: flexible, scrolls with page.
+- Header: 60px (`--header-height`), fixed at top, `z-index: 100`.
+
+### Header
+
+- Background: `--surface-container-lowest` — floats above the canvas.
+- Brand: Manrope `--text-display-sm`, `--weight-extrabold`.
+- Search bar: `--surface-container-low` fill, `--radius-md`.
+- Focus: `--surface-container-highest` + 1px inset `--secondary` ghost border.
+- Placeholder color: `--on-primary-container` (#76849f).
+
+### Sidebar Left
+
+- Active nav item: `--secondary` (#006c49) text color.
+- Section titles: `--text-body-sm`, `--weight-semibold`, `--on-surface-variant`, 0.05em tracking.
+- Community initials: 28×28px squares, `--radius-default`, colored bg, white text.
+- "Create Community" CTA: Signature Green Gradient (`--gradient-primary`).
+
+### Feed Cards
+
+- Cards use `--surface-container-lowest` on `--surface` canvas (tonal layering).
+- Rounding: `--radius-md` (0.75rem) per standard card spec.
+- No borders within cards (No-Line Rule).
+- Tab active state: `--surface-container-high` background.
+- Post action icons: `--on-surface-variant`, hover → `--on-surface`.
+
+### Community Label on Posts
+
+- Posts from communities show a label in `--secondary` (#006c49), `--text-body-sm`, `--weight-medium`.
