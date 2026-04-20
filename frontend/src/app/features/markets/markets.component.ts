@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule, DecimalPipe, CurrencyPipe, DatePipe } from '@angular/common';
 import { MarketService } from '../../core/services/market.service';
 import { FormsModule } from '@angular/forms';
@@ -13,12 +13,14 @@ declare const TradingView: any;
   styleUrls: ['./markets.component.css']
 })
 export class MarketsComponent implements OnInit, AfterViewInit {
+  @ViewChild('symbolInput') symbolInput!: ElementRef;
+  
   widget: any;
-  currentSymbol: string = 'BINANCE:BTCUSDT';
+  currentSymbol: string = 'BTCUSD';
   displaySymbol: string = 'BTC / USD';
-  currentPrice: any = { c: 0, dp: 0 };
+  currentPriceData: any = { c: 0, dp: 0 };
   currentYear = new Date().getFullYear();
-  selectedDate = new Date();
+  selectedDate: Date = new Date();
   
   tickerItems = [
     { symbol: 'BTC/USD', price: '...', change: '...', up: true },
@@ -27,40 +29,46 @@ export class MarketsComponent implements OnInit, AfterViewInit {
     { symbol: 'S&P 500', price: '...', change: '...', up: true }
   ];
 
-  calendarEvents: any[] = [];
+  economicEvents: any[] = [];
+  filteredEvents: any[] = [];
   marketNews: any[] = [];
   globalSentiment: any = { value: 0, classification: '...' };
-  searchQuery: string = '';
+
+  // Filtros del calendario
+  filters = {
+    impact: ['high', 'medium', 'low'],
+    currencies: ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF']
+  };
 
   constructor(private marketService: MarketService) {}
 
   ngOnInit() {
-    this.loadMarketData();
+    this.updatePrice(this.currentSymbol);
+    this.loadTickerData();
     this.loadSentiment();
     this.loadNews();
-    this.loadCalendar();
+    this.fetchCalendar();
   }
 
   ngAfterViewInit() {
-    this.initTradingViewWidget(this.currentSymbol);
+    this.loadTradingViewWidget(this.currentSymbol);
   }
 
-  initTradingViewWidget(symbol: string) {
-    // Si ya existe un widget, lo eliminamos (o simplemente reiniciamos el contenedor)
-    const container = document.getElementById('tv_chart_container');
-    if (container) container.innerHTML = '';
-
-    this.widget = new TradingView.widget({
+  // MÉTODO PARA RENDERIZAR EL WIDGET AVANZADO
+  loadTradingViewWidget(symbol: string): void {
+    // Si ya existe un widget, lo eliminamos (opcional, el constructor suele manejarlo si el ID es el mismo)
+    new TradingView.widget({
       "container_id": "tv_chart_container",
       "autosize": true,
       "symbol": symbol,
       "interval": "D",
       "timezone": "Etc/UTC",
       "theme": "light",
-      "style": "1",
-      "locale": "en",
+      "style": "1", // Velas japonesas
+      "locale": "es",
       "toolbar_bg": "#f1f3f6",
       "enable_publishing": false,
+      "withdateranges": true,
       "hide_side_toolbar": false,
       "allow_symbol_change": true,
       "details": true,
@@ -72,13 +80,29 @@ export class MarketsComponent implements OnInit, AfterViewInit {
     });
   }
 
-  loadMarketData() {
-    // Cargar precio inicial para el overlay
-    this.marketService.getSymbolPrice(this.currentSymbol).subscribe(data => {
-      this.currentPrice = data;
-    });
+  onSymbolSearch(value: string) {
+    if (!value) return;
+    
+    let formattedSymbol = value.toUpperCase().trim();
+    
+    if (!formattedSymbol.includes(':') && formattedSymbol.length <= 4) {
+      formattedSymbol = `${formattedSymbol}USD`;
+    }
 
-    // Cargar datos para el ticker (simulado con algunos símbolos principales)
+    this.currentSymbol = formattedSymbol;
+    this.displaySymbol = this.currentSymbol.replace('USD', ' / USD').replace(':', ' / ');
+    
+    this.loadTradingViewWidget(this.currentSymbol);
+    this.updatePrice(this.currentSymbol);
+  }
+
+  updatePrice(symbol: string) {
+    this.marketService.getSymbolPrice(symbol).subscribe(data => {
+      this.currentPriceData = data;
+    });
+  }
+
+  loadTickerData() {
     const tickerSymbols = ['BINANCE:BTCUSDT', 'FX_IDC:EURUSD', 'OANDA:XAUUSD', 'FOREXCOM:SPXUSD'];
     tickerSymbols.forEach((sym, index) => {
       this.marketService.getSymbolPrice(sym).subscribe(data => {
@@ -102,46 +126,37 @@ export class MarketsComponent implements OnInit, AfterViewInit {
 
   loadNews() {
     this.marketService.getMarketNews().subscribe(data => {
-      this.marketNews = data.slice(0, 3); // Solo cogemos las 3 primeras
+      this.marketNews = data.slice(0, 5);
     });
   }
 
-  loadCalendar() {
-    const today = new Date().toISOString().split('T')[0];
-    this.marketService.getEconomicCalendar(today, today).subscribe(data => {
-      this.calendarEvents = data.slice(0, 5);
+  // Lógica del Calendario
+  fetchCalendar() {
+    const dateStr = this.selectedDate.toISOString().split('T')[0];
+    this.marketService.getEconomicCalendar(dateStr, dateStr).subscribe(data => {
+      // Ajustamos según la respuesta de Finnhub
+      this.economicEvents = data.economicCalendar || [];
+      this.applyFilters();
     });
   }
 
-  onSymbolSearch() {
-    if (!this.searchQuery) return;
-    
-    // Si no contiene exchange, asumimos BINANCE para crypto o buscamos tal cual
-    let symbolToSearch = this.searchQuery.toUpperCase();
-    if (!symbolToSearch.includes(':')) {
-      // Lógica simple de mapeo (mejorable)
-      if (['BTC', 'ETH', 'SOL'].includes(symbolToSearch)) {
-        symbolToSearch = `BINANCE:${symbolToSearch}USDT`;
-      }
-    }
-
-    this.currentSymbol = symbolToSearch;
-    this.displaySymbol = this.searchQuery.toUpperCase().replace(':', ' / ');
-    
-    this.initTradingViewWidget(this.currentSymbol);
-    
-    this.marketService.getSymbolPrice(this.currentSymbol).subscribe(data => {
-      this.currentPrice = data;
+  applyFilters() {
+    this.filteredEvents = this.economicEvents.filter(event => {
+      const impactMap: any = { 1: 'low', 2: 'medium', 3: 'high' };
+      const eventImpact = impactMap[event.impact] || 'low';
+      
+      return this.filters.impact.includes(eventImpact) && 
+             this.filters.currencies.includes(event.country);
     });
-
-    this.searchQuery = '';
   }
 
   changeDate(days: number) {
-    this.selectedDate.setDate(this.selectedDate.getDate() + days);
-    const dateStr = this.selectedDate.toISOString().split('T')[0];
-    this.marketService.getEconomicCalendar(dateStr, dateStr).subscribe(data => {
-      this.calendarEvents = data.slice(0, 5);
-    });
+    this.selectedDate = new Date(this.selectedDate.setDate(this.selectedDate.getDate() + days));
+    this.fetchCalendar();
+  }
+
+  goToday() {
+    this.selectedDate = new Date();
+    this.fetchCalendar();
   }
 }
