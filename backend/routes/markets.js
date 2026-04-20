@@ -10,4 +10,7 @@ router.get('/history', marketController.getHistory);
 // Obtener noticias
 router.get('/news', marketController.getNews);
 
+// Obtener calendario económico
+router.get('/calendar', marketController.getEconomicCalendar);
+
 module.exports = router;

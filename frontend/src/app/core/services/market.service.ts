@@ -9,18 +9,23 @@ export class MarketService {
 
   constructor(private http: HttpClient) {}
 
-  // Obtener precios para el Ticker superior
-  getPrices(symbols: string): Observable<any> {
-    return this.http.get(`${this.apiUrl}/prices?symbols=${symbols}`);
+  // 1. Calendario Económico (vía Proxy)
+  getEconomicCalendar(from: string, to: string): Observable<any> {
+    return this.http.get(`${this.apiUrl}/calendar?from=${from}&to=${to}`);
   }
 
-  // Obtener serie temporal para el gráfico (TradingView style)
-  getHistory(symbol: string, interval: string): Observable<any> {
-    return this.http.get(`${this.apiUrl}/history?symbol=${symbol}&interval=${interval}`);
+  // 2. Noticias con Impacto (vía Proxy)
+  getMarketNews(category: string = 'general'): Observable<any> {
+    return this.http.get(`${this.apiUrl}/news?category=${category}`);
   }
 
-  // Obtener noticias de impacto
-  getNews(symbol: string): Observable<any> {
-    return this.http.get(`${this.apiUrl}/news?symbol=${symbol}`);
+  // 3. Sentimiento Global (Fear & Greed Index - API directa gratuita)
+  getGlobalSentiment(): Observable<any> {
+    return this.http.get('https://api.alternative.me/fng/');
+  }
+
+  // 4. Precios Real-time (vía Proxy)
+  getSymbolPrice(symbol: string): Observable<any> {
+    return this.http.get(`${this.apiUrl}/prices?symbols=${symbol}`);
   }
 }

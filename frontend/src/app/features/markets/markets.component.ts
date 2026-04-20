@@ -1,109 +1,147 @@
-import { Component, OnInit, ElementRef, ViewChild, AfterViewInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, AfterViewInit } from '@angular/core';
+import { CommonModule, DecimalPipe, CurrencyPipe, DatePipe } from '@angular/common';
 import { MarketService } from '../../core/services/market.service';
-import { createChart, IChartApi, CandlestickSeries } from 'lightweight-charts';
+import { FormsModule } from '@angular/forms';
+
+declare const TradingView: any;
 
 @Component({
   selector: 'app-markets',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule, DecimalPipe, CurrencyPipe, DatePipe],
   templateUrl: './markets.component.html',
   styleUrls: ['./markets.component.css']
 })
-export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
-  @ViewChild('chartContainer') chartContainer!: ElementRef;
-  private chart!: IChartApi;
+export class MarketsComponent implements OnInit, AfterViewInit {
+  widget: any;
+  currentSymbol: string = 'BINANCE:BTCUSDT';
+  displaySymbol: string = 'BTC / USD';
+  currentPrice: any = { c: 0, dp: 0 };
+  currentYear = new Date().getFullYear();
+  selectedDate = new Date();
   
-  // Datos dinámicos inicializados
   tickerItems = [
-    { symbol: 'BTC/USD', price: '64,241.50', change: '+2.4%', up: true },
-    { symbol: 'EUR/USD', price: '1.0842', change: '-0.02%', up: false },
-    { symbol: 'GOLD', price: '2,345.10', change: '-0.4%', up: false },
-    { symbol: 'SPX', price: '5,432.12', change: '+0.15%', up: true }
+    { symbol: 'BTC/USD', price: '...', change: '...', up: true },
+    { symbol: 'EUR/USD', price: '...', change: '...', up: true },
+    { symbol: 'GOLD', price: '...', change: '...', up: false },
+    { symbol: 'S&P 500', price: '...', change: '...', up: true }
   ];
+
+  calendarEvents: any[] = [];
+  marketNews: any[] = [];
+  globalSentiment: any = { value: 0, classification: '...' };
+  searchQuery: string = '';
 
   constructor(private marketService: MarketService) {}
 
   ngOnInit() {
-    this.loadTickerData();
+    this.loadMarketData();
+    this.loadSentiment();
+    this.loadNews();
+    this.loadCalendar();
   }
 
   ngAfterViewInit() {
-    this.initChart();
+    this.initTradingViewWidget(this.currentSymbol);
   }
 
-  ngOnDestroy() {
-    if (this.chart) {
-      this.chart.remove();
-    }
-  }
+  initTradingViewWidget(symbol: string) {
+    // Si ya existe un widget, lo eliminamos (o simplemente reiniciamos el contenedor)
+    const container = document.getElementById('tv_chart_container');
+    if (container) container.innerHTML = '';
 
-  loadTickerData() {
-    const symbols = 'BTC/USD,EUR/USD,GOLD,SPX';
-    this.marketService.getPrices(symbols).subscribe(data => {
-      // Mapeamos los datos de la API a nuestro array del ticker
-      // Nota: Si la API devuelve un solo objeto en lugar de un mapa por falta de créditos,
-      // aquí lo manejamos con fallback.
-      if (data) {
-        if (data['BTC/USD']) this.tickerItems[0].price = data['BTC/USD'].price;
-        if (data['EUR/USD']) this.tickerItems[1].price = data['EUR/USD'].price;
-        if (data['GOLD']) this.tickerItems[2].price = data['GOLD'].price;
-        if (data['SPX']) this.tickerItems[3].price = data['SPX'].price;
-      }
-    }, error => {
-      console.error('Error loading ticker data:', error);
+    this.widget = new TradingView.widget({
+      "container_id": "tv_chart_container",
+      "autosize": true,
+      "symbol": symbol,
+      "interval": "D",
+      "timezone": "Etc/UTC",
+      "theme": "light",
+      "style": "1",
+      "locale": "en",
+      "toolbar_bg": "#f1f3f6",
+      "enable_publishing": false,
+      "hide_side_toolbar": false,
+      "allow_symbol_change": true,
+      "details": true,
+      "hotlist": true,
+      "calendar": true,
+      "show_popup_button": true,
+      "popup_width": "1000",
+      "popup_height": "650"
     });
   }
 
-  initChart() {
-    setTimeout(() => {
-      if (!this.chartContainer) return;
+  loadMarketData() {
+    // Cargar precio inicial para el overlay
+    this.marketService.getSymbolPrice(this.currentSymbol).subscribe(data => {
+      this.currentPrice = data;
+    });
 
-      this.chart = createChart(this.chartContainer.nativeElement, {
-        width: this.chartContainer.nativeElement.offsetWidth,
-        height: 450,
-        layout: { 
-          background: { color: 'transparent' }, 
-          textColor: '#191c1e' 
-        },
-        grid: { 
-          vertLines: { visible: false }, 
-          horzLines: { color: '#f0f3fa' } 
-        },
+    // Cargar datos para el ticker (simulado con algunos símbolos principales)
+    const tickerSymbols = ['BINANCE:BTCUSDT', 'FX_IDC:EURUSD', 'OANDA:XAUUSD', 'FOREXCOM:SPXUSD'];
+    tickerSymbols.forEach((sym, index) => {
+      this.marketService.getSymbolPrice(sym).subscribe(data => {
+        this.tickerItems[index].price = data.c.toLocaleString();
+        this.tickerItems[index].change = (data.dp >= 0 ? '+' : '') + data.dp.toFixed(2) + '%';
+        this.tickerItems[index].up = data.dp >= 0;
       });
+    });
+  }
 
-      const series = this.chart.addSeries(CandlestickSeries, {
-        upColor: '#006c49', 
-        downColor: '#ba1a1a', 
-        borderVisible: false, 
-        wickUpColor: '#006c49', 
-        wickDownColor: '#ba1a1a'
-      });
+  loadSentiment() {
+    this.marketService.getGlobalSentiment().subscribe(res => {
+      if (res.data && res.data.length > 0) {
+        this.globalSentiment = {
+          value: res.data[0].value,
+          classification: res.data[0].value_classification
+        };
+      }
+    });
+  }
 
-      // Cargar histórico real de BTC/USD
-      this.marketService.getHistory('BTC/USD', '1h').subscribe(res => {
-        if (res && res.values) {
-          const formattedData = res.values.map((v: any) => ({
-            time: new Date(v.datetime).getTime() / 1000,
-            open: parseFloat(v.open),
-            high: parseFloat(v.high),
-            low: parseFloat(v.low),
-            close: parseFloat(v.close)
-          })).sort((a: any, b: any) => a.time - b.time); // Aseguramos orden cronológico
+  loadNews() {
+    this.marketService.getMarketNews().subscribe(data => {
+      this.marketNews = data.slice(0, 3); // Solo cogemos las 3 primeras
+    });
+  }
 
-          series.setData(formattedData);
-        }
-      }, error => {
-        console.error('Error loading chart data:', error);
-      });
+  loadCalendar() {
+    const today = new Date().toISOString().split('T')[0];
+    this.marketService.getEconomicCalendar(today, today).subscribe(data => {
+      this.calendarEvents = data.slice(0, 5);
+    });
+  }
 
-      // Responsive chart
-      const resizeObserver = new ResizeObserver(entries => {
-        if (this.chart && entries[0].contentRect.width) {
-          this.chart.applyOptions({ width: entries[0].contentRect.width });
-        }
-      });
-      resizeObserver.observe(this.chartContainer.nativeElement);
-    }, 100);
+  onSymbolSearch() {
+    if (!this.searchQuery) return;
+    
+    // Si no contiene exchange, asumimos BINANCE para crypto o buscamos tal cual
+    let symbolToSearch = this.searchQuery.toUpperCase();
+    if (!symbolToSearch.includes(':')) {
+      // Lógica simple de mapeo (mejorable)
+      if (['BTC', 'ETH', 'SOL'].includes(symbolToSearch)) {
+        symbolToSearch = `BINANCE:${symbolToSearch}USDT`;
+      }
+    }
+
+    this.currentSymbol = symbolToSearch;
+    this.displaySymbol = this.searchQuery.toUpperCase().replace(':', ' / ');
+    
+    this.initTradingViewWidget(this.currentSymbol);
+    
+    this.marketService.getSymbolPrice(this.currentSymbol).subscribe(data => {
+      this.currentPrice = data;
+    });
+
+    this.searchQuery = '';
+  }
+
+  changeDate(days: number) {
+    this.selectedDate.setDate(this.selectedDate.getDate() + days);
+    const dateStr = this.selectedDate.toISOString().split('T')[0];
+    this.marketService.getEconomicCalendar(dateStr, dateStr).subscribe(data => {
+      this.calendarEvents = data.slice(0, 5);
+    });
   }
 }
