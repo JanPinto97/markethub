@@ -11,28 +11,54 @@
   scrollbar-width: none;
 }
 
+/* Regulatory rules: No borders, only shadows or tonal changes */
+.card-premium {
+  background: #ffffff;
+  border: none !important;
+  box-shadow: 0 20px 40px rgba(13, 28, 50, 0.04);
+  border-radius: 0.75rem;
+}
+
+/* Glassmorphism for floating elements */
 .glass-panel {
   background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
 
-@keyframes scroll {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
+/* Infinite Editorial Ticker */
+.ticker-wrap {
+  width: 100%;
+  overflow: hidden;
+  background: #ffffff;
+  padding: 12px 0;
+  white-space: nowrap;
 }
 
-.animate-scroll {
+.ticker-move {
   display: flex;
   width: max-content;
-  animation: scroll 40s linear infinite;
+  /* El truco es que la animación sea lineal y el loop sea perfecto */
+  animation: scroll-left 60s linear infinite;
 }
 
-.animate-scroll:hover {
+@keyframes scroll-left {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); } /* Al llegar al 50% reinicia y no se nota el salto */
+}
+
+.ticker-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 50px; /* Aumentamos el padding para que respire */
+  font-family: 'Inter', sans-serif;
+  border-right: 1px solid #f2f4f6; /* Separador sutil */
+  font-weight: 800;
+  font-size: 11px;
+}
+
+.ticker-move:hover {
   animation-play-state: paused;
 }
 
@@ -44,13 +70,4 @@
     'GRAD' 0,
     'opsz' 24;
   vertical-align: middle;
-}
-
-/* Ticker color helpers */
-.text-secondary-fixed-dim {
-  color: #4edea3;
-}
-
-.text-error {
-  color: #ba1a1a;
 }
