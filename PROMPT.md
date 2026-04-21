@@ -1,10 +1,11 @@
-# PROMPT 2 — Community Frontend: Sidebar Esquerra
+# PROMPT 3 — Community Frontend: Feed Central
 
 ## Context
 
-Continuem amb el frontend de `/community` de **MarketHub**. El Prompt 1 ja ha creat
-l'esquelet de la pàgina amb el layout de 3 columnes. Ara implementem la **sidebar esquerra**
-amb lògica real: dades de l'API, navegació funcional i interaccions.
+Continuem amb el frontend de `/community` de **MarketHub**. El Prompt 1 va crear
+l'esquelet de la pàgina i el Prompt 2 va implementar la sidebar esquerra.
+Ara implementem el **feed central** amb lògica real: selector Trending/Following,
+caixa de creació de post, i les targetes de posts connectades a l'API.
 
 Llegeix `frontend/DESIGN.md` i `frontend/CLAUDE.md` abans d'escriure cap línia de codi.
 Tot el CSS ha d'usar les variables del sistema de disseny.
@@ -13,145 +14,203 @@ Tot el CSS ha d'usar les variables del sistema de disseny.
 
 ## Objectiu
 
-Implementar la sidebar esquerra completament funcional, connectada a l'API,
-amb els estats corresponents (autenticat / no autenticat, comunitats buides, topics buits).
+Implementar el feed central completament funcional: càrrega de posts reals,
+creació de posts, sistema de likes i comentaris bàsic.
 
 ---
 
-## Estructura de la sidebar
+## Estructura del feed central
 
 ```
-┌─────────────────────────┐
-│  🏠 Home                │  ← Navegació principal
-├─────────────────────────┤
-│  MY COMMUNITIES         │  ← Secció 2
-│  · Gold Bugs [Public]   │
-│  · Whale Alerts [Priv.] │
-├─────────────────────────┤
-│  TOPICS                 │  ← Secció 3
-│  · Gold                 │
-│  · Crypto               │
-│  [+ Add Topics]         │
-├─────────────────────────┤
-│                         │
-│  [Create Community]     │  ← Zona inferior
-└─────────────────────────┘
+┌──────────────────────────────────────┐
+│  [ Trending ]  [ Following ]         │  ← 3.1 Selector
+├──────────────────────────────────────┤
+│  [Avatar] What's on your mind...     │  ← 3.2 Caixa de creació
+│  [🖼] [😊]                  [Post]  │
+├──────────────────────────────────────┤
+│  ┌────────────────────────────────┐  │
+│  │ Avatar  Nom @handle · 4h ago  │  │  ← 3.3 Targeta de post
+│  │                                │  │
+│  │ Text del post...               │  │
+│  │                                │  │
+│  │ 👍 12   💬 4                  │  │
+│  └────────────────────────────────┘  │
+│  ┌────────────────────────────────┐  │
+│  │ ...                            │  │
+│  └────────────────────────────────┘  │
+└──────────────────────────────────────┘
 ```
 
 ---
 
-## Secció 1 — Navegació principal
+## 3.1 — Selector Trending / Following
 
-Un sol element de navegació:
+Dues pestanyes a la part superior del feed:
 
-- **Home** amb icona de casa. Sempre visible. `routerLink="/community"`.
-- Estil "actiu" quan estem a la ruta `/community` (usa `routerLinkActive`).
+- `Trending` — activa per defecte. Carrega posts ordenats per `trendingScore`.
+- `Following` — requereix login. Si l'usuari no està autenticat i clica,
+  redirigeix a `/login`.
 
----
+En canviar de pestanya:
 
-## Secció 2 — My Communities
+- Es fa una nova crida a l'API amb el mode corresponent.
+- El feed es reseteja i carrega des del principi.
+- L'estat actiu de la pestanya es reflecteix visualment.
 
-**Títol:** `MY COMMUNITIES`
+**Endpoints:**
 
-**Dades:** Crida a l'API per obtenir les comunitats de l'usuari autenticat.
-
-- Endpoint: `GET /api/communities/my` (retorna llista de comunitats públiques
-  i privades de les quals l'usuari és membre).
-- Cada item mostra:
-  - Cercle de color amb la inicial del nom de la comunitat (color generat
-    a partir del nom, consistent, no aleatori en cada render).
-  - Nom de la comunitat.
-  - Etiqueta `[Public]` o `[Private]` al costat del nom, en text petit i discret.
-  - `routerLink` a `/community/c/:communityId` (ruta que no implementem ara,
-    però el link ha d'existir).
-
-**Estats:**
-
-- **Carregant:** placeholder/skeleton de 2-3 items.
-- **Sense comunitats:** text discret "You haven't joined any community yet."
-- **Amb comunitats:** llista completa sense límit de scroll.
-- **No autenticat:** no es mostra aquesta secció.
+- `GET /api/posts/feed?mode=trending&page=1&limit=10`
+- `GET /api/posts/feed?mode=following&page=1&limit=10`
 
 ---
 
-## Secció 3 — Topics
+## 3.2 — Caixa de creació de post
 
-**Títol:** `TOPICS`
+### Si l'usuari NO està autenticat:
 
-**Dades:** Els topics els gestiona l'usuari localment (quins ha ancorat a la sidebar).
-Es guarden a `localStorage` com a llista d'IDs. En carregar, es fa una crida
-per obtenir els detalls d'aquests topics.
+- Mostra la caixa però desactivada (input readonly, botó disabled).
+- Text al input: `"Sign in to join the conversation"`.
+- En clicar l'input o el botó → redirigeix a `/login`.
 
-- Endpoint: `GET /api/topics?ids=id1,id2,id3`
+### Si l'usuari SÍ està autenticat:
 
-Cada topic a la llista mostra:
+Targeta amb:
 
-- **Icona de categoria** a l'esquerra. Assigna una icona o color per categoria:
-  - `CORE_MARKETS` → 📈 o color blau
-  - `ECONOMIA_I_MACRO` → 🏦 o color verd
-  - `ASSETS_ESPECIFICS` → 💼 o color taronja
-  - `TRADING_I_INVERSIO` → ⚡ o color groc
-  - Pots usar emojis, SVG inline simples o lletres amb color de fons. El que
-    quedi més net visualment.
-- Nom del topic.
-- `routerLink` a `/community/t/:topicId` (ruta futura, el link ha d'existir).
+- **Avatar** de l'usuari a l'esquerra (del `AuthService`). Cercle placeholder si no té avatar.
+- **Input de text** amb placeholder `"What's on your mind regarding the markets?"`.
+  - El input creix en alçada a mesura que l'usuari escriu (`textarea` auto-resize).
+  - Màxim 400 caràcters. Mostra comptador `"X/400"` quan l'usuari comença a escriure.
+- **Fila d'accions** sota l'input:
+  - Icona d'imatge (📷): obre un `<input type="file">` ocult. Accepta jpeg, png, gif, webp (màx 10MB).
+    Si se selecciona un fitxer, mostra una previsualització en miniatura sobre la fila d'accions,
+    amb una `x` per eliminar-la.
+  - Icona d'emoji (😊): de moment `console.log('open emoji picker')`.
+  - Botó `Post` a la dreta: disabled si el text és buit. En clicar, envia el post.
 
-**Botó "+ Add Topics":**
+**Enviament del post:**
 
-- Apareix sempre: si no hi ha topics, és l'únic element de la secció;
-  si n'hi ha, apareix al final de la llista.
-- De moment, en clicar, mostra un `console.log('open topic search')`.
-  El modal/popup el farem en un prompt posterior.
-
-**Estats:**
-
-- **Sense topics ancorats:** mostra directament el botó `+ Add Topics`.
-- **Amb topics:** llista + botó al final.
-- **No autenticat:** la secció es mostra igual (els topics son públics),
-  però el botó "+ Add Topics" no apareix.
-
----
-
-## Secció 4 — Zona inferior
-
-Situada a la part baixa de la sidebar (`margin-top: auto` si la sidebar
-és un flex container en columna).
-
-**Contingut:**
-
-- Botó `Create Community` prominent, estil CTA (call to action).
-- En clicar obre un modal/formulari. **De moment:** `console.log('open create community modal')`.
-- **Visibilitat:** Només visible si l'usuari està autenticat. Si no ho està,
-  no es mostra res en aquesta zona (o es pot mostrar un missatge "Join to create communities").
+- Endpoint: `POST /api/posts`
+- Body (FormData si hi ha imatge, JSON si no):
+  ```
+  text: string
+  mediaFile?: File        ← si s'ha seleccionat imatge
+  origin: 'general'
+  ```
+- En èxit: afegeix el nou post al capdamunt del feed sense recarregar tota la llista.
+  Neteja l'input i la previsualització.
+- En error: mostra un missatge d'error discret sota la caixa (no un alert del navegador).
 
 ---
 
-## Servei Angular a crear o ampliar
+## 3.3 — Targetes de posts (PostX)
 
-Crea o amplia `CommunityService` a `frontend/src/app/features/community/`:
+Cada post del feed es renderitza com una targeta. Implementa un component
+`PostCardComponent` reutilitzable:
+
+```
+frontend/src/app/features/community/components/post-card/
+├── post-card.component.ts
+├── post-card.component.html
+└── post-card.component.css
+```
+
+### Estructura de cada targeta:
+
+**Capçalera:**
+
+- Avatar de l'autor (cercle; si no té avatar, inicial del username amb color de fons consistent).
+- Nom complet de l'autor (o username si no té nom). `routerLink="/profile/:username"`.
+- Handle `@username` en text secundari.
+- Temps relatiu des de la publicació (ex: "4h ago", "2d ago"). Usa una funció utilitària simple,
+  no cal cap llibreria externa.
+- Si el post prové d'una comunitat pública (`origin: 'public_community'`):
+  mostra una etiqueta/badge discreta amb el nom de la comunitat sota el handle.
+- Menú de tres punts (`···`) a la dreta de la capçalera, visible en hover.
+  Opcions del menú:
+  - Si ets l'autor: `Edit` (de moment `console.log`) i `Delete`.
+  - Si ets moderator/superadmin de plataforma: `Delete`.
+  - Si no ets l'autor ni moderador: `Report` (de moment `console.log`).
+
+**Cos:**
+
+- Text del post. Si supera 280 caràcters, mostra'n els primers 280 i un botó `"See more"`
+  que expandeix el text complet inline (sense navegar).
+- Si hi ha `mediaUrl` (imatge): mostra la imatge sota el text, a l'amplada completa de la
+  targeta, amb `border-radius` consistent, i alçada màxima de ~400px (`object-fit: cover`).
+
+**Peu:**
+
+- **Like:** icona de polze amunt + número. En clicar (requereix login):
+  - Toggle: si ja has donat like, el treu; si no, l'afegeix.
+  - Actualitza el número de forma optimista (immediatament, sense esperar la resposta).
+  - Reverteix si la crida falla.
+  - Endpoint: `POST /api/posts/:id/like` (toggle, el backend gestiona afegir/treure).
+  - L'icona té un estat visual diferenciat quan l'usuari ha donat like (color accent).
+- **Comentaris:** icona de bombolles + número. En clicar, expandeix una secció de comentaris
+  directament sota el peu de la targeta (inline, no navega). Veure especificació a continuació.
+- No hi ha botó de compartir en aquesta fase.
+
+---
+
+## 3.4 — Secció de comentaris (inline)
+
+En clicar la icona de comentaris d'un post, es desplega una secció sota la targeta:
+
+**Càrrega:**
+
+- Endpoint: `GET /api/posts/:postId/comments`
+- Mostra un estat de carregant mentre es carreguen.
+
+**Visualització de comentaris:**
+
+- Cada comentari: avatar + username + temps + text.
+- Màxim 5 comentaris visibles inicialment. Si n'hi ha més, botó `"Load more"`.
+- Els comentaris estan aplanat (un sol nivell de niament, sense fils visuals de resposta).
+
+**Caixa de nou comentari** (requereix login):
+
+- Input de text inline amb placeholder `"Write a comment..."`.
+- Botó `Send` a la dreta.
+- Màxim 400 caràcters.
+- En enviar: `POST /api/posts/:postId/comments` amb `{ text: string }`.
+- En èxit: afegeix el comentari al capdamunt de la llista de forma optimista.
+
+---
+
+## 3.5 — Paginació del feed (infinite scroll)
+
+- Carrega 10 posts per pàgina.
+- Quan l'usuari arriba prop del final del feed (últims ~200px), carrega automàticament
+  la pàgina següent i afegeix els posts a la llista existent.
+- Usa `IntersectionObserver` per detectar quan cal carregar més.
+- Mostra un spinner discret mentre carrega la pàgina següent.
+- Quan no hi ha més posts, mostra un text `"You're all caught up 🎉"`.
+
+---
+
+## Eliminació de posts
+
+Quan l'usuari selecciona `Delete` al menú de tres punts:
+
+- Mostra un diàleg de confirmació simple (pot ser un `confirm()` natiu del navegador
+  o un petit popup inline, el que quedi més net).
+- En confirmar: `DELETE /api/posts/:id`.
+- En èxit: elimina la targeta del feed amb una animació de fade-out.
+- En error: mostra missatge d'error discret.
+
+---
+
+## Servei Angular — ampliar CommunityService
+
+Afegeix els mètodes necessaris a l'existent `community.service.ts`:
 
 ```typescript
-// Mètodes necessaris per a aquest prompt:
-getMyCommunitites(): Observable<Community[]>
-getTopicsByIds(ids: string[]): Observable<Topic[]>
-```
-
-Usa `ApiService` existent per fer les crides HTTP. No implementis la lògica
-de gestió d'errors complexa, però sí que el component mostri l'estat de
-"carregant" i "error genèric" si la crida falla.
-
----
-
-## Topics al localStorage
-
-```typescript
-// Clau: 'mh_pinned_topics'
-// Valor: JSON array d'strings amb els IDs, ex: '["id1","id2"]'
-
-// Helpers a implementar (poden ser mètodes del servei o utils):
-getPinnedTopicIds(): string[]
-addPinnedTopic(id: string): void
-removePinnedTopic(id: string): void
+getFeed(mode: 'trending' | 'following', page: number): Observable<PostX[]>
+createPost(formData: FormData | CreatePostDto): Observable<PostX>
+likePost(postId: string): Observable<{ liked: boolean; count: number }>
+deletePost(postId: string): Observable<void>
+getComments(postId: string): Observable<Comment[]>
+addComment(postId: string, text: string): Observable<Comment>
 ```
 
 ---
@@ -160,15 +219,17 @@ removePinnedTopic(id: string): void
 
 ```
 frontend/src/app/features/community/
-├── community.component.ts         → injecta CommunityService, crida getMyCommunitites()
-├── community.component.html       → afegeix la lògica @if/@for a la sidebar
-├── community.component.css        → estils de la sidebar
-└── services/
-    └── community.service.ts       → nou, amb els mètodes descrits
+├── community.component.ts          → lògica del feed, selector, infinite scroll
+├── community.component.html        → estructura del feed central
+├── community.component.css         → estils del feed
+├── services/
+│   └── community.service.ts        → ampliar amb mètodes del feed
+└── components/
+    └── post-card/
+        ├── post-card.component.ts
+        ├── post-card.component.html
+        └── post-card.component.css
 ```
-
-Si en el Prompt 1 la sidebar era un component fill separat, modifica'l.
-Si era tot en un sol component, pot continuar sent-ho.
 
 ---
 
@@ -176,20 +237,26 @@ Si era tot en un sol component, pot continuar sent-ho.
 
 - CSS custom pur, variables del `DESIGN.md`.
 - Usa `@if` i `@for` d'Angular 17+ (sintaxi nova, no `*ngIf` ni `*ngFor`).
-- Usa `inject()` en comptes de constructor injection on sigui possible.
-- El component ha de ser `standalone: true`.
-- No implementis cap modal ni popup real en aquest prompt (només `console.log`).
-- No implementis la pàgina de detall de comunitat ni de topic.
+- Usa `inject()` en comptes de constructor injection.
+- Tots els components han de ser `standalone: true`.
+- **Optimistic updates** per a likes: actualitza la UI immediatament, reverteix en error.
+- **No implementis** el modal de "Create Community" ni el buscador de topics.
+- **No implementis** cap pàgina de detall de post, comunitat ni perfil.
+- Les animacions han de ser suaus i subtils (CSS transitions), coherents amb el DESIGN.md.
 
 ---
 
 ## Resultat esperat
 
-Al final d'aquest prompt, la sidebar esquerra ha de:
+Al final d'aquest prompt, el feed central ha de:
 
-- ✅ Mostrar les comunitats reals de l'usuari (o estat buit)
-- ✅ Mostrar els topics ancorats des de localStorage (o botó si no n'hi ha)
-- ✅ Tenir el botó "Create Community" visible només si autenticat
-- ✅ Gestionar correctament els estats: carregant, buit, amb dades, no autenticat
-- ✅ Tots els links creats amb `routerLink` (encara que la ruta destí no existeixi)
+- ✅ Carregar posts reals de l'API en mode Trending per defecte
+- ✅ Canviar entre Trending i Following (amb redirect a login si no autenticat)
+- ✅ Permetre crear posts amb text i/o imatge
+- ✅ Mostrar targetes de post amb avatar, autor, text, imatge opcional i interaccions
+- ✅ Sistema de likes amb optimistic update i estat visual
+- ✅ Secció de comentaris expandible inline
+- ✅ Infinite scroll amb IntersectionObserver
+- ✅ Eliminació de posts amb confirmació
+- ✅ Gestió d'estats: carregant, buit, error, fi de llista
 - ✅ CSS cohesiu amb el sistema de disseny del projecte

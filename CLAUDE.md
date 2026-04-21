@@ -17,11 +17,11 @@ frontend, Node/Express backend, MongoDB, Docker.
 
 ## Tech decisions (don't change these)
 
-- Frontend: Angular 17+ standalone components, CSS custom (no Bootstrap)
+- Frontend: Angular 17+ standalone components, CSS custom as default. Tailwind CSS is allowed (loaded via CDN in `frontend/src/index.html` with a custom config). Do NOT use Bootstrap or other frameworks.
 - Backend: Express MVC pattern (/models /controllers /routes /middleware)
 - DB: MongoDB 7 with Mongoose
 - Auth: JWT (access token in memory, refresh token httpOnly cookie)
-- No CSS frameworks — custom variables in /frontend/src/styles/variables.css
+- CSS custom + CSS variables in /frontend/src/styles/variables.css are the default. Tailwind (via CDN) is permitted as a complement for speed in specific components (e.g. Markets). The "cdn.tailwindcss.com should not be used in production" console warning is accepted for now.
 - Containerization: Docker with docker-compose
 
 ## Environment
