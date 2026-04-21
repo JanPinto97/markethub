@@ -2,35 +2,6 @@
   display: block;
 }
 
-body {
-  background-color: #f7f9fb;
-  color: #191c1e;
-  font-family: 'Inter', sans-serif;
-}
-
-h1,
-h2,
-h3,
-.display-text {
-  font-family: 'Manrope', sans-serif;
-  letter-spacing: -0.02em;
-}
-
-/* Regulatory rules: No borders, only shadows or tonal changes */
-.card-premium {
-  background: #ffffff;
-  border: none !important;
-  box-shadow: 0 20px 40px rgba(13, 28, 50, 0.04);
-  border-radius: 0.75rem;
-}
-
-/* Glassmorphism for floating elements */
-.glass-element {
-  background: rgba(247, 249, 251, 0.6);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-}
-
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -55,23 +26,40 @@ h3,
   -webkit-backdrop-filter: blur(20px);
 }
 
-@keyframes scroll {
-  0% {
-    transform: translateX(0);
-  }
-
-  100% {
-    transform: translateX(-50%);
-  }
+/* Infinite Editorial Ticker */
+.ticker-wrap {
+  width: 100%;
+  overflow: hidden;
+  background: #ffffff;
+  padding: 10px 0;
+  white-space: nowrap;
+  z-index: 100;
 }
 
 .ticker-move {
   display: flex;
   width: max-content;
-  animation: scroll 40s linear infinite;
+  /* El truco es que la animación sea lineal y el loop sea perfecto */
+  animation: scroll-left 60s linear infinite;
 }
 
-.animate-scroll:hover {
+@keyframes scroll-left {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); } 
+}
+
+.ticker-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 180px;
+  padding: 0 3rem;
+  font-family: 'Inter', sans-serif;
+  font-weight: 800;
+  font-size: 11px;
+}
+
+.ticker-move:hover {
   animation-play-state: paused;
 }
 
@@ -83,4 +71,14 @@ h3,
     'GRAD' 0,
     'opsz' 24;
   vertical-align: middle;
+}
+
+/* Animación pulse para el sentimiento cuando carga */
+.animate-pulse-slow {
+  animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .8; }
 }

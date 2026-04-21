@@ -1,20 +1,13 @@
 <div class="min-h-screen bg-[#f7f9fb] font-body antialiased pb-12">
-  
+
   <!-- Infinite Editorial Ticker -->
-  <div class="ticker-wrap border-b border-[#f2f4f6] sticky top-0 z-50">
+  <div class="ticker-wrap border-b border-[#f2f4f6] sticky top-0 z-50 bg-white">
     <div class="ticker-move">
-<<<<<<< HEAD
-      <!-- Contenido triplicado para asegurar el loop sin importar el ancho -->
       <div *ngFor="let set of [1,2,3]" class="flex">
-        <div *ngFor="let coin of coins" class="ticker-item">
-=======
-      <!-- Duplicated for seamless infinite scroll -->
-      <div *ngFor="let repeat of [1,2]" class="flex">
-        <div *ngFor="let coin of tickerData" class="ticker-item">
->>>>>>> dev
+        <div *ngFor="let coin of coins" class="ticker-item px-12 border-r border-slate-50">
           <span class="text-slate-400 font-black uppercase text-[9px] tracking-tighter">{{ coin.symbol }}</span>
           <span [style.color]="coin.change >= 0 ? '#006c49' : '#cf352e'" class="font-mono text-[11px]">
-            {{ coin.price | currency:'USD':'symbol':'1.2-2' }} 
+            {{ coin.price | currency:'USD':'symbol':'1.2-2' }}
             <span class="text-[9px] font-bold ml-1">({{ coin.change | number:'1.2-2' }}%)</span>
           </span>
         </div>
@@ -23,7 +16,7 @@
   </div>
 
   <!-- Top Navigation -->
-  <nav class="w-full h-16 bg-white flex justify-between items-center px-6 md:px-12 max-w-[1920px] mx-auto font-manrope antialiased tracking-tight shadow-sm border-b border-slate-50">
+  <nav class="w-full h-16 bg-white flex justify-between items-center px-6 md:px-12 max-w-[1920px] mx-auto font-manrope shadow-sm border-b border-slate-50">
     <div class="flex items-center gap-8">
       <span class="text-xl font-black text-slate-900 tracking-tighter italic">MarketHub</span>
       <section class="hidden md:flex gap-6">
@@ -44,217 +37,160 @@
   </nav>
 
   <main class="max-w-[1440px] mx-auto px-6 py-10 grid grid-cols-12 gap-8">
-<<<<<<< HEAD
-    <!-- Left Section -->
-    <section class="col-span-12 lg:col-span-4 flex flex-col gap-8">
-      <!-- Global Sentiment Card -->
-      <div class="bg-white p-8 rounded-xl shadow-[0_20px_40px_rgba(13,28,50,0.04)]">
-=======
-    <!-- Left Section: Pulse & Sentiment -->
-    <section class="col-span-12 lg:col-span-4 flex flex-col gap-8">
-      <!-- Global Sentiment (Fear & Greed Index) -->
-      <div class="bg-white p-8 rounded-xl shadow-[0_20px_40px_rgba(13,28,50,0.04)] border-none">
->>>>>>> dev
-        <div class="flex justify-between items-start mb-6">
-          <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Global Sentiment</h3>
-          <span class="text-[9px] font-mono text-slate-400 italic">Last updated {{ lastSentimentUpdate }}</span>
-        </div>
-        <article class="flex flex-col items-center">
-          <div class="text-6xl font-black text-[#191c1e] mb-1 tracking-tighter">{{ sentimentData?.value }}</div>
-          <div class="text-xs font-bold uppercase tracking-[0.1em]" 
-               [style.color]="sentimentData?.value > 50 ? '#006c49' : '#cf352e'">
-            {{ sentimentData?.value_classification }}
-          </div>
-          <div class="w-full h-2 bg-[#f2f4f6] rounded-full mt-8 overflow-hidden">
-            <div class="h-full transition-all duration-1000" 
-                 [style.width.%]="sentimentData?.value"
-                 [style.background]="'linear-gradient(90deg, #0d1c32, #006c49)'"></div>
-          </div>
-        </article>
-      </div>
-
-<<<<<<< HEAD
-      <!-- Market Impact Stream (Finnhub) -->
-      <div class="bg-white p-8 rounded-xl shadow-[0_20px_40px_rgba(13,28,50,0.04)]">
-        <div class="flex items-center justify-between mb-8">
-          <h2 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Market News Impact</h2>
-          <span class="text-[8px] bg-emerald-50 text-[#006c49] px-2.5 py-1 rounded-full font-black tracking-widest uppercase">Realtime</span>
-        </div>
-        <div class="space-y-8">
-          <div *ngFor="let news of marketNews | slice:0:5" class="group cursor-pointer">
-            <div class="flex justify-between items-start mb-1">
-              <span class="text-[10px] font-black text-secondary uppercase tracking-tighter">{{ news.source }}</span>
-              <span class="text-[9px] text-slate-400 font-mono">{{ news.datetime * 1000 | date:'HH:mm' }}</span>
-            </div>
-            <h4 class="text-xs font-bold text-[#191c1e] leading-snug group-hover:text-secondary transition-colors">
-              {{ news.headline }}
-            </h4>
-            <div class="w-full h-[2px] bg-[#f2f4f6] mt-3">
-              <div class="h-full bg-secondary transition-all duration-500" [style.width.%]="news.related ? 85 : 30"></div>
-=======
-      <!-- Market Impact Stream -->
-      <div class="bg-white p-8 rounded-xl shadow-[0_20px_40px_rgba(13,28,50,0.04)]">
-        <div class="flex items-center justify-between mb-8">
-          <h2 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Market News Impact</h2>
-          <span class="text-[8px] bg-emerald-50 text-[#006c49] px-2.5 py-1 rounded-full font-black tracking-widest">REALTIME</span>
-        </div>
-        <div class="space-y-8">
-          <div *ngFor="let news of marketNews | slice:0:3" class="group cursor-pointer">
-            <div class="flex justify-between items-start mb-2">
-              <h4 class="text-[9px] font-black uppercase text-secondary tracking-tight">{{ news.source }}</h4>
-              <span class="text-[9px] font-bold text-slate-300 font-mono">{{ news.datetime * 1000 | date:'HH:mm' }}</span>
-            </div>
-            <p class="text-[11px] leading-relaxed text-slate-500 font-medium group-hover:text-[#191c1e] transition-colors">
-              {{ news.headline }}
-            </p>
-            <div class="w-full h-[1px] bg-slate-50 mt-4 overflow-hidden group-hover:bg-[#f2f4f6]">
-              <div class="h-full bg-secondary transition-all duration-500" [style.width.%]="news.related ? 85 : 35"></div>
->>>>>>> dev
-            </div>
-          </div>
-        </div>
-        <button class="w-full mt-10 py-3.5 bg-[#f7f9fb] hover:bg-[#191c1e] hover:text-white transition-all duration-500 font-bold text-[9px] uppercase tracking-widest rounded-xl">
-          Enter Full Stream View
-        </button>
-      </div>
-    </section>
-
-    <!-- Right Section: Analysis & Charting -->
+    
+    <!-- LEFT SECTION (8 Columns): Search, Chart & News Impact -->
     <section class="col-span-12 lg:col-span-8 flex flex-col gap-8">
       
-<<<<<<< HEAD
-=======
-
->>>>>>> dev
-      <!-- Economic Calendar (Editorial Style) -->
-      <div class="bg-white rounded-xl shadow-[0_20px_40px_rgba(13,28,50,0.04)] overflow-hidden">
-        <header class="p-6 bg-[#f2f4f6] flex justify-between items-center">
-          <div class="flex items-center gap-4">
-            <button (click)="changeDate(-1)" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white transition-all shadow-sm">◀</button>
-            <span class="text-[11px] font-black uppercase tracking-widest text-[#191c1e]">{{ selectedDate | date:'dd MMM yyyy' }}</span>
-            <button (click)="changeDate(1)" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white transition-all shadow-sm">▶</button>
-            <button (click)="goToday()" class="ml-4 text-[9px] font-black px-3 py-1.5 bg-[#191c1e] text-white rounded-lg hover:bg-slate-700 transition-colors">TODAY</button>
-          </div>
-<<<<<<< HEAD
-          <button class="text-[10px] font-black px-5 py-2 bg-white rounded-xl shadow-sm tracking-widest uppercase hover:bg-slate-50 transition-colors">Filter</button>
-=======
-          <button class="text-[10px] font-black px-5 py-2 bg-white rounded-xl shadow-sm tracking-widest uppercase hover:bg-slate-50 transition-colors">Filters</button>
->>>>>>> dev
-        </header>
-
-        <div class="divide-y divide-[#f2f4f6]">
-          <div *ngFor="let event of filteredEvents" class="px-8 py-4.5 flex items-center justify-between hover:bg-[#f7f9fb] transition-colors group">
-            <div class="flex items-center gap-6">
-              <span class="text-[10px] font-mono text-slate-400 w-12">{{ event.time ? (event.time.split(' ')[1] || event.time) : '--:--' }}</span>
-              <span class="text-[10px] font-black w-8 text-slate-400 uppercase tracking-tighter">{{ event.country }}</span>
-              <div class="flex gap-0.5">
-<<<<<<< HEAD
-                <!-- Impact Dots: Red for High, Gold for Medium, Slate for Low -->
-                <div *ngFor="let dot of [1,2,3]; let i = index" 
-                     class="w-1.5 h-1.5 rounded-full transition-colors duration-500"
-                     [style.background-color]="i < event.impact ? (event.impact == 3 ? '#cf352e' : (event.impact == 2 ? '#fbbf24' : '#94a3b8')) : '#f1f5f9'"></div>
-=======
-                <div *ngFor="let dot of [1,2,3]; let i = index" 
-                     class="w-1.5 h-1.5 rounded-full"
-                     [style.background-color]="i < event.impact ? '#cf352e' : '#e2e8f0'"></div>
->>>>>>> dev
-              </div>
-              <span class="text-xs font-bold text-[#44474d] group-hover:text-[#191c1e] transition-colors line-clamp-1">{{ event.event }}</span>
-            </div>
-            <span class="text-[10px] font-mono font-bold text-[#191c1e]">{{ event.actual || '--' }}</span>
-          </div>
-<<<<<<< HEAD
-          <div *ngIf="filteredEvents.length === 0" class="p-16 text-center italic text-slate-400 text-xs tracking-large">
-            No high-impact economic developments recorded for this curation.
-=======
-          <div *ngIf="filteredEvents.length === 0" class="p-16 text-center italic text-slate-400 text-xs tracking-wide">
-            No high-impact economic developments recorded for this curation date.
->>>>>>> dev
-          </div>
-        </div>
-      </div>
-
-<<<<<<< HEAD
-      <!-- Asset Search Engine (With Modal Results) -->
-      <div class="w-full px-4 mb-2 relative group">
-=======
-      <!-- Principal Search Engine (Repositioned directly above Chart) -->
-      <div class="w-full px-4 mb-2">
->>>>>>> dev
+      <!-- Principal Search Engine (Symbol Search Modal Integration) -->
+      <div class="w-full relative" #searchContainer>
         <div class="relative w-full">
           <span class="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-slate-300">search</span>
-          <input 
-            #symbolInput
-            (keyup.enter)="onSymbolSearch(symbolInput.value); symbolInput.value=''"
-            class="w-full bg-white shadow-[0_10px_30px_rgba(13,28,50,0.03)] border-none rounded-2xl pl-14 pr-6 py-5 focus:ring-2 focus:ring-[#006c49]/10 transition-all text-xs font-bold uppercase tracking-widest" 
-<<<<<<< HEAD
+          <input #symbolInput [value]="searchQuery" 
+            (input)="onSearchInput(symbolInput.value)"
+            (focus)="onSearchFocus()"
+            (keyup.enter)="onSymbolSearch(symbolInput.value); showSearchModal = false; searchQuery = ''"
+            class="w-full bg-white shadow-sm border-none rounded-2xl pl-14 pr-6 py-5 focus:ring-2 focus:ring-[#006c49]/10 transition-all text-xs font-bold uppercase tracking-widest"
             placeholder="Search Assets (BTC, AAPL, EURUSD)...">
+          
+          <!-- TradingView-Style Results Modal (Glassmorphism) -->
+          <div *ngIf="showSearchModal && searchResults.length > 0" 
+               class="absolute top-full left-0 w-full mt-3 bg-white/95 backdrop-blur-xl rounded-2xl shadow-[0_30px_60px_rgba(0,0,0,0.12)] border border-white/20 z-[100] overflow-hidden">
             
-          <!-- Dropdown Results (TradingView Style) -->
-          <div class="absolute top-full left-0 w-full bg-white mt-2 rounded-2xl shadow-2xl z-[100] border border-slate-50 opacity-0 group-focus-within:opacity-100 pointer-events-none group-focus-within:pointer-events-auto transition-all p-4">
-            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 px-2">Popular Assets</p>
-            <div class="grid grid-cols-2 gap-2">
-              <button *ngFor="let asset of coins | slice:0:6" 
-                      (click)="onSymbolSearch(asset.tech)"
-                      class="flex items-center justify-between p-3 hover:bg-[#f7f9fb] rounded-xl transition-colors">
-                <span class="text-[10px] font-bold">{{ asset.symbol }}</span>
-                <span class="text-[9px] font-mono text-slate-400">{{ asset.tech }}</span>
+            <header class="px-6 py-4 bg-slate-50/50 border-b border-slate-100 flex justify-between items-center">
+              <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                {{ searchQuery.length < 1 ? 'Curated Popular Assets' : 'Market Search Results' }}
+              </span>
+              <button (click)="showSearchModal = false" class="text-slate-300 hover:text-slate-900 transition-colors">
+                <span class="material-symbols-outlined text-sm">close</span>
               </button>
+            </header>
+
+            <div class="max-h-[400px] overflow-y-auto no-scrollbar">
+              <div *ngFor="let result of searchResults" (click)="selectResult(result)"
+                   class="px-6 py-4 flex items-center justify-between hover:bg-[#006c49]/5 cursor-pointer transition-all border-b border-slate-50 last:border-none group">
+                <div class="flex items-center gap-4">
+                  <div class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-400 group-hover:bg-[#006c49] group-hover:text-white transition-all">
+                    {{ result.symbol.slice(0, 2) }}
+                  </div>
+                  <div class="flex flex-col">
+                    <span class="text-xs font-black text-[#191c1e] tracking-tight">{{ result.symbol }}</span>
+                    <span class="text-[10px] text-slate-400 font-medium line-clamp-1">{{ result.description }}</span>
+                  </div>
+                </div>
+                <div class="flex items-center gap-3">
+                  <span class="text-[9px] font-black uppercase px-2 py-1 bg-slate-50 text-slate-400 rounded group-hover:bg-white transition-all">
+                    {{ result.type || 'ASSET' }}
+                  </span>
+                  <span class="material-symbols-outlined text-slate-200 group-hover:text-[#006c49] transition-all">arrow_forward_ios</span>
+                </div>
+              </div>
             </div>
           </div>
-=======
-            placeholder="Search Assets, Pairs or Commodities (e.g. BTC, EURUSD, AAPL)...">
->>>>>>> dev
         </div>
       </div>
 
       <!-- Advanced Charting Workspace -->
-<<<<<<< HEAD
-      <div class="bg-white rounded-xl shadow-[0_20px_40px_rgba(13,28,50,0.04)] p-10">
-        <header class="flex justify-between items-center mb-10">
+      <div class="bg-white rounded-xl shadow-sm p-8">
+        <header class="flex justify-between items-center mb-8">
           <div class="flex items-center gap-3">
             <div class="flex flex-col">
               <h2 class="text-lg font-black tracking-tighter text-[#191c1e] uppercase leading-none">{{ displaySymbol }}</h2>
               <span class="text-[9px] font-black uppercase text-slate-300 tracking-[0.2em] mt-1">{{ currentSymbol }}</span>
             </div>
-            <span [ngClass]="currentPriceData.dp >= 0 ? 'bg-emerald-50 text-secondary' : 'bg-rose-50 text-error'" 
-                  class="px-2 py-1 rounded text-[10px] font-black animate-pulse">
+            <span [ngClass]="currentPriceData.dp >= 0 ? 'bg-emerald-50 text-secondary' : 'bg-rose-50 text-error'"
+              class="px-2 py-1 rounded text-[10px] font-black animate-pulse">
               {{ currentPriceData.dp >= 0 ? '+' : '' }}{{ currentPriceData.dp | number:'1.2-2' }}%
             </span>
           </div>
-          <div class="flex flex-col items-end">
-            <div class="text-2xl font-mono font-bold text-[#191c1e] tracking-tighter leading-none">
-              {{ currentPriceData.c | currency:'USD':'symbol':'1.2-2' }}
-            </div>
-            <span class="text-[9px] font-mono text-slate-300 mt-1 uppercase">Live Quote</span>
-          </div>
-        </header>
-        
-        <div class="relative w-full h-[640px] bg-[#f7f9fb] rounded-2xl overflow-hidden shadow-inner border border-slate-50">
-=======
-      <div class="bg-white rounded-xl shadow-[0_20px_40px_rgba(13,28,50,0.04)] p-8">
-        <header class="flex justify-between items-center mb-8">
-          <div class="flex items-center gap-3">
-            <h2 class="text-lg font-black tracking-tighter text-[#191c1e] uppercase">{{ displaySymbol }}</h2>
-            <span [ngClass]="currentPriceData.dp >= 0 ? 'bg-emerald-50 text-secondary' : 'bg-rose-50 text-error'" 
-                  class="px-2 py-1 rounded text-[10px] font-black">
-              {{ currentPriceData.dp >= 0 ? '+' : '' }}{{ currentPriceData.dp | number:'1.2-2' }}%
-            </span>
-          </div>
-          <div class="text-lg font-mono font-bold text-[#191c1e] tracking-tighter">
+          <div class="text-2xl font-mono font-bold text-[#191c1e] tracking-tighter leading-none">
             {{ currentPriceData.c | currency:'USD':'symbol':'1.2-2' }}
           </div>
         </header>
-        
-        <div class="relative w-full h-[620px] bg-[#f7f9fb] rounded-2xl overflow-hidden shadow-inner border border-slate-50">
->>>>>>> dev
+        <div class="relative w-full h-[600px] bg-[#f7f9fb] rounded-2xl overflow-hidden border border-slate-50">
           <div id="tv_chart_container" class="w-full h-full"></div>
+        </div>
+      </div>
+
+      <!-- Market News Impact Card -->
+      <div class="bg-white p-8 rounded-xl shadow-sm">
+        <div class="flex items-center justify-between mb-8">
+          <h2 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Market News Impact</h2>
+          <span class="text-[8px] bg-emerald-50 text-[#006c49] px-2.5 py-1 rounded-full font-black tracking-widest uppercase">Realtime</span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div *ngFor="let news of marketNews | slice:0:4" class="group cursor-pointer p-4 hover:bg-[#f7f9fb] rounded-xl transition-all">
+            <div class="flex justify-between items-start mb-1">
+              <span class="text-[10px] font-black text-secondary uppercase">{{ news.source }}</span>
+              <span class="text-[9px] text-slate-400 font-mono">{{ news.datetime * 1000 | date:'HH:mm' }}</span>
+            </div>
+            <h4 class="text-xs font-bold text-[#191c1e] leading-snug group-hover:text-secondary line-clamp-2">
+              {{ news.headline }}
+            </h4>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT SECTION (4 Columns): Sentiment & Calendar -->
+    <section class="col-span-12 lg:col-span-4 flex flex-col gap-8">
+      
+      <!-- Global Sentiment (Relocated here) -->
+      <div class="bg-white p-8 rounded-xl shadow-sm">
+        <div class="flex justify-between items-start mb-6">
+          <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Global Sentiment</h3>
+          <span class="text-[9px] font-mono text-slate-400 italic">{{ lastSentimentUpdate }}</span>
+        </div>
+        <article class="flex flex-col items-center">
+          <div class="text-6xl font-black text-[#191c1e] mb-1 tracking-tighter leading-none">{{ sentimentData?.value }}</div>
+          <div class="text-xs font-bold uppercase tracking-[0.1em]" [style.color]="sentimentData?.value > 50 ? '#006c49' : '#cf352e'">
+            {{ sentimentData?.value_classification }}
+          </div>
+          <div class="w-full h-2 bg-[#f2f4f6] rounded-full mt-8 overflow-hidden">
+            <div class="h-full transition-all duration-1000" [style.width.%]="sentimentData?.value"
+              [style.background]="'linear-gradient(90deg, #0d1c32, #006c49)'"></div>
+          </div>
+        </article>
+      </div>
+
+      <!-- Economic Calendar (Editorial Style) -->
+      <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <header class="p-6 bg-[#f2f4f6] flex justify-between items-center">
+          <div class="flex items-center gap-3">
+            <button (click)="changeDate(-1)" class="w-7 h-7 rounded-full flex items-center justify-center hover:bg-white transition-all shadow-sm">◀</button>
+            <span class="text-[10px] font-black uppercase tracking-widest text-[#191c1e]">{{ selectedDate | date:'dd MMM' }}</span>
+            <button (click)="changeDate(1)" class="w-7 h-7 rounded-full flex items-center justify-center hover:bg-white transition-all shadow-sm">▶</button>
+          </div>
+          <button (click)="goToday()" class="text-[9px] font-black px-3 py-1.5 bg-[#191c1e] text-white rounded-lg hover:bg-slate-700 transition-colors uppercase">Today</button>
+        </header>
+
+        <div class="divide-y divide-[#f2f4f6] max-h-[600px] overflow-y-auto no-scrollbar">
+          <div *ngFor="let event of filteredEvents" class="px-6 py-4 flex flex-col gap-2 hover:bg-[#f7f9fb] transition-colors group">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <span class="text-[9px] font-mono text-slate-400">{{ event.time ? (event.time.split(' ')[1] || event.time) : '--:--' }}</span>
+                <span class="text-[9px] font-black text-slate-900 uppercase px-1.5 py-0.5 bg-slate-100 rounded">{{ event.country }}</span>
+              </div>
+              <div class="flex gap-1">
+                <!-- 3 dots always present: filling 1/3, 2/3 or 3/3 with #cf352e -->
+                <div class="w-1.5 h-1.5 rounded-full" [style.background]="event.impact >= 1 ? '#cf352e' : '#e2e8f0'"></div>
+                <div class="w-1.5 h-1.5 rounded-full" [style.background]="event.impact >= 2 ? '#cf352e' : '#e2e8f0'"></div>
+                <div class="w-1.5 h-1.5 rounded-full" [style.background]="event.impact >= 3 ? '#cf352e' : '#e2e8f0'"></div>
+              </div>
+            </div>
+            <span class="text-[11px] font-bold text-[#44474d] group-hover:text-[#191c1e] transition-colors leading-tight">{{ event.event }}</span>
+            <div class="flex justify-between items-center mt-1">
+               <span class="text-[9px] font-mono text-slate-400 uppercase">Actual: <b class="text-slate-900">{{ event.actual || '--' }}</b></span>
+               <span class="text-[9px] font-mono text-slate-400 uppercase">Prev: {{ event.prev || '--' }}</span>
+            </div>
+          </div>
+          <div *ngIf="filteredEvents.length === 0" class="p-10 text-center italic text-slate-400 text-[10px]">
+            No major events for this region.
+          </div>
         </div>
       </div>
     </section>
   </main>
 
-<<<<<<< HEAD
   <footer class="w-full py-16 px-12 bg-white mt-12 border-t border-slate-50">
     <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-12">
       <div class="flex flex-col gap-2">
@@ -264,18 +200,6 @@
       <nav class="flex gap-8">
         <span class="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-[#006c49] cursor-pointer transition-colors">Risk Disclosure</span>
         <span class="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-[#006c49] cursor-pointer transition-colors">Privacy Policy</span>
-=======
-  <!-- Editorial Footer -->
-  <footer class="w-full py-16 px-12 bg-white mt-12">
-    <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-12">
-      <div class="flex flex-col gap-2">
-        <span class="font-manrope font-black text-slate-900 text-xl tracking-tighter italic">MarketHub</span>
-        <p class="font-inter text-[10px] font-bold uppercase tracking-widest text-slate-300 max-w-xs">© {{ currentYear }} THE INFORMED CURATOR. EDITORIAL FINANCIAL WORKSPACE.</p>
-      </div>
-      <nav class="flex gap-8">
-        <span class="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-[#006c49] cursor-pointer transition-colors">Risk Disclosure</span>
-        <span class="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-[#006c49] cursor-pointer transition-colors">Subscription Privacy</span>
->>>>>>> dev
       </nav>
     </div>
   </footer>

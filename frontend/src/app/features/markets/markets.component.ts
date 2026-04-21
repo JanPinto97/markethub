@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, ElementRef, ViewChild } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ElementRef, ViewChild, ChangeDetectorRef, HostListener, OnDestroy } from '@angular/core';
 import { CommonModule, DecimalPipe, CurrencyPipe, DatePipe } from '@angular/common';
 import { MarketService } from '../../core/services/market.service';
 import { FormsModule } from '@angular/forms';
@@ -13,11 +13,13 @@ declare const TradingView: any;
   templateUrl: './markets.component.html',
   styleUrls: ['./markets.component.css']
 })
-export class MarketsComponent implements OnInit, AfterViewInit {
+export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('symbolInput') symbolInput!: ElementRef;
-  
+  @ViewChild('searchContainer') searchContainer!: ElementRef;
+
   // CONFIGURACIÓN (API Key de Finnhub)
   private apiKey = 'd7jo9s9r01qu1n4fg3pgd7jo9s9r01qu1n4fg3q0';
+  private socket: WebSocket | null = null;
   
   widget: any;
   currentSymbol: string = 'BINANCE:BTCUSDT';
@@ -27,7 +29,6 @@ export class MarketsComponent implements OnInit, AfterViewInit {
   selectedDate: Date = new Date();
   lastSentimentUpdate: string = '';
   
-<<<<<<< HEAD
   // Ticker extendido y real
   coins: any[] = [
     { symbol: 'BTC/USD', tech: 'BINANCE:BTCUSDT', price: 0, change: 0 },
@@ -40,68 +41,175 @@ export class MarketsComponent implements OnInit, AfterViewInit {
     { symbol: 'NVDA', tech: 'NVDA', price: 0, change: 0 },
     { symbol: 'TSLA', tech: 'TSLA', price: 0, change: 0 },
     { symbol: 'CRUDE OIL', tech: 'TVC:USOIL', price: 0, change: 0 }
-=======
-  tickerData = [
-    { symbol: 'BTC/USD', price: 0, change: 0, up: true },
-    { symbol: 'EUR/USD', price: 0, change: 0, up: true },
-    { symbol: 'GOLD', price: 0, change: 0, up: false },
-    { symbol: 'S&P 500', price: 0, change: 0, up: true }
->>>>>>> dev
   ];
 
+  searchResults: any[] = [];
+  showSearchModal: boolean = false;
+  searchQuery: string = '';
+  
   economicEvents: any[] = [];
   filteredEvents: any[] = [];
   marketNews: any[] = [];
   sentimentData: any = { value: 0, value_classification: '...' };
 
-<<<<<<< HEAD
-  constructor(private http: HttpClient) {}
-=======
-  constructor(private marketService: MarketService) {}
->>>>>>> dev
+  constructor(private http: HttpClient, private cdr: ChangeDetectorRef, private el: ElementRef) {}
+
+  @HostListener('document:click', ['$event'])
+  onClickOutside(event: Event) {
+    if (this.showSearchModal && !this.searchContainer.nativeElement.contains(event.target)) {
+      this.showSearchModal = false;
+      this.cdr.detectChanges();
+    }
+  }
 
   ngOnInit() {
-    // Carga inicial masiva
-    this.loadAllData();
+    this.initDashboard();
+    this.setupWebSocket();
+  }
+
+  ngOnDestroy() {
+    if (this.socket) {
+      this.socket.close();
+    }
+  }
+
+  setupWebSocket() {
+    this.socket = new WebSocket(`wss://ws.finnhub.io?token=${this.apiKey}`);
+
+    this.socket.addEventListener('open', () => {
+      // Suscribimos a los activos del ticker inicial
+      this.coins.forEach(coin => this.subscribeSymbol(coin.tech));
+      // Suscribimos al símbolo actual
+      this.subscribeSymbol(this.currentSymbol);
+    });
+
+    this.socket.addEventListener('message', (event) => {
+      const msg = JSON.parse(event.data);
+      if (msg.type === 'trade') {
+        const trades = msg.data;
+        trades.forEach((trade: any) => {
+          // Actualizamos el precio del ticker si coincide
+          const coin = this.coins.find(c => c.tech === trade.s);
+          if (coin) {
+            coin.price = trade.p;
+          }
+          // Actualizamos el precio de la cabecera si coincide
+          if (trade.s === this.currentSymbol) {
+            this.currentPriceData.c = trade.p;
+            this.cdr.detectChanges();
+          }
+        });
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  subscribeSymbol(symbol: string) {
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      this.socket.send(JSON.stringify({ type: 'subscribe', symbol: symbol }));
+    }
+  }
+
+  unsubscribeSymbol(symbol: string) {
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      this.socket.send(JSON.stringify({ type: 'unsubscribe', symbol: symbol }));
+    }
+  }
+
+  initDashboard() {
+    this.selectedDate = new Date();
+    this.showSearchModal = false;
+    this.searchResults = [];
+    
+    this.loadNews();
+    this.loadGlobalSentiment();
+    this.loadTickerPrices();
+    this.updatePrice(this.currentSymbol);
+    this.fetchCalendarData();
+  }
+
+  onSearchFocus() {
+    if (this.searchQuery.length < 1) {
+      this.showPopularAssets();
+    } else {
+      this.showSearchModal = true;
+    }
+  }
+
+  showPopularAssets() {
+    // Cuando está vacío, mostramos nuestros activos principales
+    this.searchResults = this.coins.map(c => ({
+      symbol: c.tech,
+      description: c.symbol,
+      type: 'POPULAR'
+    }));
+    this.showSearchModal = true;
+    this.cdr.detectChanges();
+  }
+
+  onSearchInput(query: string) {
+    this.searchQuery = query;
+    if (query.length < 1) {
+      this.showPopularAssets();
+      return;
+    }
+
+    this.http.get(`https://finnhub.io/api/v1/search?q=${query}&token=${this.apiKey}`)
+      .subscribe((res: any) => {
+        this.searchResults = (res.result || []).slice(0, 10);
+        this.showSearchModal = true;
+        this.cdr.detectChanges();
+      });
+  }
+
+  selectResult(result: any) {
+    this.onSymbolSearch(result.symbol);
+    this.showSearchModal = false;
+    this.searchQuery = '';
+    // Limpiamos el input físicamente en el HTML se hace con binding
   }
 
   loadAllData() {
-    this.updatePrice(this.currentSymbol);
-    this.loadTickerPrices();
-    this.loadGlobalSentiment();
-    this.loadNews();
-    this.fetchCalendarData();
+    this.initDashboard();
   }
 
   ngAfterViewInit() {
     this.loadTradingViewWidget(this.currentSymbol);
   }
 
-<<<<<<< HEAD
-  // Símbolo dinámico inteligente
   formatDisplaySymbol(symbol: string) {
     if (symbol.includes('BTC') || symbol.includes('ETH') || symbol.includes('USD')) {
        return symbol.replace('USD', ' / USD').replace('BINANCE:', '').replace('FX_IDC:', '').replace(':', ' / ');
     }
-    // Si es un Stock o Índice (ej: AAPL, SPX) lo dejamos limpio
     return symbol.split(':').pop() || symbol;
   }
 
   onSymbolSearch(value: string) {
     if (!value) return;
     let formattedSymbol = value.toUpperCase().trim();
+    
+    // Desuscribimos del anterior si no está en el ticker constante
+    if (!this.coins.some(c => c.tech === this.currentSymbol)) {
+      this.unsubscribeSymbol(this.currentSymbol);
+    }
+
     this.currentSymbol = formattedSymbol;
     this.displaySymbol = this.formatDisplaySymbol(this.currentSymbol);
-    this.loadTradingViewWidget(this.currentSymbol);
+    
+    // Suscribimos al nuevo símbolo para tiempo real
+    this.subscribeSymbol(this.currentSymbol);
+
     this.updatePrice(this.currentSymbol);
+    this.loadTradingViewWidget(this.currentSymbol);
+    this.cdr.detectChanges();
   }
 
-  // CONEXIÓN FINNHUB REAL
   updatePrice(symbol: string) {
-    const cleanSym = symbol.includes(':') ? symbol : symbol; 
-    this.http.get(`https://finnhub.io/api/v1/quote?symbol=${cleanSym}&token=${this.apiKey}`)
+    this.http.get(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${this.apiKey}`)
       .subscribe((data: any) => {
+        // Aseguramos que si no hay datos (0), mostramos algo coherente o esperamos el siguiente tick
         this.currentPriceData = data;
+        this.cdr.detectChanges();
       });
   }
 
@@ -111,6 +219,7 @@ export class MarketsComponent implements OnInit, AfterViewInit {
         .subscribe((data: any) => {
           coin.price = data.c;
           coin.change = data.dp;
+          this.cdr.detectChanges();
         });
     });
   }
@@ -119,9 +228,10 @@ export class MarketsComponent implements OnInit, AfterViewInit {
     this.http.get('https://api.alternative.me/fng/').subscribe((res: any) => {
       this.sentimentData = res.data[0];
       const date = new Date();
-      this.lastSentimentUpdate = date.toLocaleString('en-US', { 
-        month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true 
-      }).replace(',', ' at') + ' ET';
+      this.lastSentimentUpdate = date.toLocaleString('es-ES', { 
+        month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false 
+      });
+      this.cdr.detectChanges();
     });
   }
 
@@ -129,21 +239,37 @@ export class MarketsComponent implements OnInit, AfterViewInit {
     this.http.get(`https://finnhub.io/api/v1/news?category=general&token=${this.apiKey}`)
       .subscribe((data: any) => {
         this.marketNews = data.slice(0, 8);
+        this.cdr.detectChanges();
       });
   }
 
   fetchCalendarData() {
-    const date = this.selectedDate.toISOString().split('T')[0];
-    this.http.get(`https://finnhub.io/api/v1/calendar/economic?from=${date}&to=${date}&token=${this.apiKey}`)
+    const year = this.selectedDate.getFullYear();
+    const month = String(this.selectedDate.getMonth() + 1).padStart(2, '0');
+    const day = String(this.selectedDate.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+
+    this.http.get(`https://finnhub.io/api/v1/calendar/economic?from=${dateStr}&to=${dateStr}&token=${this.apiKey}`)
       .subscribe((res: any) => {
-        this.economicEvents = res.economicCalendar || [];
+        this.economicEvents = (res.economicCalendar || []).map((event: any) => {
+          const impactMap: { [key: string]: number } = { 'low': 1, 'med': 2, 'medium': 2, 'high': 3 };
+          return {
+            ...event,
+            impact: impactMap[event.impact?.toLowerCase()] || 1
+          };
+        });
         this.applyFilters();
+        this.cdr.detectChanges();
       });
   }
 
-  // --- MÉTODOS TRADINGVIEW ---
-=======
->>>>>>> dev
+  applyFilters() {
+    this.filteredEvents = [...this.economicEvents].sort((a, b) => {
+      if (b.impact !== a.impact) return b.impact - a.impact;
+      return (a.time || '').localeCompare(b.time || '');
+    });
+  }
+
   loadTradingViewWidget(symbol: string): void {
     new TradingView.widget({
       "container_id": "tv_chart_container",
@@ -155,100 +281,16 @@ export class MarketsComponent implements OnInit, AfterViewInit {
       "style": "1",
       "locale": "es",
       "enable_publishing": false,
-<<<<<<< HEAD
       "allow_symbol_change": false, 
       "header_widget_buttons": false,
       "top_toolbar": false,
       "details": false, 
       "hotlist": false,
       "calendar": false,
-=======
-      "withdateranges": true,
-      "hide_side_toolbar": false,
-      "allow_symbol_change": false, // Limpieza: quitamos buscador interno
-      "header_widget_buttons": false, // Limpieza: quitamos botones de cabecera
-      "top_toolbar": false, // Limpieza: quitamos toda la barra superior del widget
-      "details": true,
-      "hotlist": true,
-      "calendar": true,
->>>>>>> dev
       "show_popup_button": true,
       "popup_width": "1000",
       "popup_height": "650"
     });
-  }
-
-<<<<<<< HEAD
-  applyFilters() {
-    // Ordenamos por impacto para asegurar visibilidad
-    this.filteredEvents = this.economicEvents.sort((a, b) => b.impact - a.impact);
-=======
-  onSymbolSearch(value: string) {
-    if (!value) return;
-    let formattedSymbol = value.toUpperCase().trim();
-    if (!formattedSymbol.includes(':') && formattedSymbol.length <= 4) {
-      formattedSymbol = `${formattedSymbol}USD`;
-    }
-    this.currentSymbol = formattedSymbol;
-    this.displaySymbol = this.currentSymbol.replace('USD', ' / USD').replace(':', ' / ');
-    this.loadTradingViewWidget(this.currentSymbol);
-    this.updatePrice(this.currentSymbol);
-  }
-
-  updatePrice(symbol: string) {
-    this.marketService.getSymbolPrice(symbol).subscribe(data => {
-      this.currentPriceData = data;
-    });
-  }
-
-  loadTickerData() {
-    const tickerSymbols = ['BINANCE:BTCUSDT', 'FX_IDC:EURUSD', 'OANDA:XAUUSD', 'FOREXCOM:SPXUSD'];
-    tickerSymbols.forEach((sym, index) => {
-      this.marketService.getSymbolPrice(sym).subscribe(data => {
-        this.tickerData[index].price = data.c;
-        this.tickerData[index].change = data.dp;
-        this.tickerData[index].up = data.dp >= 0;
-      });
-    });
-  }
-
-  loadSentiment() {
-    this.marketService.getGlobalSentiment().subscribe((res: any) => {
-      this.sentimentData = res.data[0];
-      // Formateo exacto: Apr 20 at 2:36:46 PM ET
-      const date = new Date();
-      this.lastSentimentUpdate = date.toLocaleString('en-US', { 
-        month: 'short', 
-        day: '2-digit', 
-        hour: '2-digit', 
-        minute: '2-digit', 
-        second: '2-digit', 
-        hour12: true 
-      }).replace(',', ' at') + ' ET';
-    });
-  }
-
-  loadNews() {
-    this.marketService.getMarketNews().subscribe(data => {
-      this.marketNews = data.slice(0, 5);
-    });
-  }
-
-  fetchCalendar() {
-    const dateStr = this.selectedDate.toISOString().split('T')[0];
-    this.marketService.getEconomicCalendar(dateStr, dateStr).subscribe(data => {
-      this.economicEvents = data.economicCalendar || [];
-      this.applyFilters();
-    });
-  }
-
-  applyFilters() {
-    this.filteredEvents = this.economicEvents.filter(event => {
-      const impactMap: any = { 1: 'low', 2: 'medium', 3: 'high' };
-      const eventImpact = impactMap[event.impact] || 'low';
-      return ['high', 'medium', 'low'].includes(eventImpact);
-    });
->>>>>>> dev
   }
 
   changeDate(days: number) {
