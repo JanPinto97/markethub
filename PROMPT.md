@@ -1,195 +1,224 @@
-# PROMPT 2 — Community Frontend: Sidebar Esquerra
+# PROMPT 4 — Perfil públic d'usuari (`/profile/:username`)
 
-## Context
+## Abans de començar
 
-Continuem amb el frontend de `/community` de **MarketHub**. El Prompt 1 ja ha creat
-l'esquelet de la pàgina amb el layout de 3 columnes. Ara implementem la **sidebar esquerra**
-amb lògica real: dades de l'API, navegació funcional i interaccions.
-
-Llegeix `frontend/DESIGN.md` i `frontend/CLAUDE.md` abans d'escriure cap línia de codi.
-Tot el CSS ha d'usar les variables del sistema de disseny.
+1. Llegeix `frontend/CLAUDE.md` — estructura de components i convencions del projecte.
+2. Llegeix `frontend/DESIGN.md` — tots els tokens CSS. Cap valor hardcoded de color, font o espaiat.
+3. Llegeix `backend/CLAUDE.md` — endpoints disponibles i models.
 
 ---
 
-## Objectiu
+## Tasca
 
-Implementar la sidebar esquerra completament funcional, connectada a l'API,
-amb els estats corresponents (autenticat / no autenticat, comunitats buides, topics buits).
-
----
-
-## Estructura de la sidebar
-
-```
-┌─────────────────────────┐
-│  🏠 Home                │  ← Navegació principal
-├─────────────────────────┤
-│  MY COMMUNITIES         │  ← Secció 2
-│  · Gold Bugs [Public]   │
-│  · Whale Alerts [Priv.] │
-├─────────────────────────┤
-│  TOPICS                 │  ← Secció 3
-│  · Gold                 │
-│  · Crypto               │
-│  [+ Add Topics]         │
-├─────────────────────────┤
-│                         │
-│  [Create Community]     │  ← Zona inferior
-└─────────────────────────┘
-```
+Crear la pàgina pública de perfil d'usuari a la ruta `/profile/:username`.
 
 ---
 
-## Secció 1 — Navegació principal
+## Ruta Angular
 
-Un sol element de navegació:
-
-- **Home** amb icona de casa. Sempre visible. `routerLink="/community"`.
-- Estil "actiu" quan estem a la ruta `/community` (usa `routerLinkActive`).
-
----
-
-## Secció 2 — My Communities
-
-**Títol:** `MY COMMUNITIES`
-
-**Dades:** Crida a l'API per obtenir les comunitats de l'usuari autenticat.
-
-- Endpoint: `GET /api/communities/my` (retorna llista de comunitats públiques
-  i privades de les quals l'usuari és membre).
-- Cada item mostra:
-  - Cercle de color amb la inicial del nom de la comunitat (color generat
-    a partir del nom, consistent, no aleatori en cada render).
-  - Nom de la comunitat.
-  - Etiqueta `[Public]` o `[Private]` al costat del nom, en text petit i discret.
-  - `routerLink` a `/community/c/:communityId` (ruta que no implementem ara,
-    però el link ha d'existir).
-
-**Estats:**
-
-- **Carregant:** placeholder/skeleton de 2-3 items.
-- **Sense comunitats:** text discret "You haven't joined any community yet."
-- **Amb comunitats:** llista completa sense límit de scroll.
-- **No autenticat:** no es mostra aquesta secció.
-
----
-
-## Secció 3 — Topics
-
-**Títol:** `TOPICS`
-
-**Dades:** Els topics els gestiona l'usuari localment (quins ha ancorat a la sidebar).
-Es guarden a `localStorage` com a llista d'IDs. En carregar, es fa una crida
-per obtenir els detalls d'aquests topics.
-
-- Endpoint: `GET /api/topics?ids=id1,id2,id3`
-
-Cada topic a la llista mostra:
-
-- **Icona de categoria** a l'esquerra. Assigna una icona o color per categoria:
-  - `CORE_MARKETS` → 📈 o color blau
-  - `ECONOMIA_I_MACRO` → 🏦 o color verd
-  - `ASSETS_ESPECIFICS` → 💼 o color taronja
-  - `TRADING_I_INVERSIO` → ⚡ o color groc
-  - Pots usar emojis, SVG inline simples o lletres amb color de fons. El que
-    quedi més net visualment.
-- Nom del topic.
-- `routerLink` a `/community/t/:topicId` (ruta futura, el link ha d'existir).
-
-**Botó "+ Add Topics":**
-
-- Apareix sempre: si no hi ha topics, és l'únic element de la secció;
-  si n'hi ha, apareix al final de la llista.
-- De moment, en clicar, mostra un `console.log('open topic search')`.
-  El modal/popup el farem en un prompt posterior.
-
-**Estats:**
-
-- **Sense topics ancorats:** mostra directament el botó `+ Add Topics`.
-- **Amb topics:** llista + botó al final.
-- **No autenticat:** la secció es mostra igual (els topics son públics),
-  però el botó "+ Add Topics" no apareix.
-
----
-
-## Secció 4 — Zona inferior
-
-Situada a la part baixa de la sidebar (`margin-top: auto` si la sidebar
-és un flex container en columna).
-
-**Contingut:**
-
-- Botó `Create Community` prominent, estil CTA (call to action).
-- En clicar obre un modal/formulari. **De moment:** `console.log('open create community modal')`.
-- **Visibilitat:** Només visible si l'usuari està autenticat. Si no ho està,
-  no es mostra res en aquesta zona (o es pot mostrar un missatge "Join to create communities").
-
----
-
-## Servei Angular a crear o ampliar
-
-Crea o amplia `CommunityService` a `frontend/src/app/features/community/`:
+Afegir a `app.routes.ts`:
 
 ```typescript
-// Mètodes necessaris per a aquest prompt:
-getMyCommunitites(): Observable<Community[]>
-getTopicsByIds(ids: string[]): Observable<Topic[]>
+{
+  path: 'profile/:username',
+  loadComponent: () => import('./features/profile/profile.component')
+    .then(m => m.ProfileComponent)
+}
 ```
-
-Usa `ApiService` existent per fer les crides HTTP. No implementis la lògica
-de gestió d'errors complexa, però sí que el component mostri l'estat de
-"carregant" i "error genèric" si la crida falla.
 
 ---
 
-## Topics al localStorage
+## Estructura de fitxers a crear
+
+```
+frontend/src/app/features/profile/
+├── profile.component.ts
+├── profile.component.html
+├── profile.component.css
+└── profile.service.ts
+```
+
+---
+
+## Endpoints del backend
+
+```
+GET  /api/users/:username              → dades públiques del perfil
+GET  /api/users/:username/posts        → PostX públics (general + public_community)
+GET  /api/users/:username/followers    → llista de followers
+GET  /api/users/:username/following    → llista de following
+POST /api/users/:username/follow       → follow/unfollow toggle
+```
+
+Tots els endpoints retornen 404 si l'usuari no existeix.
+
+---
+
+## Layout de la pàgina
+
+```
+┌─────────────────────────────────────────┐
+│  COVER IMAGE (banner horitzontal)       │
+│  ┌───────┐                              │
+│  │ AVATAR│  Nom / @username             │
+│  └───────┘  Bio                         │
+│             X followers · Y following   │
+│             [Follow] o [Unfollow]        │
+├─────────────────────────────────────────┤
+│  Comunitats públiques (chips/badges)    │
+├─────────────────────────────────────────┤
+│  Feed de posts (PostX)                  │
+│  ...                                    │
+└─────────────────────────────────────────┘
+```
+
+La pàgina **no té sidebars**. És una columna central centrada (max-width consistent amb el feed de `/community`).
+
+---
+
+## Secció 1 — Header del perfil
+
+### Cover image
+
+- Franja horitzontal a la part superior (~200px d'alçada).
+- Si l'usuari té `coverImage` (URL): mostra-la amb `object-fit: cover`.
+- Si no té `coverImage`: fons de color sòlid derivat del username (consistent, no aleatori).
+
+### Avatar
+
+- Cercle superposat sobre el límit inferior del cover image (mig dins, mig fora).
+- Mida: ~90px de diàmetre.
+- Si té `avatar` (URL): mostra'l.
+- Si no: lletra inicial del username, fons de color consistent.
+
+### Informació bàsica
+
+- **Username** prominent.
+- **Bio** si existeix (text secundari). Si no existeix, no ocupa espai.
+- **Followers / Following:** dos valors clicables que obren un modal amb la llista.
+  - `X followers` · `Y following`
+  - En clicar, obre modal (veure Secció 4).
+
+### Botó Follow / Unfollow
+
+- Visible **només si l'usuari autenticat NO és el propietari del perfil**.
+- Si no estàs autenticat i cliques → redirect a `/login`.
+- Si ja segueixes l'usuari → mostra `Unfollow`.
+- Si no el segueixes → mostra `Follow`.
+- Toggle optimista: actualitza el comptador de followers immediatament, reverteix en error.
+- Endpoint: `POST /api/users/:username/follow` (el backend gestiona toggle i retorna `{ following: boolean, followerCount: number }`).
+- Si ets el propietari del perfil: mostra un botó `Edit Profile` que fa `routerLink="/settings"`.
+
+---
+
+## Secció 2 — Comunitats públiques
+
+Llista de comunitats públiques de les quals l'usuari és membre.
+
+- Chips/badges horitzontals: `[Inicial] Nom de la comunitat`.
+- Cada chip és clicable → `routerLink="/community/c/:id"` (ruta futura, el link ha d'existir).
+- Si no és membre de cap comunitat pública → no mostra res (no ocupa espai).
+
+---
+
+## Secció 3 — Feed de posts
+
+Llista de `PostX` de l'usuari. **Regles estrictes:**
+
+- Inclou: `origin: 'general'` i `origin: 'public_community'`.
+- Exclou: `origin: 'private_community'` i `PostReddit`.
+
+Endpoint: `GET /api/users/:username/posts?page=1&limit=10`
+
+- Usa el component `PostCardComponent` existent (ja creat al Prompt 3). No en crees un de nou.
+- Paginació: infinite scroll igual que al feed de `/community` (IntersectionObserver).
+- Si l'usuari no té posts públics → mostra text discret: `"No public posts yet."`.
+
+---
+
+## Secció 4 — Modal Followers / Following
+
+En clicar "X followers" o "Y following" s'obre un modal simple:
+
+- Dues pestanyes: `Followers` | `Following`.
+- Cada fila: avatar + username clicable (`routerLink="/profile/:username"`).
+- Paginació simple (Load more), no infinite scroll.
+- Tanca en clicar fora del modal o en una X.
+
+Endpoints:
+
+```
+GET /api/users/:username/followers?page=1&limit=20
+GET /api/users/:username/following?page=1&limit=20
+```
+
+---
+
+## Estats a gestionar
+
+| Situació               | Comportament                                |
+| ---------------------- | ------------------------------------------- |
+| Perfil no trobat (404) | Pàgina d'error inline: "User not found."    |
+| Carregant              | Skeleton del header (cover + avatar + info) |
+| Posts carregant        | Skeleton de 3 targetes                      |
+| Usuari sense posts     | Missatge "No public posts yet."             |
+| Usuari sense bio       | Camp bio invisible (no placeholder)         |
+| Usuari sense cover     | Color de fons derivat del username          |
+
+---
+
+## ProfileService — mètodes a implementar
 
 ```typescript
-// Clau: 'mh_pinned_topics'
-// Valor: JSON array d'strings amb els IDs, ex: '["id1","id2"]'
-
-// Helpers a implementar (poden ser mètodes del servei o utils):
-getPinnedTopicIds(): string[]
-addPinnedTopic(id: string): void
-removePinnedTopic(id: string): void
+getProfile(username: string): Observable<UserProfile>
+getUserPosts(username: string, page: number): Observable<PostX[]>
+getFollowers(username: string, page: number): Observable<UserSummary[]>
+getFollowing(username: string, page: number): Observable<UserSummary[]>
+toggleFollow(username: string): Observable<{ following: boolean; followerCount: number }>
 ```
 
 ---
 
-## Fitxers a crear o modificar
+## Tipus TypeScript
 
-```
-frontend/src/app/features/community/
-├── community.component.ts         → injecta CommunityService, crida getMyCommunitites()
-├── community.component.html       → afegeix la lògica @if/@for a la sidebar
-├── community.component.css        → estils de la sidebar
-└── services/
-    └── community.service.ts       → nou, amb els mètodes descrits
-```
+```typescript
+interface UserProfile {
+  username: string;
+  avatar?: string;
+  coverImage?: string;
+  bio?: string;
+  followerCount: number;
+  followingCount: number;
+  isFollowing: boolean; // calculat pel backend per l'usuari autenticat
+  publicCommunities: { id: string; name: string }[];
+}
 
-Si en el Prompt 1 la sidebar era un component fill separat, modifica'l.
-Si era tot en un sol component, pot continuar sent-ho.
+interface UserSummary {
+  username: string;
+  avatar?: string;
+}
+```
 
 ---
 
-## Regles
+## Regles d'implementació
 
-- CSS custom pur, variables del `DESIGN.md`.
-- Usa `@if` i `@for` d'Angular 17+ (sintaxi nova, no `*ngIf` ni `*ngFor`).
-- Usa `inject()` en comptes de constructor injection on sigui possible.
-- El component ha de ser `standalone: true`.
-- No implementis cap modal ni popup real en aquest prompt (només `console.log`).
-- No implementis la pàgina de detall de comunitat ni de topic.
+- CSS custom pur. Totes les variables del `DESIGN.md`.
+- Sintaxi Angular 17+: `@if`, `@for`, `inject()`, `standalone: true`.
+- `PostCardComponent` s'importa i es reutilitza directament. No duplicar lògica de targeta de post.
+- El modal de followers/following pot ser un component inline dins `profile.component.html` controlat per un flag `showFollowersModal: boolean`. No cal un component separat.
+- El color derivat del username (per avatar i cover sense imatge) ha de ser la mateixa funció utilitària que ja s'usa a `PostCardComponent`. Si existeix en un fitxer utils, importa-la. Si no, extreu-la a `src/app/shared/utils/color.utils.ts` i actualitza totes les referències.
 
 ---
 
 ## Resultat esperat
 
-Al final d'aquest prompt, la sidebar esquerra ha de:
-
-- ✅ Mostrar les comunitats reals de l'usuari (o estat buit)
-- ✅ Mostrar els topics ancorats des de localStorage (o botó si no n'hi ha)
-- ✅ Tenir el botó "Create Community" visible només si autenticat
-- ✅ Gestionar correctament els estats: carregant, buit, amb dades, no autenticat
-- ✅ Tots els links creats amb `routerLink` (encara que la ruta destí no existeixi)
-- ✅ CSS cohesiu amb el sistema de disseny del projecte
+- ✅ Ruta `/profile/:username` creada i accessible
+- ✅ Header amb cover, avatar, bio, followers/following i botó follow/unfollow
+- ✅ Follow/unfollow amb optimistic update
+- ✅ Comunitats públiques com a chips clicables
+- ✅ Feed de PostX reutilitzant `PostCardComponent` + infinite scroll
+- ✅ Modal de followers/following amb pestanyes
+- ✅ Gestió de tots els estats (404, carregant, buit)
+- ✅ El botó "Edit Profile" apareix si ets el propietari
+- ✅ Cap valor de CSS hardcoded

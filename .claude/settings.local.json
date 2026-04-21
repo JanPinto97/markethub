@@ -28,7 +28,11 @@
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); styles=d['projects']['frontend']['architect']['build']['options'].get\\('styles',[]\\); print\\(styles\\)\")",
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); s=d['projects']['frontend']['architect']['build']['options'].get\\('styles',[]\\); print\\(s\\)\")",
       "Bash(python *)",
-      "Bash(docker-compose *)"
+      "Bash(docker-compose *)",
+      "Bash(npx --no-install tsc --noEmit --skipLibCheck -p .)",
+      "Bash(npx --no-install tsc --noEmit --skipLibCheck -p tsconfig.json)",
+      "Bash(npx --no-install tsc --noEmit --skipLibCheck -p tsconfig.app.json)",
+      "Bash(npx --no-install ng build --configuration development)"
     ]
   }
 }

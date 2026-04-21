@@ -33,7 +33,8 @@ exports.createPost = async (req, res, next) => {
       community: null,
       communityType: null,
     });
-    res.status(201).json({ success: true, post: post.toPublicJSON() });
+    await post.populate('author', 'username avatar role');
+    res.status(201).json({ success: true, post: post.toPublicJSON(req.user.id) });
   } catch (err) { next(err); }
 };
 
@@ -68,9 +69,10 @@ exports.getFeed = async (req, res, next) => {
     ]);
 
     const totalPages = Math.ceil(total / limit);
+    const uid = req.user ? req.user.id : null;
     res.json({
       success: true,
-      posts: posts.map(p => p.toPublicJSON()),
+      posts: posts.map(p => p.toPublicJSON(uid)),
       pagination: { page, limit, total, totalPages, hasNextPage: page < totalPages, hasPrevPage: page > 1 },
     });
   } catch (err) { next(err); }
@@ -87,7 +89,8 @@ exports.getPostById = async (req, res, next) => {
       if (!community || !community.isMember(req.user.id)) return fail(res, 403, 'Access denied');
     }
 
-    res.json({ success: true, post: post.toPublicJSON() });
+    const uid = req.user ? req.user.id : null;
+    res.json({ success: true, post: post.toPublicJSON(uid) });
   } catch (err) { next(err); }
 };
 

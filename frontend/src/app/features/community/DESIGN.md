@@ -127,3 +127,33 @@ These extend the global system above for the Community page layout.
 ### Community Label on Posts
 
 - Posts from communities show a label in `--secondary` (#006c49), `--text-body-sm`, `--weight-medium`.
+
+### Post Card (PostCardComponent) — Prompt 3
+
+- Avatar: 40px circle. Initial fallback uses a hashed HSL color (55% saturation, 45% lightness) for consistent per-user tint.
+- Author name: `--weight-semibold`, `--text-body-md`, underline on hover (router-link to `/profile/:username`).
+- Handle, dot separator, relative time: `--text-body-sm`, `--on-surface-variant`.
+- Community badge (when `origin === 'public_community'`): `--secondary`, `--text-body-sm`, `--weight-medium`, prefix "in ".
+- Three-dot menu: `--on-surface-variant`, opacity 0 by default, opacity 1 on card hover or button focus. Menu panel uses `--surface-container-lowest` + `box-shadow: 0 4px 16px rgba(0,0,0,0.15)` (acceptable floating element exception, glass rule not used here for legibility).
+- Menu danger action: `--error` color (#dc2626 fallback).
+- Body text: `white-space: pre-wrap`, `word-wrap: break-word`, line-height 1.6.
+- "See more" button at 280 chars: `--secondary`, underline on hover.
+- Post media: `border-radius: --radius-md`, `max-height: 400px`, `object-fit: cover`.
+- Like button states: default `--on-surface-variant`; liked → `--secondary` with filled icon.
+- Comments section: top separator uses background shift — `border-top: 1px solid --surface-container-high` (exception to the No-Line Rule granted for the intra-card separator between post and comments, as the card already reserves tonal layering for sectioning).
+- Comment avatar: 32px circle, same initial-color hashing as author avatar.
+- Comment input: same styling as main post input (`--surface-container-low` background, inset secondary ring on focus).
+
+### Create Post Card — Prompt 3
+
+- Textarea auto-resizes between 40px and 200px (`min-height`/`max-height` + JS `scrollHeight` on input).
+- Char counter appears only when text length > 0; turns `--error` + `--weight-semibold` past 360/400.
+- Image preview thumbnail: max 240px wide, 180px tall, `object-fit: cover`, `--radius-md`. Remove button is a 24px circle with `rgba(0,0,0,0.6)` background and white "×".
+- Error message under the card: `--surface-container-low` background, `--error` text, `--text-body-sm`.
+- Unauthenticated state: input uses `readonly` text input with placeholder "Sign in to join the conversation"; any focus/click redirects to `/login`.
+
+### Feed States
+
+- Loading, empty, error: centered text in a `--surface-container-lowest` card with generous padding (`--spacing-6`).
+- End-of-feed message: `You're all caught up 🎉` in `--on-surface-variant`.
+- Infinite scroll: `IntersectionObserver` with `200px` rootMargin on a sentinel div at the feed bottom; spinner text "Loading more…" while fetching the next page.

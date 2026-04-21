@@ -33,14 +33,17 @@ postXSchema.statics.calculateTrendingScore = function (post) {
   return base * decay;
 };
 
-postXSchema.methods.toPublicJSON = function () {
+postXSchema.methods.toPublicJSON = function (currentUserId = null) {
+  const likes = this.likes || [];
+  const liked = currentUserId ? likes.some(id => id.toString() === currentUserId.toString()) : false;
   return {
     id: this._id,
     author: this.author,
     text: this.text,
     mediaUrl: this.mediaUrl,
     mediaType: this.mediaType,
-    likesCount: this.likes ? this.likes.length : 0,
+    likesCount: likes.length,
+    liked,
     commentCount: this.commentCount,
     origin: this.origin,
     community: this.community,

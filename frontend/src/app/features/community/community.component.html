@@ -40,27 +40,27 @@
       </a>
     </nav>
 
-    @if (auth.isAuthenticated()) {
-      <div class="sidebar-section">
-        <h3 class="section-title">MY COMMUNITIES</h3>
-        @if (communitiesLoading()) {
-          <div class="skeleton-item"></div>
-          <div class="skeleton-item"></div>
-          <div class="skeleton-item short"></div>
-        } @else if (communitiesError()) {
-          <p class="sidebar-empty">Could not load communities.</p>
-        } @else if (communities().length === 0) {
-          <p class="sidebar-empty">You haven't joined any community yet.</p>
-        } @else {
-          @for (comm of communities(); track comm.id) {
-            <a [routerLink]="'/community/c/' + comm.id" class="community-item">
-              <span class="community-initial" [style.background-color]="getInitialColor(comm.name)">{{ comm.name[0].toUpperCase() }}</span>
-              <span class="community-name">{{ comm.name }} <span class="community-tag">[{{ comm.type === 'public' ? 'Public' : 'Private' }}]</span></span>
-            </a>
-          }
+    <div class="sidebar-section">
+      <h3 class="section-title">MY COMMUNITIES</h3>
+      @if (!auth.isAuthenticated()) {
+        <p class="sidebar-empty">Sign in to see your communities.</p>
+      } @else if (communitiesLoading()) {
+        <div class="skeleton-item"></div>
+        <div class="skeleton-item"></div>
+        <div class="skeleton-item short"></div>
+      } @else if (communitiesError()) {
+        <p class="sidebar-empty">Could not load communities.</p>
+      } @else if (communities().length === 0) {
+        <p class="sidebar-empty">You haven't joined any community yet.</p>
+      } @else {
+        @for (comm of communities(); track comm.id) {
+          <a [routerLink]="'/community/c/' + comm.id" class="community-item">
+            <span class="community-initial" [style.background-color]="getInitialColor(comm.name)">{{ comm.name[0].toUpperCase() }}</span>
+            <span class="community-name">{{ comm.name }} <span class="community-tag">[{{ comm.type === 'public' ? 'Public' : 'Private' }}]</span></span>
+          </a>
         }
-      </div>
-    }
+      }
+    </div>
 
     <div class="sidebar-section">
       <h3 class="section-title">TOPICS</h3>
@@ -75,17 +75,11 @@
           </a>
         }
       }
-      @if (auth.isAuthenticated()) {
-        <button class="add-topics-btn" (click)="openTopicSearch()">+ Add Topics</button>
-      }
+      <button class="add-topics-btn" (click)="openTopicSearch()">+ Add Topics</button>
     </div>
 
     <div class="sidebar-bottom">
-      @if (auth.isAuthenticated()) {
-        <button class="create-community-btn" (click)="openCreateCommunity()">Create Community</button>
-      } @else {
-        <p class="sidebar-empty">Join to create communities</p>
-      }
+      <button class="create-community-btn" (click)="openCreateCommunity()">Create Community</button>
     </div>
   </aside>
 
@@ -108,7 +102,7 @@
     </div>
 
     <!-- Create post box -->
-    <div class="create-post-card">
+    <div class="create-post-card" [class.disabled]="!auth.isAuthenticated()">
       <div class="create-post-top">
         <div class="post-avatar-small">
           @if (auth.currentUser()?.avatar) {
@@ -117,110 +111,87 @@
             <div class="avatar-placeholder-sm"></div>
           }
         </div>
-        <input type="text" class="post-input" placeholder="What's on your mind regarding the markets?" />
+        @if (auth.isAuthenticated()) {
+          <textarea
+            #postTextarea
+            class="post-input post-textarea"
+            placeholder="What's on your mind regarding the markets?"
+            rows="1"
+            maxlength="400"
+            [value]="postText()"
+            (input)="onTextInput($event)"
+          ></textarea>
+        } @else {
+          <input
+            type="text"
+            class="post-input"
+            placeholder="Sign in to join the conversation"
+            readonly
+            (focus)="onCreateFocus()"
+            (click)="onCreateFocus()"
+          />
+        }
       </div>
+
+      @if (mediaPreview()) {
+        <div class="media-preview">
+          <img [src]="mediaPreview()!" alt="Preview" />
+          <button class="media-remove" (click)="removeMedia()" title="Remove">×</button>
+        </div>
+      }
+
       <div class="create-post-actions">
         <div class="post-action-icons">
-          <button class="icon-btn" title="Image">
+          <input #fileInput type="file" accept="image/jpeg,image/png,image/gif,image/webp" hidden (change)="onFileSelected($event)" />
+          <button class="icon-btn" title="Image" (click)="triggerFilePicker(fileInput)" [disabled]="!auth.isAuthenticated()">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
             </svg>
           </button>
-          <button class="icon-btn" title="Emoji">
+          <button class="icon-btn" title="Emoji" (click)="onEmojiClick()" [disabled]="!auth.isAuthenticated()">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/>
             </svg>
           </button>
+          @if (auth.isAuthenticated() && postText().length > 0) {
+            <span class="char-counter" [class.near-limit]="postText().length > 360">{{ postText().length }}/400</span>
+          }
         </div>
-        <button class="post-btn">Post</button>
+        @if (auth.isAuthenticated()) {
+          <button class="post-btn" (click)="submitPost()" [disabled]="!postText().trim() || creating()">
+            {{ creating() ? 'Posting…' : 'Post' }}
+          </button>
+        } @else {
+          <button class="post-btn" (click)="requireAuth()">Post</button>
+        }
       </div>
+
+      @if (createError()) {
+        <div class="create-error">{{ createError() }}</div>
+      }
     </div>
 
-    <!-- Placeholder posts -->
-    <article class="post-card">
-      <div class="post-header">
-        <div class="post-avatar"><div class="avatar-placeholder-sm"></div></div>
-        <div class="post-meta">
-          <span class="post-author">Marcus Macro</span>
-          <span class="post-handle">&#64;marcus_macro</span>
-          <span class="post-time">· 4h ago</span>
-        </div>
-      </div>
-      <div class="post-body">
-        We're entering a phase where central bank transparency will be the primary driver of volatility. Our latest analysis suggests a 65% probability of a soft landing, but private sector debt remains a structural headwind.
-      </div>
-      <div class="post-footer">
-        <button class="post-action">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-          </svg>
-          <span>1.2k</span>
-        </button>
-        <button class="post-action">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-          </svg>
-          <span>342</span>
-        </button>
-      </div>
-    </article>
+    <!-- Feed -->
+    @if (feedLoading() && posts().length === 0) {
+      <div class="feed-state">Loading posts…</div>
+    } @else if (feedError()) {
+      <div class="feed-state error">Could not load feed. Please try again.</div>
+    } @else if (posts().length === 0) {
+      <div class="feed-state">No posts yet. Be the first to share something!</div>
+    } @else {
+      @for (post of posts(); track post.id) {
+        <app-post-card [post]="post" (deleted)="onPostDeleted($event)"></app-post-card>
+      }
+    }
 
-    <article class="post-card">
-      <div class="post-header">
-        <div class="post-avatar"><div class="avatar-placeholder-sm"></div></div>
-        <div class="post-meta">
-          <span class="post-author">Sarah Chen</span>
-          <span class="post-handle">&#64;sarah_quant</span>
-          <span class="post-time">· 12m</span>
-        </div>
-      </div>
-      <div class="post-community-label">Gold Bugs Community</div>
-      <div class="post-body">
-        Is anyone else seeing the massive divergence in gold spot prices vs. mining equities? It feels like we're approaching a spring-loaded move. I'm increasing my exposure to $GDX and $NEM. Thoughts?
-      </div>
-      <div class="post-footer">
-        <button class="post-action">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-          </svg>
-          <span>452</span>
-        </button>
-        <button class="post-action">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-          </svg>
-          <span>24</span>
-        </button>
-      </div>
-    </article>
-
-    <article class="post-card">
-      <div class="post-header">
-        <div class="post-avatar"><div class="avatar-placeholder-sm"></div></div>
-        <div class="post-meta">
-          <span class="post-author">Jess Gold</span>
-          <span class="post-handle">&#64;jess_gold</span>
-          <span class="post-time">· 2h ago</span>
-        </div>
-      </div>
-      <div class="post-body">
-        The Fed minutes were surprisingly hawkish. Market is pricing in two more rate hikes before year-end. Bond yields are responding accordingly — 10Y at 4.8%. This will pressure growth stocks significantly.
-      </div>
-      <div class="post-footer">
-        <button class="post-action">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-          </svg>
-          <span>89</span>
-        </button>
-        <button class="post-action">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-          </svg>
-          <span>15</span>
-        </button>
-      </div>
-    </article>
+    <!-- Infinite scroll sentinel -->
+    <div #feedSentinel class="feed-sentinel">
+      @if (loadingMore()) {
+        <div class="feed-spinner">Loading more…</div>
+      } @else if (!hasMore() && posts().length > 0) {
+        <div class="feed-end">You're all caught up 🎉</div>
+      }
+    </div>
   </main>
 
   <!-- SIDEBAR RIGHT -->

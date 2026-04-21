@@ -27,6 +27,7 @@ export class MarketsComponent implements OnInit, AfterViewInit {
   selectedDate: Date = new Date();
   lastSentimentUpdate: string = '';
   
+<<<<<<< HEAD
   // Ticker extendido y real
   coins: any[] = [
     { symbol: 'BTC/USD', tech: 'BINANCE:BTCUSDT', price: 0, change: 0 },
@@ -39,6 +40,13 @@ export class MarketsComponent implements OnInit, AfterViewInit {
     { symbol: 'NVDA', tech: 'NVDA', price: 0, change: 0 },
     { symbol: 'TSLA', tech: 'TSLA', price: 0, change: 0 },
     { symbol: 'CRUDE OIL', tech: 'TVC:USOIL', price: 0, change: 0 }
+=======
+  tickerData = [
+    { symbol: 'BTC/USD', price: 0, change: 0, up: true },
+    { symbol: 'EUR/USD', price: 0, change: 0, up: true },
+    { symbol: 'GOLD', price: 0, change: 0, up: false },
+    { symbol: 'S&P 500', price: 0, change: 0, up: true }
+>>>>>>> dev
   ];
 
   economicEvents: any[] = [];
@@ -46,7 +54,11 @@ export class MarketsComponent implements OnInit, AfterViewInit {
   marketNews: any[] = [];
   sentimentData: any = { value: 0, value_classification: '...' };
 
+<<<<<<< HEAD
   constructor(private http: HttpClient) {}
+=======
+  constructor(private marketService: MarketService) {}
+>>>>>>> dev
 
   ngOnInit() {
     // Carga inicial masiva
@@ -65,6 +77,7 @@ export class MarketsComponent implements OnInit, AfterViewInit {
     this.loadTradingViewWidget(this.currentSymbol);
   }
 
+<<<<<<< HEAD
   // Símbolo dinámico inteligente
   formatDisplaySymbol(symbol: string) {
     if (symbol.includes('BTC') || symbol.includes('ETH') || symbol.includes('USD')) {
@@ -129,6 +142,8 @@ export class MarketsComponent implements OnInit, AfterViewInit {
   }
 
   // --- MÉTODOS TRADINGVIEW ---
+=======
+>>>>>>> dev
   loadTradingViewWidget(symbol: string): void {
     new TradingView.widget({
       "container_id": "tv_chart_container",
@@ -140,21 +155,100 @@ export class MarketsComponent implements OnInit, AfterViewInit {
       "style": "1",
       "locale": "es",
       "enable_publishing": false,
+<<<<<<< HEAD
       "allow_symbol_change": false, 
       "header_widget_buttons": false,
       "top_toolbar": false,
       "details": false, 
       "hotlist": false,
       "calendar": false,
+=======
+      "withdateranges": true,
+      "hide_side_toolbar": false,
+      "allow_symbol_change": false, // Limpieza: quitamos buscador interno
+      "header_widget_buttons": false, // Limpieza: quitamos botones de cabecera
+      "top_toolbar": false, // Limpieza: quitamos toda la barra superior del widget
+      "details": true,
+      "hotlist": true,
+      "calendar": true,
+>>>>>>> dev
       "show_popup_button": true,
       "popup_width": "1000",
       "popup_height": "650"
     });
   }
 
+<<<<<<< HEAD
   applyFilters() {
     // Ordenamos por impacto para asegurar visibilidad
     this.filteredEvents = this.economicEvents.sort((a, b) => b.impact - a.impact);
+=======
+  onSymbolSearch(value: string) {
+    if (!value) return;
+    let formattedSymbol = value.toUpperCase().trim();
+    if (!formattedSymbol.includes(':') && formattedSymbol.length <= 4) {
+      formattedSymbol = `${formattedSymbol}USD`;
+    }
+    this.currentSymbol = formattedSymbol;
+    this.displaySymbol = this.currentSymbol.replace('USD', ' / USD').replace(':', ' / ');
+    this.loadTradingViewWidget(this.currentSymbol);
+    this.updatePrice(this.currentSymbol);
+  }
+
+  updatePrice(symbol: string) {
+    this.marketService.getSymbolPrice(symbol).subscribe(data => {
+      this.currentPriceData = data;
+    });
+  }
+
+  loadTickerData() {
+    const tickerSymbols = ['BINANCE:BTCUSDT', 'FX_IDC:EURUSD', 'OANDA:XAUUSD', 'FOREXCOM:SPXUSD'];
+    tickerSymbols.forEach((sym, index) => {
+      this.marketService.getSymbolPrice(sym).subscribe(data => {
+        this.tickerData[index].price = data.c;
+        this.tickerData[index].change = data.dp;
+        this.tickerData[index].up = data.dp >= 0;
+      });
+    });
+  }
+
+  loadSentiment() {
+    this.marketService.getGlobalSentiment().subscribe((res: any) => {
+      this.sentimentData = res.data[0];
+      // Formateo exacto: Apr 20 at 2:36:46 PM ET
+      const date = new Date();
+      this.lastSentimentUpdate = date.toLocaleString('en-US', { 
+        month: 'short', 
+        day: '2-digit', 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        second: '2-digit', 
+        hour12: true 
+      }).replace(',', ' at') + ' ET';
+    });
+  }
+
+  loadNews() {
+    this.marketService.getMarketNews().subscribe(data => {
+      this.marketNews = data.slice(0, 5);
+    });
+  }
+
+  fetchCalendar() {
+    const dateStr = this.selectedDate.toISOString().split('T')[0];
+    this.marketService.getEconomicCalendar(dateStr, dateStr).subscribe(data => {
+      this.economicEvents = data.economicCalendar || [];
+      this.applyFilters();
+    });
+  }
+
+  applyFilters() {
+    this.filteredEvents = this.economicEvents.filter(event => {
+      const impactMap: any = { 1: 'low', 2: 'medium', 3: 'high' };
+      const eventImpact = impactMap[event.impact] || 'low';
+      return ['high', 'medium', 'low'].includes(eventImpact);
+    });
+>>>>>>> dev
   }
 
   changeDate(days: number) {
