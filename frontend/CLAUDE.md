@@ -30,6 +30,9 @@ Angular SPA serving the MarketHub UI. Runs on port 4200.
     /community
       community.component.ts → Community page
       DESIGN.md
+    /profile
+      profile.component.ts → Public user profile page
+      profile.service.ts
     /auth
       /login
         login.component.ts
@@ -40,6 +43,8 @@ Angular SPA serving the MarketHub UI. Runs on port 4200.
     /components
       /navbar
         navbar.component.ts → Navigation bar
+    /utils
+      color.utils.ts     → getUsernameColor, getInitial (shared by PostCardComponent, CommunityComponent, ProfileComponent)
 
 /src/styles
   variables.css          → CSS custom properties (colors, spacing, etc.)
@@ -68,11 +73,12 @@ Angular SPA serving the MarketHub UI. Runs on port 4200.
 
 | Path         | Component          | Description       |
 | ------------ | ------------------ | ----------------- |
-| `/`          | HomeComponent      | Landing page      |
-| `/markets`   | MarketsComponent   | Markets dashboard |
-| `/community` | CommunityComponent | Community feed    |
-| `/login`     | LoginComponent     | Login form        |
-| `/register`  | RegisterComponent  | Registration form |
+| `/`                   | HomeComponent      | Landing page           |
+| `/markets`            | MarketsComponent   | Markets dashboard      |
+| `/community`          | CommunityComponent | Community feed         |
+| `/profile/:username`  | ProfileComponent   | Public user profile    |
+| `/login`              | LoginComponent     | Login form             |
+| `/register`           | RegisterComponent  | Registration form      |
 
 ## Running
 
@@ -88,7 +94,8 @@ Angular SPA serving the MarketHub UI. Runs on port 4200.
 
 - HomeComponent, MarketsComponent (scaffolds)
 - CommunityComponent — full 3-column layout with header, left sidebar (nav, communities, topics), central feed, right sidebar (copyright). Own header replaces global navbar. Sidebar left is fully functional: loads user communities from API, loads pinned topics from localStorage, skeleton/empty states, auth-aware visibility. Central feed fully functional: Trending/Following tabs (Following requires auth), create-post card (textarea auto-resize, 400 char counter, image upload with preview, auth-gated), real posts from `/posts/feed` with pagination via IntersectionObserver (200px rootMargin), "You're all caught up 🎉" end state.
-- PostCardComponent — standalone reusable card: header (avatar/initial with consistent HSL color, author name + @handle linking to /profile/:username, relative time "4h ago", community badge for public_community origin, three-dot menu with Edit/Delete/Report by role), body (text with "See more" at 280 chars, optional image at max-height 400px), footer (like with optimistic update + `liked` visual state, comments toggle). Inline comments section: loads via `/posts/:id/comments`, shows 5 at a time with "Load more", new comment input with auth gate and optimistic add. Delete flow uses native confirm + fade-out animation + `deleted` EventEmitter to parent.
+- PostCardComponent — standalone reusable card: header (avatar/initial with consistent HSL color, author name + @handle linking to /profile/:username, relative time "4h ago", community badge for public_community origin, three-dot menu with Edit/Delete/Report by role), body (text with "See more" at 280 chars, optional image at max-height 400px), footer (like with optimistic update + `liked` visual state, comments toggle). Inline comments section: loads via `/posts/:id/comments`, shows 5 at a time with "Load more", new comment input with auth gate and optimistic add. Delete flow uses native confirm + fade-out animation + `deleted` EventEmitter to parent. Username color/initial helpers now come from `/shared/utils/color.utils.ts`.
+- ProfileComponent — public profile at `/profile/:username`. Header: cover image (url or username-derived color, 200px tall), avatar overlay (circle 90px, initial fallback), username, optional bio, follower/following stats (clickable), Follow/Unfollow button with optimistic update via `POST /users/:username/follow` (shows Edit Profile → /settings when owner, redirects to /login when not authed). Chips of public communities linking to `/community/c/:id`. Feed reuses `PostCardComponent` with `GET /users/:username/posts` (only `general` + `public_community`) and IntersectionObserver infinite scroll (200px rootMargin). Inline followers/following modal (tabs + Load more) via `GET /users/:username/followers|following`. States: skeleton (header + 3 post cards), 404 "User not found.", "No public posts yet." empty.
 - LoginComponent — email/password form, calls AuthService.login, redirects to /markets, shows API error (incl. 423 lock message)
 - RegisterComponent — username/email/password form with client validation (email regex, username 3-30, password ≥8), calls AuthService.register
 - NavbarComponent — auth-aware: shows username+avatar+logout when authed, login/register links when not
@@ -101,16 +108,18 @@ Angular SPA serving the MarketHub UI. Runs on port 4200.
 - User model interface (/core/models/user.model.ts)
 - app.config.ts — registers interceptor and `provideAppInitializer` to restore session on startup
 - CommunityService — getMyCommunities(), getTopicsByIds(), pinned topics localStorage helpers, getFeed(mode, page, limit), createPost(text, mediaFile?) via FormData, likePost(id), deletePost(id), getComments(postId), addComment(postId, text). Exports PostX, PostAuthor, PostCommunity, PostComment, FeedResponse interfaces. Uses ApiService for JSON calls + raw HttpClient for FormData/DELETE.
+- ProfileService — getProfile(username), getUserPosts(username, page), getFollowers(username, page), getFollowing(username, page), toggleFollow(username). Maps backend `followersCount` to `followerCount` in the `UserProfile` type to match the spec. Exports UserProfile, UserSummary, FollowToggleResult, PagedPosts, PagedUsers.
 
 ## Routes done
 
 | Path         | Component          | Guard                                                |
 | ------------ | ------------------ | ---------------------------------------------------- |
-| `/`          | HomeComponent      | —                                                    |
-| `/markets`   | MarketsComponent   | authGuard (placeholder — will be refined per-action) |
-| `/community` | CommunityComponent | — (visible to all, actions require login)            |
-| `/login`     | LoginComponent     | —                                                    |
-| `/register`  | RegisterComponent  | —                                                    |
+| `/`                   | HomeComponent      | —                                                    |
+| `/markets`            | MarketsComponent   | authGuard (placeholder — will be refined per-action) |
+| `/community`          | CommunityComponent | — (visible to all, actions require login)            |
+| `/profile/:username`  | ProfileComponent   | — (public, Follow gated by login)                    |
+| `/login`              | LoginComponent     | —                                                    |
+| `/register`           | RegisterComponent  | —                                                    |
 
 ## Current Status
 

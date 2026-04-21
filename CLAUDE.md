@@ -95,6 +95,7 @@ CommunityPrivate, DiscussionTopic + User model updated
 ✅ API: user profiles and following
 ✅ API: general search
 ⬜ Frontend: Community page
+✅ Frontend: Public user profile (`/profile/:username`)
 
 ⬜ Phase 4: Markets
 ⬜ Phase 5: AI assistant + Home

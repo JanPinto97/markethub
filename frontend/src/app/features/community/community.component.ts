@@ -3,6 +3,7 @@ import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { CommunityService, Community, Topic, PostX } from './services/community.service';
 import { PostCardComponent } from './components/post-card/post-card.component';
+import { getUsernameColor } from '../../shared/utils/color.utils';
 
 @Component({
   selector: 'app-community',
@@ -218,12 +219,7 @@ export class CommunityComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   getInitialColor(name: string): string {
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) {
-      hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const hue = Math.abs(hash) % 360;
-    return `hsl(${hue}, 55%, 45%)`;
+    return getUsernameColor(name);
   }
 
   getCategoryIcon(category: string): string {

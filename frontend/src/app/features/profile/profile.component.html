@@ -1,0 +1,199 @@
+<div class="profile-page">
+
+  @if (profileLoading()) {
+    <!-- Skeleton header -->
+    <div class="profile-card">
+      <div class="pr-cover pr-skeleton"></div>
+      <div class="pr-header">
+        <div class="pr-avatar pr-skeleton-circle"></div>
+        <div class="pr-header-info">
+          <div class="pr-skeleton-line pr-sk-title"></div>
+          <div class="pr-skeleton-line pr-sk-bio"></div>
+          <div class="pr-skeleton-line pr-sk-stats"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pr-feed">
+      @for (_ of [1,2,3]; track $index) {
+        <div class="pr-post-skeleton">
+          <div class="pr-sk-post-head"></div>
+          <div class="pr-sk-post-body"></div>
+        </div>
+      }
+    </div>
+
+  } @else if (profileNotFound()) {
+    <div class="pr-not-found">
+      <h1 class="pr-nf-title">User not found.</h1>
+      <p class="pr-nf-sub">We couldn't find an account with the username "{{ username() }}".</p>
+      <a routerLink="/community" class="pr-nf-link">Back to community</a>
+    </div>
+
+  } @else if (profile(); as p) {
+    <article class="profile-card">
+      <!-- Cover -->
+      <div
+        class="pr-cover"
+        [style.background-image]="p.coverImage ? 'url(' + mediaUrlFull(p.coverImage) + ')' : null"
+        [style.background-color]="!p.coverImage ? coverBackground(p.username) : null">
+      </div>
+
+      <!-- Header -->
+      <div class="pr-header">
+        <div
+          class="pr-avatar"
+          [style.background-color]="!p.avatar ? initialColor(p.username) : null">
+          @if (p.avatar) {
+            <img [src]="mediaUrlFull(p.avatar)" [alt]="p.username" />
+          } @else {
+            <span class="pr-avatar-initial">{{ initial(p.username) }}</span>
+          }
+        </div>
+
+        <div class="pr-header-info">
+          <div class="pr-identity">
+            <h1 class="pr-username">{{ '@' + p.username }}</h1>
+
+            <div class="pr-header-actions">
+              @if (isOwner()) {
+                <a routerLink="/settings" class="pr-btn pr-btn-secondary">Edit Profile</a>
+              } @else {
+                <button
+                  type="button"
+                  class="pr-btn"
+                  [class.pr-btn-secondary]="p.isFollowing"
+                  [class.pr-btn-primary]="!p.isFollowing"
+                  [disabled]="followPending()"
+                  (click)="onFollowClick()">
+                  {{ p.isFollowing ? 'Unfollow' : 'Follow' }}
+                </button>
+              }
+            </div>
+          </div>
+
+          @if (p.bio) {
+            <p class="pr-bio">{{ p.bio }}</p>
+          }
+
+          <div class="pr-stats">
+            <button type="button" class="pr-stat" (click)="openFollowers()">
+              <strong>{{ p.followerCount }}</strong>
+              <span>{{ p.followerCount === 1 ? 'follower' : 'followers' }}</span>
+            </button>
+            <span class="pr-stat-dot">·</span>
+            <button type="button" class="pr-stat" (click)="openFollowing()">
+              <strong>{{ p.followingCount }}</strong>
+              <span>following</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      @if (p.publicCommunities.length > 0) {
+        <div class="pr-communities">
+          @for (c of p.publicCommunities; track c.id) {
+            <a [routerLink]="'/community/c/' + c.id" class="pr-chip">
+              <span
+                class="pr-chip-initial"
+                [style.background-color]="initialColor(c.name)">{{ initial(c.name) }}</span>
+              <span class="pr-chip-name">{{ c.name }}</span>
+            </a>
+          }
+        </div>
+      }
+    </article>
+
+    <!-- Posts -->
+    <section class="pr-feed">
+      @if (postsLoading()) {
+        @for (_ of [1,2,3]; track $index) {
+          <div class="pr-post-skeleton">
+            <div class="pr-sk-post-head"></div>
+            <div class="pr-sk-post-body"></div>
+          </div>
+        }
+      } @else if (posts().length === 0) {
+        <p class="pr-empty">No public posts yet.</p>
+      } @else {
+        @for (post of posts(); track post.id) {
+          <app-post-card [post]="post" (deleted)="onPostDeleted($event)"></app-post-card>
+        }
+      }
+
+      <div #postsSentinel class="pr-sentinel">
+        @if (loadingMorePosts()) {
+          <div class="pr-sentinel-msg">Loading more…</div>
+        } @else if (!hasMorePosts() && posts().length > 0) {
+          <div class="pr-sentinel-msg">You've reached the end.</div>
+        }
+      </div>
+    </section>
+  }
+
+  <!-- Followers / Following modal -->
+  @if (showFollowersModal()) {
+    <div class="pr-modal-backdrop" (click)="onModalBackdropClick($event)">
+      <div class="pr-modal" role="dialog" aria-modal="true">
+        <header class="pr-modal-header">
+          <div class="pr-modal-tabs">
+            <button
+              type="button"
+              class="pr-modal-tab"
+              [class.active]="followersTab() === 'followers'"
+              (click)="setModalTab('followers')">Followers</button>
+            <button
+              type="button"
+              class="pr-modal-tab"
+              [class.active]="followersTab() === 'following'"
+              (click)="setModalTab('following')">Following</button>
+          </div>
+          <button
+            type="button"
+            class="pr-modal-close"
+            aria-label="Close"
+            (click)="closeFollowersModal()">×</button>
+        </header>
+
+        <div class="pr-modal-body">
+          @if (modalLoading() && modalUsers().length === 0) {
+            <p class="pr-modal-state">Loading…</p>
+          } @else if (modalUsers().length === 0) {
+            <p class="pr-modal-state">
+              {{ followersTab() === 'followers' ? 'No followers yet.' : 'Not following anyone yet.' }}
+            </p>
+          } @else {
+            @for (u of modalUsers(); track u.username) {
+              <a
+                [routerLink]="'/profile/' + u.username"
+                class="pr-modal-row"
+                (click)="closeFollowersModal()">
+                <span
+                  class="pr-modal-avatar"
+                  [style.background-color]="!u.avatar ? initialColor(u.username) : null">
+                  @if (u.avatar) {
+                    <img [src]="mediaUrlFull(u.avatar)" [alt]="u.username" />
+                  } @else {
+                    <span class="pr-modal-avatar-initial">{{ initial(u.username) }}</span>
+                  }
+                </span>
+                <span class="pr-modal-username">{{ '@' + u.username }}</span>
+              </a>
+            }
+
+            @if (modalHasMore()) {
+              <button
+                type="button"
+                class="pr-modal-more"
+                [disabled]="modalLoading()"
+                (click)="loadMoreModal()">
+                {{ modalLoading() ? 'Loading…' : 'Load more' }}
+              </button>
+            }
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+</div>

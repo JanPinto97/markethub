@@ -2,6 +2,7 @@ import { Component, Input, Output, EventEmitter, inject, signal, computed, HostB
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../../core/services/auth.service';
 import { CommunityService, PostX, PostComment } from '../../services/community.service';
+import { getUsernameColor, getInitial } from '../../../../shared/utils/color.utils';
 
 @Component({
   selector: 'app-post-card',
@@ -105,16 +106,11 @@ export class PostCardComponent {
   }
 
   initial(name: string): string {
-    return (name || '?').charAt(0).toUpperCase();
+    return getInitial(name);
   }
 
   initialColor(name: string): string {
-    let hash = 0;
-    for (let i = 0; i < (name || '').length; i++) {
-      hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const hue = Math.abs(hash) % 360;
-    return `hsl(${hue}, 55%, 45%)`;
+    return getUsernameColor(name);
   }
 
   toggleExpand() {

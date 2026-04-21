@@ -123,13 +123,23 @@ Estat actual: feta l'estructura de 3 columnes, sidebar esquerra funcional, feed 
 
 ## 6. Perfil d'usuari (`/profile/:username`)
 
-- [ ] Ruta encara **no existeix** — els `routerLink="/profile/..."` apunten a enlloc.
-- [ ] Crear la pàgina pública amb:
-  - Header: avatar, cover image, username, bio, follower count, following count.
-  - Llista de comunitats públiques de les quals és membre.
-  - Feed de **PostX** (general + public communities) — **MAI** PostReddit, **MAI** posts de privades.
-  - Botó Follow/Unfollow (`POST /users/:username/follow`).
-- [ ] Llistat de followers / following amb paginació.
+- [x] Ruta creada a `app.routes.ts` (lazy load `ProfileComponent`).
+- [x] Pàgina pública amb:
+  - [x] Header amb cover image (o color derivat del username), avatar (amb inicial fallback), username, bio (ocult si buit), follower/following count clicables.
+  - [x] Llista de comunitats públiques com a chips que enllacen a `/community/c/:id`.
+  - [x] Feed de **PostX** (`origin: general` + `public_community`) reutilitzant `PostCardComponent`, infinite scroll amb IntersectionObserver, "No public posts yet." empty state.
+  - [x] Botó Follow/Unfollow amb optimistic update (`POST /users/:username/follow`). Redirecció a `/login` si no autenticat.
+  - [x] Botó "Edit Profile" → `/settings` quan veus el teu propi perfil.
+- [x] Modal de followers/following amb pestanyes + paginació "Load more" (tanca clicant fora o a la X).
+- [x] Estats: skeleton (header + 3 targetes), 404 "User not found.", loading posts, sense bio/cover.
+- [x] `ProfileService` (`getProfile`, `getUserPosts`, `getFollowers`, `getFollowing`, `toggleFollow`).
+- [x] Utilitat compartida `shared/utils/color.utils.ts` (`getUsernameColor`, `getInitial`) consumida per `PostCardComponent`, `CommunityComponent` i `ProfileComponent`.
+
+### Polish pendent (fora d'abast del Prompt 4)
+
+- [ ] `/settings` encara no existeix → el botó "Edit Profile" dirigeix a una ruta trencada fins que es faci la Secció 7 d'aquest TODO.
+- [ ] La ruta `/community/c/:id` (chips de comunitats públiques) encara no existeix.
+- [ ] Afegir camp `coverImage` a `User` interface del frontend (`core/models/user.model.ts`) per si es vol tipar la sessió; el perfil ja no en depèn perquè tipa amb `UserProfile`.
 
 ---
 
@@ -198,7 +208,7 @@ Estat actual: feta l'estructura de 3 columnes, sidebar esquerra funcional, feed 
 
 ## Prioritat suggerida
 
-1. Perfil d'usuari públic + Settings (desbloqueja els `routerLink` trencats).
+1. ~~Perfil d'usuari públic~~ ✅ **fet al Prompt 4**. Resta: Settings (`/settings`) per desbloquejar l'"Edit Profile" i la icona ⚙.
 2. Replies i likes als comentaris (complet la feature del feed central).
 3. Pàgina de comunitat pública + Join/Leave + modal Create Community.
 4. Topics: popup de cerca + pàgina de topic + `PostRedditCard`.
