@@ -52,9 +52,21 @@
         {{ expanded() ? 'See less' : 'See more' }}
       </button>
     }
-    @if (post.mediaType === 'image' && post.mediaUrl) {
+    @if (post.mediaUrl) {
       <div class="pc-media">
-        <img [src]="mediaUrlFull" alt="Post media" />
+        @if (post.mediaType === 'video') {
+          @if (videoError()) {
+            <div class="pc-video-unavailable">Video unavailable</div>
+          } @else {
+            <video
+              controls
+              preload="metadata"
+              [src]="mediaUrlFull"
+              (error)="videoError.set(true)"></video>
+          }
+        } @else if (post.mediaType === 'image') {
+          <img [src]="mediaUrlFull" alt="Post media" />
+        }
       </div>
     }
   </div>

@@ -43,6 +43,10 @@ Angular SPA serving the MarketHub UI. Runs on port 4200.
     /components
       /navbar
         navbar.component.ts → Navigation bar
+      /toast
+        toast.component.ts → Global toast notification (slide-in/fade-out)
+      /emoji-picker
+        emoji-picker.component.ts → Emoji popover (4 groups, close on outside click/Escape)
     /utils
       color.utils.ts     → getUsernameColor, getInitial (shared by PostCardComponent, CommunityComponent, ProfileComponent)
 
@@ -71,15 +75,15 @@ Angular SPA serving the MarketHub UI. Runs on port 4200.
 
 ## Routes
 
-| Path         | Component          | Description       |
-| ------------ | ------------------ | ----------------- |
-| `/`                   | HomeComponent      | Landing page           |
-| `/markets`            | MarketsComponent   | Markets dashboard      |
-| `/community`          | CommunityComponent | Community feed         |
-| `/profile/:username`  | ProfileComponent   | Public user profile    |
-| `/settings`           | SettingsComponent  | Private settings page  |
-| `/login`              | LoginComponent     | Login form             |
-| `/register`           | RegisterComponent  | Registration form      |
+| Path                 | Component          | Description           |
+| -------------------- | ------------------ | --------------------- |
+| `/`                  | HomeComponent      | Landing page          |
+| `/markets`           | MarketsComponent   | Markets dashboard     |
+| `/community`         | CommunityComponent | Community feed        |
+| `/profile/:username` | ProfileComponent   | Public user profile   |
+| `/settings`          | SettingsComponent  | Private settings page |
+| `/login`             | LoginComponent     | Login form            |
+| `/register`          | RegisterComponent  | Registration form     |
 
 ## Running
 
@@ -94,8 +98,9 @@ Angular SPA serving the MarketHub UI. Runs on port 4200.
 ## Components done
 
 - HomeComponent, MarketsComponent (scaffolds)
-- CommunityComponent — full 3-column layout with header, left sidebar (nav, communities, topics), central feed, right sidebar (copyright). Own header replaces global navbar. Sidebar left is fully functional: loads user communities from API, loads pinned topics from localStorage, skeleton/empty states, auth-aware visibility. Central feed fully functional: Trending/Following tabs (Following requires auth), create-post card (textarea auto-resize, 400 char counter, image upload with preview, auth-gated), real posts from `/posts/feed` with pagination via IntersectionObserver (200px rootMargin), "You're all caught up 🎉" end state.
-- PostCardComponent — standalone reusable card: header (avatar/initial with consistent HSL color, author name + @handle linking to /profile/:username, relative time "4h ago", community badge for public_community origin, three-dot menu with Edit/Delete/Report by role), body (text with "See more" at 280 chars, optional image at max-height 400px), footer (like with optimistic update + `liked` visual state, comments toggle). Inline comments section: loads via `/posts/:id/comments`, shows 5 at a time with "Load more", new comment input with auth gate and optimistic add. Delete flow uses native confirm + fade-out animation + `deleted` EventEmitter to parent. Username color/initial helpers now come from `/shared/utils/color.utils.ts`.
+- CommunityComponent — full 3-column layout with header, left sidebar (nav, communities, topics), central feed, right sidebar (copyright). Own header replaces global navbar. Sidebar left is fully functional: loads user communities from API, loads pinned topics from localStorage, skeleton/empty states, auth-aware visibility. Central feed fully functional: Trending/Following tabs (Following requires auth), create-post card (textarea auto-resize, 400 char counter, image+video upload with preview using createObjectURL and proper revokeObjectURL cleanup, auth-gated, emoji picker popover), real posts from `/posts/feed` with PostSkeletonComponent shimmer loading, retry button on error (initial + infinite scroll), toast on success. Pagination via IntersectionObserver (200px rootMargin), "You're all caught up 🎉" end state.
+- PostCardComponent — standalone reusable card: header (avatar/initial with consistent HSL color, author name + @handle linking to /profile/:username, relative time "4h ago", community badge for public_community origin, three-dot menu with Edit/Delete/Report by role — closes on outside click via HostListener), body (text with "See more" at 280 chars, image or native video player with "Video unavailable" fallback), footer (like with optimistic update + `liked` visual state, comments toggle). Inline comments section: loads via `/posts/:id/comments`, shows 5 at a time with "Load more", new comment input with auth gate and optimistic add. Delete flow uses native confirm + fade-out animation + `deleted` EventEmitter + toast. Hover: subtle box-shadow on card, menu always visible on mobile. Username color/initial from `/shared/utils/color.utils.ts`.
+- PostSkeletonComponent — reusable shimmer skeleton (circle + lines) for loading feed states. Used in community feed and profile page.
 - ProfileComponent — public profile at `/profile/:username`. Header: cover image (url or username-derived color, 200px tall), avatar overlay (circle 90px, initial fallback), username, optional bio, follower/following stats (clickable), Follow/Unfollow button with optimistic update via `POST /users/:username/follow` (shows Edit Profile → /settings when owner, redirects to /login when not authed). Chips of public communities linking to `/community/c/:id`. Feed reuses `PostCardComponent` with `GET /users/:username/posts` (only `general` + `public_community`) and IntersectionObserver infinite scroll (200px rootMargin). Inline followers/following modal (tabs + Load more) via `GET /users/:username/followers|following`. States: skeleton (header + 3 post cards), 404 "User not found.", "No public posts yet." empty.
 - SettingsComponent — private page at `/settings` (authGuard). Three independent sections (Profile / Account / Password), each with its own Reactive Form, save button, loading spinner, and inline success/error state. Profile: avatar URL + live circle preview (fallback to initial + username color), cover URL + live banner preview (fallback to username color), username, bio with 200-char counter and auto-resize. Account: email (private, never on public profile). Password: current/new/confirm with show/hide toggles, ≥8 char + match validation on frontend before calling `PUT /profile/password`. Save buttons disabled unless the section's values differ from initial; 409/401/400 errors surface inline next to the relevant field. On profile/account success calls `AuthService.updateCurrentUser` so navbar + rest of app reflect the change immediately. Success messages auto-hide after 4s.
 - LoginComponent — email/password form, calls AuthService.login, redirects to /markets, shows API error (incl. 423 lock message)
@@ -111,18 +116,19 @@ Angular SPA serving the MarketHub UI. Runs on port 4200.
 - app.config.ts — registers interceptor and `provideAppInitializer` to restore session on startup
 - CommunityService — getMyCommunities(), getTopicsByIds(), pinned topics localStorage helpers, getFeed(mode, page, limit), createPost(text, mediaFile?) via FormData, likePost(id), deletePost(id), getComments(postId), addComment(postId, text). Exports PostX, PostAuthor, PostCommunity, PostComment, FeedResponse interfaces. Uses ApiService for JSON calls + raw HttpClient for FormData/DELETE.
 - ProfileService — getProfile(username), getUserPosts(username, page), getFollowers(username, page), getFollowing(username, page), toggleFollow(username). Maps backend `followersCount` to `followerCount` in the `UserProfile` type to match the spec. Exports UserProfile, UserSummary, FollowToggleResult, PagedPosts, PagedUsers.
+- ToastService — `show(message, type)` triggers a global toast. Signal-based, one toast at a time, auto-dismiss 3s with manual close.
 
 ## Routes done
 
-| Path         | Component          | Guard                                                |
-| ------------ | ------------------ | ---------------------------------------------------- |
-| `/`                   | HomeComponent      | —                                                    |
-| `/markets`            | MarketsComponent   | authGuard (placeholder — will be refined per-action) |
-| `/community`          | CommunityComponent | — (visible to all, actions require login)            |
-| `/profile/:username`  | ProfileComponent   | — (public, Follow gated by login)                    |
-| `/settings`           | SettingsComponent  | authGuard (private)                                  |
-| `/login`              | LoginComponent     | —                                                    |
-| `/register`           | RegisterComponent  | —                                                    |
+| Path                 | Component          | Guard                                                |
+| -------------------- | ------------------ | ---------------------------------------------------- |
+| `/`                  | HomeComponent      | —                                                    |
+| `/markets`           | MarketsComponent   | authGuard (placeholder — will be refined per-action) |
+| `/community`         | CommunityComponent | — (visible to all, actions require login)            |
+| `/profile/:username` | ProfileComponent   | — (public, Follow gated by login)                    |
+| `/settings`          | SettingsComponent  | authGuard (private)                                  |
+| `/login`             | LoginComponent     | —                                                    |
+| `/register`          | RegisterComponent  | —                                                    |
 
 ## Current Status
 
@@ -138,5 +144,6 @@ Angular SPA serving the MarketHub UI. Runs on port 4200.
 
 ## Rules
 
-- UPDATE THIS FILE AFTER EVERY SUCCESSFULLY IMPLEMENTED FEATURE OR FUNCTION.
+<!-- - UPDATE THIS FILE AFTER EVERY SUCCESSFULLY IMPLEMENTED FEATURE OR FUNCTION. -->
+
 - EVERY TIME YOU MAKE DESIGN CHANGES IN A PAGE, UPDATE THE DESIGN.MD FILE LOCATED IN THE SAME FOLDER OF THE PAGE. DO NOT UPDATE THE GLOBAL DESIGN.MD FILE, OR THE DESIGN.MD FILE OF ANOTHER PAGE.

@@ -18,6 +18,7 @@ import {
 } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../core/services/auth.service';
+import { ToastService } from '../../core/services/toast.service';
 import { User } from '../../core/models/user.model';
 import { getInitial, getUsernameColor } from '../../shared/utils/color.utils';
 
@@ -45,6 +46,7 @@ export class SettingsComponent implements AfterViewInit {
   private fb = inject(FormBuilder);
   private destroyRef = inject(DestroyRef);
 
+  private toastSvc = inject(ToastService);
   private baseUrl = 'http://localhost:3000/api/v1';
 
   @ViewChild('bioInput') bioInput?: ElementRef<HTMLTextAreaElement>;
@@ -249,6 +251,7 @@ export class SettingsComponent implements AfterViewInit {
           this.profileChanged.set(false);
           this.profileSaving.set(false);
           this.profileSuccess.set(true);
+          this.toastSvc.show('Profile saved', 'success');
           setTimeout(() => this.profileSuccess.set(false), SUCCESS_HIDE_MS);
         },
         error: (err: HttpErrorResponse) => {
@@ -292,6 +295,7 @@ export class SettingsComponent implements AfterViewInit {
           this.accountChanged.set(false);
           this.accountSaving.set(false);
           this.accountSuccess.set(true);
+          this.toastSvc.show('Email updated', 'success');
           setTimeout(() => this.accountSuccess.set(false), SUCCESS_HIDE_MS);
         },
         error: (err: HttpErrorResponse) => {
@@ -342,6 +346,7 @@ export class SettingsComponent implements AfterViewInit {
           this.showConfirm.set(false);
           this.passwordSaving.set(false);
           this.passwordSuccess.set(true);
+          this.toastSvc.show('Password updated', 'success');
           setTimeout(() => this.passwordSuccess.set(false), SUCCESS_HIDE_MS);
         },
         error: (err: HttpErrorResponse) => {

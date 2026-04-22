@@ -1,14 +1,17 @@
 import { Component, inject, signal, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { ToastService } from '../../core/services/toast.service';
 import { CommunityService, Community, Topic, PostX } from './services/community.service';
 import { PostCardComponent } from './components/post-card/post-card.component';
+import { PostSkeletonComponent } from './components/post-skeleton/post-skeleton.component';
+import { EmojiPickerComponent } from '../../shared/components/emoji-picker/emoji-picker.component';
 import { getUsernameColor } from '../../shared/utils/color.utils';
 
 @Component({
   selector: 'app-community',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive, PostCardComponent],
+  imports: [RouterLink, RouterLinkActive, PostCardComponent, PostSkeletonComponent, EmojiPickerComponent],
   templateUrl: './community.component.html',
   styleUrl: './community.component.css'
 })
@@ -16,6 +19,7 @@ export class CommunityComponent implements OnInit, AfterViewInit, OnDestroy {
   auth = inject(AuthService);
   private router = inject(Router);
   private communityService = inject(CommunityService);
+  private toast = inject(ToastService);
 
   @ViewChild('feedSentinel') feedSentinel?: ElementRef<HTMLDivElement>;
   @ViewChild('postTextarea') postTextarea?: ElementRef<HTMLTextAreaElement>;
@@ -36,13 +40,16 @@ export class CommunityComponent implements OnInit, AfterViewInit, OnDestroy {
   feedPage = signal(1);
   hasMore = signal(true);
   loadingMore = signal(false);
+  loadMoreError = signal(false);
 
   // Create post state
   postText = signal('');
   mediaFile: File | null = null;
   mediaPreview = signal<string | null>(null);
+  mediaIsVideo = signal(false);
   creating = signal(false);
   createError = signal<string | null>(null);
+  emojiPickerOpen = signal(false);
 
   private observer?: IntersectionObserver;
 
@@ -61,6 +68,9 @@ export class CommunityComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy() {
     this.observer?.disconnect();
+    if (this.mediaIsVideo() && this.mediaPreview()) {
+      URL.revokeObjectURL(this.mediaPreview()!);
+    }
   }
 
   private setupObserver() {
@@ -105,6 +115,7 @@ export class CommunityComponent implements OnInit, AfterViewInit, OnDestroy {
   private loadMore() {
     const next = this.feedPage() + 1;
     this.loadingMore.set(true);
+    this.loadMoreError.set(false);
     this.communityService.getFeed(this.activeTab, next, 10).subscribe({
       next: (res) => {
         this.posts.update(list => [...list, ...res.posts]);
@@ -114,8 +125,17 @@ export class CommunityComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       error: () => {
         this.loadingMore.set(false);
+        this.loadMoreError.set(true);
       }
     });
+  }
+
+  retryFeed() {
+    this.loadFeed(true);
+  }
+
+  retryLoadMore() {
+    this.loadMore();
   }
 
   // ── Create post ──
@@ -144,31 +164,75 @@ export class CommunityComponent implements OnInit, AfterViewInit, OnDestroy {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
-    const okTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    if (!okTypes.includes(file.type)) {
-      this.createError.set('Unsupported image type.');
+    const imageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    const videoTypes = ['video/mp4', 'video/webm', 'video/quicktime'];
+    const isImage = imageTypes.includes(file.type);
+    const isVideo = videoTypes.includes(file.type);
+    if (!isImage && !isVideo) {
+      this.createError.set('Unsupported file type.');
+      input.value = '';
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      this.createError.set('Image too large (max 10MB).');
+    const maxSize = isVideo ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      this.createError.set(isVideo ? 'Video too large (max 100MB).' : 'Image too large (max 10MB).');
+      input.value = '';
       return;
     }
     this.createError.set(null);
+    this.removeMedia();
     this.mediaFile = file;
-    const reader = new FileReader();
-    reader.onload = () => this.mediaPreview.set(reader.result as string);
-    reader.readAsDataURL(file);
+    this.mediaIsVideo.set(isVideo);
+    if (isImage) {
+      const reader = new FileReader();
+      reader.onload = () => this.mediaPreview.set(reader.result as string);
+      reader.readAsDataURL(file);
+    } else {
+      this.mediaPreview.set(URL.createObjectURL(file));
+    }
     input.value = '';
   }
 
   removeMedia() {
+    if (this.mediaIsVideo() && this.mediaPreview()) {
+      URL.revokeObjectURL(this.mediaPreview()!);
+    }
     this.mediaFile = null;
     this.mediaPreview.set(null);
+    this.mediaIsVideo.set(false);
   }
 
-  onEmojiClick() {
+  onEmojiClick(event: Event) {
+    event.stopPropagation();
     if (!this.requireAuth()) return;
-    console.log('open emoji picker');
+    this.emojiPickerOpen.update(v => !v);
+  }
+
+  onEmojiSelected(emoji: string) {
+    const ta = this.postTextarea?.nativeElement;
+    if (ta) {
+      const start = ta.selectionStart ?? ta.value.length;
+      const end = ta.selectionEnd ?? start;
+      const val = ta.value;
+      const newVal = val.slice(0, start) + emoji + val.slice(end);
+      if (newVal.length <= 400) {
+        this.postText.set(newVal);
+        ta.value = newVal;
+        const pos = start + emoji.length;
+        ta.setSelectionRange(pos, pos);
+        ta.focus();
+      }
+    } else {
+      const cur = this.postText();
+      if (cur.length + emoji.length <= 400) {
+        this.postText.set(cur + emoji);
+      }
+    }
+    this.emojiPickerOpen.set(false);
+  }
+
+  onEmojiClosed() {
+    this.emojiPickerOpen.set(false);
   }
 
   submitPost() {
@@ -182,12 +246,12 @@ export class CommunityComponent implements OnInit, AfterViewInit, OnDestroy {
       next: (newPost) => {
         this.posts.update(list => [newPost, ...list]);
         this.postText.set('');
-        this.mediaFile = null;
-        this.mediaPreview.set(null);
+        this.removeMedia();
         if (this.postTextarea) {
           this.postTextarea.nativeElement.style.height = 'auto';
         }
         this.creating.set(false);
+        this.toast.show('Post published successfully', 'success');
       },
       error: (err) => {
         this.createError.set(err?.error?.message || 'Could not publish post.');

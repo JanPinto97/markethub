@@ -1,4 +1,4 @@
-# PROMPT 5 — Pàgina de configuració privada (`/settings`)
+# PROMPT 6 — Feed central: vídeos, emoji picker i polish general
 
 ## Abans de començar
 
@@ -6,199 +6,288 @@
 2. Llegeix `frontend/DESIGN.md` — tots els tokens CSS. Cap valor hardcoded de color, font o espaiat.
 3. Llegeix `backend/CLAUDE.md` — endpoints disponibles i models.
 
+Aquest prompt **modifica components ja existents**. No crea cap ruta nova. Tots els canvis són a `PostCardComponent` i a `community.component` (feed central). Llegeix bé el codi existent abans de modificar res.
+
 ---
 
 ## Tasca
 
-Crear la pàgina privada de configuració d'usuari a la ruta `/settings`.
+Completar i polir el feed central de `/community` amb tres grups de millores:
+
+1. Suport de vídeo a posts i caixa de creació
+2. Emoji picker real
+3. Polish general: skeletons, retry, hover states, toast d'èxit
 
 ---
 
-## Ruta Angular
+## Grup 1 — Suport de vídeo
 
-Afegir a `app.routes.ts`:
+### Caixa de creació de post
+
+L'`<input type="file">` actual accepta només imatges. Modifica-ho:
+
+```html
+accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime"
+```
+
+Límits de mida (validació al frontend abans d'enviar):
+
+- Imatges: màx 10MB
+- Vídeos: màx 100MB
+
+Si l'usuari selecciona un fitxer que supera el límit → missatge d'error inline sota la previsualització, l'arxiu no s'afegeix.
+
+**Previsualització:**
+
+- Si és imatge: igual que ara (`<img>`).
+- Si és vídeo: element `<video controls preload="metadata">` amb la URL objecte local (`URL.createObjectURL`). Alçada màxima 200px. `object-fit: contain`.
+- La `x` per eliminar funciona igual en els dos casos. En eliminar, allibera la URL objecte (`URL.revokeObjectURL`) per evitar memory leaks.
+
+**Enviament:**
+
+- El camp `mediaType` del `FormData` ha de ser `'image'` o `'video'` segons el fitxer seleccionat.
+- Si no hi ha fitxer, s'envia JSON normal (sense canvis respecte a l'actual).
+
+### PostCardComponent — reproductor de vídeo
+
+Quan `post.mediaType === 'video'`, en lloc de `<img>` mostra:
+
+```html
+<video
+  controls
+  preload="metadata"
+  [src]="post.mediaUrl"
+  style="max-height: 400px; width: 100%; object-fit: contain;"
+></video>
+```
+
+- No autoplay.
+- No loop.
+- Mostra els controls natius del navegador.
+- Si el vídeo no carrega (error d'event `(error)`): mostra un placeholder amb text "Video unavailable".
+
+---
+
+## Grup 2 — Emoji picker
+
+### Implementació sense llibreries externes
+
+Crea un component `EmojiPickerComponent` simple:
+
+```
+frontend/src/app/shared/components/emoji-picker/
+├── emoji-picker.component.ts
+├── emoji-picker.component.html
+└── emoji-picker.component.css
+```
+
+**Contingut:**
+Una graella d'emojis agrupats per categoria. Usa un fitxer de dades estàtic (array de strings dins el component, no un JSON extern):
 
 ```typescript
-{
-  path: 'settings',
-  loadComponent: () => import('./features/settings/settings.component')
-    .then(m => m.SettingsComponent),
-  canActivate: [AuthGuard]   // ja existent al projecte
+const EMOJI_GROUPS = [
+  {
+    label: "Smileys",
+    emojis: ["😀", "😂", "😍", "🤔", "😎", "🙄", "😤", "🤯", "😴", "🥳"],
+  },
+  {
+    label: "Finance",
+    emojis: ["📈", "📉", "💰", "💵", "💹", "🏦", "📊", "🪙", "💎", "🚀"],
+  },
+  {
+    label: "Hands",
+    emojis: ["👍", "👎", "🙌", "👏", "🤝", "💪", "🫡", "☝️", "👀", "✅"],
+  },
+  {
+    label: "Objects",
+    emojis: ["🔥", "⚡", "🎯", "📌", "🗓️", "📰", "🔔", "⏰", "🌍", "⚠️"],
+  },
+];
+```
+
+**Comportament:**
+
+- S'obre en clicar la icona 😊 de la caixa de creació de post.
+- Apareix com un **popover** posicionat sobre la icona (no modal, no ocupa tota la pantalla).
+- En clicar un emoji: l'afegeix al text del post a la posició actual del cursor (si es pot detectar) o al final.
+- Es tanca en clicar fora del popover (usa `@HostListener('document:click')` o similar).
+- Es tanca en prémer `Escape`.
+
+**Output:**
+
+```typescript
+@Output() emojiSelected = new EventEmitter<string>();
+```
+
+El component pare (`community.component`) escolta i afegeix l'emoji al textarea.
+
+---
+
+## Grup 3 — Polish general
+
+### 3.1 Loading skeletons
+
+Substitueix tots els textos de càrrega ("Loading posts…", "Loading...") per **skeleton screens** coherents.
+
+**Skeleton d'una targeta de post** (crea un component `PostSkeletonComponent`):
+
+```
+frontend/src/app/features/community/components/post-skeleton/
+├── post-skeleton.component.ts
+├── post-skeleton.component.html
+└── post-skeleton.component.css
+```
+
+Estructura visual del skeleton (blocs grisos animats amb shimmer):
+
+```
+[Cercle] [Bloc ample]   [Bloc curt]
+         [Bloc molt ample            ]
+         [Bloc ample      ]
+         [Bloc curt] [Bloc curt]
+```
+
+Animació shimmer: gradient lineal que es desplaça d'esquerra a dreta en loop (CSS pur, sense JS).
+
+```css
+@keyframes shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
 }
 ```
 
----
+Mostra **3 skeletons** mentre el feed carrega (càrrega inicial i canvi de mode Trending/Following).
+Mostra **1 skeleton** al final de la llista mentre carrega la pàgina següent (infinite scroll).
 
-## Estructura de fitxers a crear
+`PostSkeletonComponent` s'usa també al perfil d'usuari (`/profile/:username`). Importa'l allà si no es va fer al Prompt 4.
 
-```
-frontend/src/app/features/settings/
-├── settings.component.ts
-├── settings.component.html
-└── settings.component.css
-```
+### 3.2 Estat d'error amb retry
 
-No cal un servei separat: les crides HTTP es fan des de `AuthService` (ja existent) o directament amb `ApiService`.
-
----
-
-## Endpoints del backend
-
-```
-PUT  /api/profile              → actualitzar username, email, avatar, bio, coverImage
-PUT  /api/profile/password     → canviar contrasenya
-```
-
-### Body `PUT /api/profile`:
-```typescript
-{
-  username?: string;
-  email?: string;
-  avatar?: string;       // URL de text
-  bio?: string;
-  coverImage?: string;   // URL de text (upload futur; ara camp de text)
-}
-```
-
-### Body `PUT /api/profile/password`:
-```typescript
-{
-  currentPassword: string;
-  newPassword: string;
-}
-```
-
-Errors esperats del backend:
-- `400` — validació (username massa curt, email invàlid, etc.)
-- `409` — username o email ja en ús
-- `401` — contrasenya actual incorrecta
-
----
-
-## Layout de la pàgina
-
-Pàgina centrada, sense sidebars. Columna única amb `max-width` consistent amb la resta del projecte.
+Quan el feed falla en carregar (xarxa, 500, etc.), en lloc del text d'error actual mostra:
 
 ```
 ┌──────────────────────────────────┐
-│  Settings                        │  ← títol de pàgina
-├──────────────────────────────────┤
-│  PROFILE                         │  ← secció
-│  Avatar URL        [input]       │
-│  Cover Image URL   [input]       │
-│  Username          [input]       │
-│  Bio               [textarea]    │
-│                    [Save]        │
-├──────────────────────────────────┤
-│  ACCOUNT                         │  ← secció
-│  Email             [input]       │
-│                    [Save]        │
-├──────────────────────────────────┤
-│  PASSWORD                        │  ← secció
-│  Current password  [input]       │
-│  New password      [input]       │
-│  Confirm password  [input]       │
-│                    [Save]        │
+│  ⚠️  Could not load posts.       │
+│      [Try again]                 │
 └──────────────────────────────────┘
 ```
 
-Tres seccions clarament separades, cadascuna amb el seu propi botó `Save` i gestió d'errors independent.
+- El botó `Try again` torna a cridar el mateix endpoint.
+- Si falla la pàgina N del infinite scroll (no la primera): mostra el botó de retry només al final de la llista, no substitueix tot el feed.
 
----
+### 3.3 Toast d'èxit en crear un post
 
-## Secció 1 — Profile
+Quan un post es crea correctament, mostra un toast a la cantonada superior dreta:
 
-Camps:
-- **Avatar URL** — `<input type="url">`. Placeholder: `https://...`. Si hi ha valor actual, apareix preomplert.
-  - Previsualització en temps real: mostra la imatge en un cercle petit a la dreta de l'input. Si la URL no és vàlida o falla la càrrega → mostra la inicial com a fallback (mateixa lògica que `color.utils.ts`).
-- **Cover Image URL** — `<input type="url">`. Placeholder: `https://...`. Previsualització en temps real: banner horitzontal petit sota l'input (~80px d'alçada). Si falla → fons de color derivat del username.
-- **Username** — `<input type="text">`. Preomplert amb el valor actual.
-- **Bio** — `<textarea>` auto-resize. Màxim 200 caràcters. Mostra comptador `X/200`. Preomplert amb el valor actual.
+```
+✅  Post published successfully
+```
 
-Botó `Save changes`:
-- Disabled si cap camp ha canviat respecte al valor inicial.
-- En clicar: `PUT /api/profile` amb tots els camps (no cal enviar només els modificats).
-- En èxit: actualitza l'estat de `AuthService` (`currentUser`) perquè la navbar i la resta de la web reflecteixin els canvis immediatament. Mostra missatge d'èxit inline sota el botó (no toast global).
-- En error `409` (username en ús): mostra missatge d'error específic sota el camp `Username`.
-- En altres errors: mostra missatge genèric sota el botó.
+**Especificació del toast:**
 
----
+- Apareix amb una transició suau (slide-in des de la dreta, 200ms).
+- Desapareix automàticament als 3 segons (fade-out 200ms).
+- Es pot tancar manualment amb una `x`.
+- Màxim 1 toast visible alhora (si es creen posts ràpid, el segon substitueix el primer).
 
-## Secció 2 — Account
+Crea un `ToastComponent` reutilitzable:
 
-Camps:
-- **Email** — `<input type="email">`. Preomplert amb l'email actual (dada privada, no visible al perfil públic).
+```
+frontend/src/app/shared/components/toast/
+├── toast.component.ts
+├── toast.component.html
+└── toast.component.css
+```
 
-Botó `Save`:
-- Disabled si l'email no ha canviat.
-- En clicar: `PUT /api/profile` amb `{ email }`.
-- En èxit: missatge d'èxit inline.
-- En error `409` (email en ús): missatge d'error sota el camp.
-- En error `400` (format invàlid): missatge d'error sota el camp.
+I un `ToastService` injectable a `root`:
 
----
+```
+frontend/src/app/core/services/toast.service.ts
+```
 
-## Secció 3 — Password
+```typescript
+// API del ToastService:
+show(message: string, type: 'success' | 'error' | 'info' = 'success'): void
+```
 
-Camps:
-- **Current password** — `<input type="password">`.
-- **New password** — `<input type="password">`. Mínim 8 caràcters (validació al frontend abans d'enviar).
-- **Confirm new password** — `<input type="password">`. Validació al frontend: ha de coincidir amb "New password".
+El `ToastComponent` s'afegeix a `app.component.html` (o equivalent arrel) perquè estigui disponible a tota l'app. Des de qualsevol component s'injecta `ToastService` i es crida `show(...)`.
 
-Botó `Update password`:
-- Disabled si algun dels tres camps és buit.
-- Validació al frontend **abans** de fer la crida:
-  - New password ≥ 8 caràcters → si no, error inline sota el camp.
-  - Confirm coincideix amb New → si no, error inline sota el camp.
-- En clicar (si la validació passa): `PUT /api/profile/password` amb `{ currentPassword, newPassword }`.
-- En èxit: neteja els tres camps. Mostra missatge d'èxit inline.
-- En error `401` (contrasenya actual incorrecta): missatge d'error específic sota el camp "Current password".
+**Usa el `ToastService` també a:**
 
----
+- Settings (Prompt 5): si `ToastService` no existia quan es va fer, afegeix-lo ara als saves exitosos.
+- Eliminació de posts: "Post deleted."
 
-## Carregar les dades inicials
+### 3.4 Hover states a les targetes
 
-En inicialitzar el component, omple els camps amb les dades de l'usuari autenticat.
+Afegeix a `PostCardComponent`:
 
-- Les dades vénen de `AuthService.currentUser` (ja disponible en memòria, no cal una crida extra).
-- Si per algun motiu `currentUser` és null → redirigeix a `/login` (tot i que `AuthGuard` ja ho hauria fet).
+- La targeta completa: transició subtil de `background-color` o `box-shadow` en hover (coherent amb `DESIGN.md`).
+- El menú de tres punts (`···`): visible sempre en mòbil, visible en hover de la targeta en desktop.
+- Els botons de like i comentaris: canvi de color en hover i cursor pointer.
+- L'avatar i el nom de l'autor: cursor pointer (ja tenen `routerLink`).
+
+### 3.5 Tancar el menú de tres punts en clicar fora
+
+El menú de tres punts actualment queda obert. Corregeix-ho:
+
+- Usa `@HostListener('document:click', ['$event'])` dins `PostCardComponent`.
+- En clicar fora del menú → `isMenuOpen = false`.
+- Assegura't que el clic sobre el botó d'obertura no es propagui al document (usa `$event.stopPropagation()`).
 
 ---
 
 ## Regles d'implementació
 
 - CSS custom pur. Totes les variables del `DESIGN.md`.
-- Sintaxi Angular 17+: `@if`, `inject()`, `standalone: true`. No usar `FormsModule`; usar **Reactive Forms** (`ReactiveFormsModule`) per a la gestió dels formularis.
-- Cada secció gestiona el seu propi estat de càrrega i error de forma **independent**. Un error a la secció Password no afecta l'estat de la secció Profile.
-- Els missatges d'error i èxit apareixen **inline** (sota el camp o sota el botó corresponent), no com a alerts del navegador ni toasts globals.
-- Els inputs de password han de tenir un botó de toggle show/hide (icona d'ull).
-- La previsualització d'avatar i cover s'actualitza **on change** de l'input (no cal botó de preview).
-- Quan el backend retorna èxit a `PUT /api/profile`, cridar `AuthService` per actualitzar `currentUser` en memòria. Consulta com `AuthService` exposa aquesta actualització (potser un mètode `updateCurrentUser(data)` o similar). Si no existeix, afegeix-lo.
+- Sintaxi Angular 17+: `@if`, `@for`, `inject()`, `standalone: true`.
+- `ToastService` injectable a `root` (`providedIn: 'root'`).
+- **No instal·lis cap llibreria externa** per a l'emoji picker ni per als toasts. Tot és CSS + Angular pur.
+- Allibera sempre els `URL.createObjectURL` amb `URL.revokeObjectURL` quan ja no calguin.
+- Els `@HostListener` de document:click als components han de fer `ngOnDestroy` per evitar listeners orfes si el component es destrueix amb el menú obert.
 
 ---
 
-## Estats a gestionar
+## Resum de fitxers a crear o modificar
 
-| Situació | Comportament |
-|---|---|
-| Carregant (save en curs) | Botó disabled + spinner inline al botó |
-| Èxit | Missatge verd inline sota el botó, desapareix als 4s |
-| Error de validació frontend | Missatge vermell sota el camp específic |
-| Error del backend (409, 401, 400) | Missatge vermell sota el camp o botó corresponent |
-| Cap canvi detectat | Botó `Save` disabled |
-| URL d'avatar invàlida | Previsualització mostra fallback (inicial + color) |
+**Crear:**
+
+```
+frontend/src/app/shared/components/emoji-picker/   (nou)
+frontend/src/app/shared/components/toast/          (nou)
+frontend/src/app/core/services/toast.service.ts    (nou)
+frontend/src/app/features/community/components/post-skeleton/  (nou)
+```
+
+**Modificar:**
+
+```
+frontend/src/app/features/community/community.component.*   (skeletons, retry, toast)
+frontend/src/app/features/community/components/post-card/*  (vídeo, hover, menú fix)
+frontend/src/app/app.component.html                         (afegir <app-toast>)
+```
+
+**Modificar si cal (Prompt 5 ja fet):**
+
+```
+frontend/src/app/features/settings/settings.component.ts   (usar ToastService)
+frontend/src/app/features/profile/profile.component.*      (usar PostSkeletonComponent)
+```
 
 ---
 
 ## Resultat esperat
 
-- ✅ Ruta `/settings` creada, protegida per `AuthGuard`
-- ✅ Tres seccions independents: Profile, Account, Password
-- ✅ Camps preomplerts amb les dades actuals de `AuthService.currentUser`
-- ✅ Previsualització en temps real d'avatar i cover image
-- ✅ Toggle show/hide als camps de password
-- ✅ Validació al frontend abans de cada crida
-- ✅ Errors inline específics per camp i per secció
-- ✅ En èxit de Profile: `AuthService.currentUser` actualitzat immediatament
-- ✅ Botó `Save` disabled si no hi ha canvis o si hi ha càrrega en curs
+- ✅ Crear posts amb vídeo (mp4, webm) + validació de mida + previsualització local
+- ✅ Reproductor de vídeo natiu a `PostCardComponent`
+- ✅ Emoji picker popover sense llibreries externes
+- ✅ Skeleton screens animats (shimmer) en lloc de text de càrrega
+- ✅ Estat d'error amb botó "Try again" al feed i al infinite scroll
+- ✅ Toast d'èxit en crear posts (i en altres accions exitoses anteriors)
+- ✅ Hover states coherents a les targetes de post
+- ✅ Menú de tres punts es tanca en clicar fora
+- ✅ Cap memory leak de URL objecte de previsualització
 - ✅ Cap valor de CSS hardcoded

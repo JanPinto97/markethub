@@ -1,6 +1,6 @@
 # MarketHub — TODO: Community Page
 
-Estat actual: feta l'estructura de 3 columnes, sidebar esquerra funcional, feed central funcional (Trending/Following, crear post, targetes PostX, likes optimistes, comentaris inline, infinite scroll, eliminació). Falta tot allò marcat a sota segons `COMMUNITY.md`.
+Estat actual: feta l'estructura de 3 columnes, sidebar esquerra funcional, feed central funcional (Trending/Following, crear post amb imatge i vídeo, emoji picker, targetes PostX amb hover i vídeo, likes optimistes, comentaris inline, infinite scroll amb skeletons shimmer, eliminació amb toast, retry en errors). Falta tot allò marcat a sota segons `COMMUNITY.md`.
 
 ---
 
@@ -9,17 +9,19 @@ Estat actual: feta l'estructura de 3 columnes, sidebar esquerra funcional, feed 
 ### Pendents funcionals
 
 - [ ] **Trending real barrejat**: verificar que el `getFeed` a backend barreja posts de `general` + `public_community` (ara filtra amb `origin: { $in: ['general', 'public_community'] }` — OK, però cal comprovar que els posts de comunitats públiques arriben amb `community.name` populat perquè es mostri el badge).
-- [ ] **Crear post amb vídeo**: actualment només s'accepta imatge (jpeg/png/gif/webp). Afegir acceptació de vídeo (mp4, webm) al `<input type="file">` i al `mediaType` del formulari.
-- [ ] **Reproductor de vídeo** a `PostCardComponent` quan `mediaType === 'video'` (ara només es renderitza `image`).
-- [ ] **Emoji picker** real (ara és un `console.log`).
-- [ ] **Notificació toast / missatge d'èxit** en crear un post (opcional però bonic).
-- [ ] **Retry** al botó de "Could not load feed. Please try again."
+- [x] **Crear post amb vídeo**: accepta mp4, webm, quicktime; validació de mida (imatge ≤10MB, vídeo ≤100MB); previsualització amb `<video>` + `createObjectURL` + `revokeObjectURL` cleanup.
+- [x] **Reproductor de vídeo** a `PostCardComponent` amb controls natius, "Video unavailable" en cas d'error.
+- [x] **Emoji picker** real: `EmojiPickerComponent` popover amb 4 grups (Smileys, Finance, Hands, Objects), insereix a posició del cursor, tanca clic fora / Escape.
+- [x] **Toast d'èxit** en crear un post ("Post published successfully") via `ToastService`.
+- [x] **Retry** al botó d'error del feed (càrrega inicial i infinite scroll).
+- [x] **Loading skeletons** al feed: `PostSkeletonComponent` (shimmer animat) — 3 inicials, 1 al infinite scroll.
 
 ### Pendents de disseny
 
 - [ ] Revisar espaiat i amplada de la caixa de creació en mòbil (≤ 640px).
-- [ ] Transicions més polides al fade-out d'eliminació (ara 300ms lineal).
-- [ ] Estat `hover` diferenciat a les targetes (ara no n'hi ha).
+- [x] Estat `hover` diferenciat a les targetes (`box-shadow` subtil). Menú de tres punts sempre visible en mòbil, visible en hover en desktop.
+- [x] **Menú de tres punts** es tanca en clicar fora (HostListener document:click).
+- [x] **Toast d'eliminació** ("Post deleted.") en comptes d'`alert()`.
 
 ---
 
@@ -137,20 +139,18 @@ Estat actual: feta l'estructura de 3 columnes, sidebar esquerra funcional, feed 
 
 ### Polish pendent (fora d'abast del Prompt 4)
 
-- [ ] `/settings` encara no existeix → el botó "Edit Profile" dirigeix a una ruta trencada fins que es faci la Secció 7 d'aquest TODO.
+- [x] `/settings` existeix → "Edit Profile" funciona (Prompt 5).
 - [ ] La ruta `/community/c/:id` (chips de comunitats públiques) encara no existeix.
-- [ ] Afegir camp `coverImage` a `User` interface del frontend (`core/models/user.model.ts`) per si es vol tipar la sessió; el perfil ja no en depèn perquè tipa amb `UserProfile`.
 
 ---
 
-## 7. Settings (`/settings`)
+## 7. Settings (`/settings`) ✅ (Prompt 5)
 
-- [ ] La icona ⚙ del header enllaça a `/settings` però la ruta **no existeix** encara.
-- [ ] Crear pàgina privada amb:
-  - Canvi d'username (`PUT /profile`).
-  - Canvi d'email (`PUT /profile`).
-  - Canvi de password (`PUT /profile/password`, requereix password actual).
-- [ ] Cover image upload (backend ja suporta el camp).
+- [x] Ruta `/settings` amb `authGuard`.
+- [x] Pàgina privada amb Reactive Forms: Profile (avatar, cover, username, bio), Account (email), Password (current/new/confirm).
+- [x] Cover image URL (amb preview live).
+- [x] Toast d'èxit en guardar (Profile saved / Email updated / Password updated) via `ToastService`.
+- [ ] Cover image **file upload** (ara només URL; backend ja suporta multer).
 
 ---
 

@@ -13,6 +13,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../core/services/auth.service';
 import { PostCardComponent } from '../community/components/post-card/post-card.component';
+import { PostSkeletonComponent } from '../community/components/post-skeleton/post-skeleton.component';
 import { PostX } from '../community/services/community.service';
 import { getInitial, getUsernameColor } from '../../shared/utils/color.utils';
 import { ProfileService, UserProfile, UserSummary } from './profile.service';
@@ -22,7 +23,7 @@ type FollowersTab = 'followers' | 'following';
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [RouterLink, PostCardComponent],
+  imports: [RouterLink, PostCardComponent, PostSkeletonComponent],
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.css',
 })

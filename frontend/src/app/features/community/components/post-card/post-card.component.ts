@@ -1,7 +1,8 @@
-import { Component, Input, Output, EventEmitter, inject, signal, computed, HostBinding } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, signal, computed, HostBinding, HostListener } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../../core/services/auth.service';
 import { CommunityService, PostX, PostComment } from '../../services/community.service';
+import { ToastService } from '../../../../core/services/toast.service';
 import { getUsernameColor, getInitial } from '../../../../shared/utils/color.utils';
 
 @Component({
@@ -18,12 +19,14 @@ export class PostCardComponent {
   auth = inject(AuthService);
   private router = inject(Router);
   private svc = inject(CommunityService);
+  private toast = inject(ToastService);
 
   readonly TEXT_LIMIT = 280;
 
   expanded = signal(false);
   menuOpen = signal(false);
   removing = signal(false);
+  videoError = signal(false);
 
   commentsOpen = signal(false);
   commentsLoading = signal(false);
@@ -124,6 +127,11 @@ export class PostCardComponent {
 
   closeMenu() {
     this.menuOpen.set(false);
+  }
+
+  @HostListener('document:click')
+  onDocClick() {
+    if (this.menuOpen()) this.menuOpen.set(false);
   }
 
   requireAuth(): boolean {
@@ -234,11 +242,12 @@ export class PostCardComponent {
     this.removing.set(true);
     this.svc.deletePost(this.post.id).subscribe({
       next: () => {
+        this.toast.show('Post deleted.', 'success');
         setTimeout(() => this.deleted.emit(this.post.id), 300);
       },
       error: () => {
         this.removing.set(false);
-        alert('Could not delete post. Try again.');
+        this.toast.show('Could not delete post. Try again.', 'error');
       }
     });
   }
