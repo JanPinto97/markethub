@@ -65,4 +65,8 @@ userSchema.methods.toPublicJSON = function () {
   };
 };
 
+userSchema.methods.toPrivateJSON = function () {
+  return { ...this.toPublicJSON(), email: this.email };
+};
+
 module.exports = mongoose.model('User', userSchema);

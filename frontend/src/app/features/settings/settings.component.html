@@ -1,0 +1,255 @@
+<section class="settings-page">
+  <header class="st-page-header">
+    <h1 class="st-page-title">Settings</h1>
+    <p class="st-page-sub">Manage your profile, account and password</p>
+  </header>
+
+  <!-- ─────────────── PROFILE ─────────────── -->
+  <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="st-card" novalidate>
+    <h2 class="st-card-title">Profile</h2>
+
+    <div class="st-field">
+      <label for="avatar" class="st-label">Avatar URL</label>
+      <div class="st-avatar-row">
+        <input
+          id="avatar"
+          type="url"
+          class="st-input"
+          formControlName="avatar"
+          placeholder="https://..."
+          autocomplete="off"
+        />
+        <div class="st-avatar-preview" [style.background-color]="color()">
+          @if (showAvatarImage()) {
+            <img [src]="currentAvatarUrl()" alt="Avatar preview" (error)="onAvatarImgError()" />
+          } @else {
+            <span class="st-avatar-initial">{{ initial() }}</span>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="st-field">
+      <label for="coverImage" class="st-label">Cover Image URL</label>
+      <input
+        id="coverImage"
+        type="url"
+        class="st-input"
+        formControlName="coverImage"
+        placeholder="https://..."
+        autocomplete="off"
+      />
+      <div
+        class="st-cover-preview"
+        [style.background-color]="color()"
+        [style.background-image]="showCoverImage() ? 'url(' + currentCoverUrl() + ')' : 'none'"
+      >
+        @if (showCoverImage()) {
+          <img
+            class="st-cover-probe"
+            [src]="currentCoverUrl()"
+            alt=""
+            aria-hidden="true"
+            (error)="onCoverImgError()"
+          />
+        }
+      </div>
+    </div>
+
+    <div class="st-field">
+      <label for="username" class="st-label">Username</label>
+      <input
+        id="username"
+        type="text"
+        class="st-input"
+        formControlName="username"
+        autocomplete="username"
+      />
+      @if (profileUsernameError()) {
+        <p class="st-error">{{ profileUsernameError() }}</p>
+      }
+    </div>
+
+    <div class="st-field">
+      <label for="bio" class="st-label">Bio</label>
+      <textarea
+        #bioInput
+        id="bio"
+        class="st-input st-textarea"
+        formControlName="bio"
+        rows="3"
+        [maxlength]="bioMax"
+      ></textarea>
+      <p class="st-hint">{{ bioLength() }}/{{ bioMax }}</p>
+    </div>
+
+    <div class="st-actions">
+      <button
+        type="submit"
+        class="st-btn st-btn-primary"
+        [disabled]="!profileChanged() || profileSaving()"
+      >
+        @if (profileSaving()) {
+          <span class="st-spinner" aria-hidden="true"></span>
+          Saving…
+        } @else {
+          Save changes
+        }
+      </button>
+      @if (profileSuccess()) {
+        <p class="st-success">Profile updated</p>
+      }
+      @if (profileGenericError()) {
+        <p class="st-error">{{ profileGenericError() }}</p>
+      }
+    </div>
+  </form>
+
+  <!-- ─────────────── ACCOUNT ─────────────── -->
+  <form [formGroup]="accountForm" (ngSubmit)="saveAccount()" class="st-card" novalidate>
+    <h2 class="st-card-title">Account</h2>
+
+    <div class="st-field">
+      <label for="email" class="st-label">Email</label>
+      <input
+        id="email"
+        type="email"
+        class="st-input"
+        formControlName="email"
+        autocomplete="email"
+      />
+      @if (accountEmailError()) {
+        <p class="st-error">{{ accountEmailError() }}</p>
+      }
+      <p class="st-hint st-hint-muted">Your email is private and never shown on your public profile.</p>
+    </div>
+
+    <div class="st-actions">
+      <button
+        type="submit"
+        class="st-btn st-btn-primary"
+        [disabled]="!accountChanged() || accountSaving()"
+      >
+        @if (accountSaving()) {
+          <span class="st-spinner" aria-hidden="true"></span>
+          Saving…
+        } @else {
+          Save
+        }
+      </button>
+      @if (accountSuccess()) {
+        <p class="st-success">Email updated</p>
+      }
+    </div>
+  </form>
+
+  <!-- ─────────────── PASSWORD ─────────────── -->
+  <form [formGroup]="passwordForm" (ngSubmit)="updatePassword()" class="st-card" novalidate>
+    <h2 class="st-card-title">Password</h2>
+
+    <div class="st-field">
+      <label for="currentPassword" class="st-label">Current password</label>
+      <div class="st-password-wrap">
+        <input
+          id="currentPassword"
+          class="st-input st-password-input"
+          [type]="showCurrent() ? 'text' : 'password'"
+          formControlName="currentPassword"
+          autocomplete="current-password"
+        />
+        <button
+          type="button"
+          class="st-password-toggle"
+          (click)="toggleShowCurrent()"
+          [attr.aria-label]="showCurrent() ? 'Hide password' : 'Show password'"
+          tabindex="-1"
+        >
+          @if (showCurrent()) {
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+          } @else {
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          }
+        </button>
+      </div>
+      @if (passwordCurrentError()) {
+        <p class="st-error">{{ passwordCurrentError() }}</p>
+      }
+    </div>
+
+    <div class="st-field">
+      <label for="newPassword" class="st-label">New password</label>
+      <div class="st-password-wrap">
+        <input
+          id="newPassword"
+          class="st-input st-password-input"
+          [type]="showNew() ? 'text' : 'password'"
+          formControlName="newPassword"
+          autocomplete="new-password"
+        />
+        <button
+          type="button"
+          class="st-password-toggle"
+          (click)="toggleShowNew()"
+          [attr.aria-label]="showNew() ? 'Hide password' : 'Show password'"
+          tabindex="-1"
+        >
+          @if (showNew()) {
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+          } @else {
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          }
+        </button>
+      </div>
+      @if (passwordNewError()) {
+        <p class="st-error">{{ passwordNewError() }}</p>
+      }
+    </div>
+
+    <div class="st-field">
+      <label for="confirmPassword" class="st-label">Confirm new password</label>
+      <div class="st-password-wrap">
+        <input
+          id="confirmPassword"
+          class="st-input st-password-input"
+          [type]="showConfirm() ? 'text' : 'password'"
+          formControlName="confirmPassword"
+          autocomplete="new-password"
+        />
+        <button
+          type="button"
+          class="st-password-toggle"
+          (click)="toggleShowConfirm()"
+          [attr.aria-label]="showConfirm() ? 'Hide password' : 'Show password'"
+          tabindex="-1"
+        >
+          @if (showConfirm()) {
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+          } @else {
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          }
+        </button>
+      </div>
+      @if (passwordConfirmError()) {
+        <p class="st-error">{{ passwordConfirmError() }}</p>
+      }
+    </div>
+
+    <div class="st-actions">
+      <button
+        type="submit"
+        class="st-btn st-btn-primary"
+        [disabled]="!passwordReady() || passwordSaving()"
+      >
+        @if (passwordSaving()) {
+          <span class="st-spinner" aria-hidden="true"></span>
+          Updating…
+        } @else {
+          Update password
+        }
+      </button>
+      @if (passwordSuccess()) {
+        <p class="st-success">Password updated</p>
+      }
+    </div>
+  </form>
+</section>

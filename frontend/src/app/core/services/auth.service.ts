@@ -19,6 +19,12 @@ export class AuthService {
   getToken(): string | null { return this.accessToken; }
   setToken(token: string | null): void { this.accessToken = token; }
 
+  updateCurrentUser(patch: Partial<User>): void {
+    const current = this.currentUser();
+    if (!current) return;
+    this.currentUser.set({ ...current, ...patch });
+  }
+
   login(email: string, password: string): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.baseUrl}/auth/login`, { email, password }, { withCredentials: true })
       .pipe(tap(res => { this.accessToken = res.accessToken; this.currentUser.set(res.user); }));

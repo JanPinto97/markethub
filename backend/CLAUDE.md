@@ -46,7 +46,7 @@ server.js            → Entry point: loads env, connects DB, starts Express
 - POST /api/v1/auth/logout
 - POST /api/v1/auth/refresh
 - GET  /api/v1/auth/me (protected)
-- PUT  /api/v1/profile (protected)
+- PUT  /api/v1/profile (protected) — accepts username, email, avatar, coverImage, bio; 409 on username/email conflict, 400 on validation
 - PUT  /api/v1/profile/password (protected)
 - POST /api/v1/posts (protected, multipart)
 - GET  /api/v1/posts/feed (public, supports ?mode=trending|following&page&limit)
@@ -116,7 +116,7 @@ server.js            → Entry point: loads env, connects DB, starts Express
 - Connects to mongo service via `mongodb://mongo:27017/markethub`
 
 ## Models done
-- User: updated with following, followers, coverImage
+- User: updated with following, followers, coverImage. `toPublicJSON()` omits email; `toPrivateJSON()` adds email for own-data endpoints (auth/me, register, login, profile update)
 - PostX: Twitter/X style post for general feed and communities (max 400 chars)
 - PostReddit: Reddit style post for discussion topics only (title + text + votes)
 - Comment: shared by both post types, supports one nesting level, likes only on PostX comments

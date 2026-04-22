@@ -77,6 +77,7 @@ Angular SPA serving the MarketHub UI. Runs on port 4200.
 | `/markets`            | MarketsComponent   | Markets dashboard      |
 | `/community`          | CommunityComponent | Community feed         |
 | `/profile/:username`  | ProfileComponent   | Public user profile    |
+| `/settings`           | SettingsComponent  | Private settings page  |
 | `/login`              | LoginComponent     | Login form             |
 | `/register`           | RegisterComponent  | Registration form      |
 
@@ -96,13 +97,14 @@ Angular SPA serving the MarketHub UI. Runs on port 4200.
 - CommunityComponent — full 3-column layout with header, left sidebar (nav, communities, topics), central feed, right sidebar (copyright). Own header replaces global navbar. Sidebar left is fully functional: loads user communities from API, loads pinned topics from localStorage, skeleton/empty states, auth-aware visibility. Central feed fully functional: Trending/Following tabs (Following requires auth), create-post card (textarea auto-resize, 400 char counter, image upload with preview, auth-gated), real posts from `/posts/feed` with pagination via IntersectionObserver (200px rootMargin), "You're all caught up 🎉" end state.
 - PostCardComponent — standalone reusable card: header (avatar/initial with consistent HSL color, author name + @handle linking to /profile/:username, relative time "4h ago", community badge for public_community origin, three-dot menu with Edit/Delete/Report by role), body (text with "See more" at 280 chars, optional image at max-height 400px), footer (like with optimistic update + `liked` visual state, comments toggle). Inline comments section: loads via `/posts/:id/comments`, shows 5 at a time with "Load more", new comment input with auth gate and optimistic add. Delete flow uses native confirm + fade-out animation + `deleted` EventEmitter to parent. Username color/initial helpers now come from `/shared/utils/color.utils.ts`.
 - ProfileComponent — public profile at `/profile/:username`. Header: cover image (url or username-derived color, 200px tall), avatar overlay (circle 90px, initial fallback), username, optional bio, follower/following stats (clickable), Follow/Unfollow button with optimistic update via `POST /users/:username/follow` (shows Edit Profile → /settings when owner, redirects to /login when not authed). Chips of public communities linking to `/community/c/:id`. Feed reuses `PostCardComponent` with `GET /users/:username/posts` (only `general` + `public_community`) and IntersectionObserver infinite scroll (200px rootMargin). Inline followers/following modal (tabs + Load more) via `GET /users/:username/followers|following`. States: skeleton (header + 3 post cards), 404 "User not found.", "No public posts yet." empty.
+- SettingsComponent — private page at `/settings` (authGuard). Three independent sections (Profile / Account / Password), each with its own Reactive Form, save button, loading spinner, and inline success/error state. Profile: avatar URL + live circle preview (fallback to initial + username color), cover URL + live banner preview (fallback to username color), username, bio with 200-char counter and auto-resize. Account: email (private, never on public profile). Password: current/new/confirm with show/hide toggles, ≥8 char + match validation on frontend before calling `PUT /profile/password`. Save buttons disabled unless the section's values differ from initial; 409/401/400 errors surface inline next to the relevant field. On profile/account success calls `AuthService.updateCurrentUser` so navbar + rest of app reflect the change immediately. Success messages auto-hide after 4s.
 - LoginComponent — email/password form, calls AuthService.login, redirects to /markets, shows API error (incl. 423 lock message)
 - RegisterComponent — username/email/password form with client validation (email regex, username 3-30, password ≥8), calls AuthService.register
 - NavbarComponent — auth-aware: shows username+avatar+logout when authed, login/register links when not
 
 ## Core done
 
-- AuthService — in-memory access token, `currentUser` signal, `isAuthenticated` computed, methods: login, register, logout, refreshToken, getToken, loadCurrentUser (refresh + /me on bootstrap)
+- AuthService — in-memory access token, `currentUser` signal, `isAuthenticated` computed, methods: login, register, logout, refreshToken, getToken, loadCurrentUser (refresh + /me on bootstrap), updateCurrentUser(patch) to merge changes into the in-memory user after profile edits
 - authInterceptor — functional, attaches Bearer token, retries once on 401 via /auth/refresh, logs out + redirects to /login on failure
 - authGuard — functional, redirects to /login when not authenticated
 - User model interface (/core/models/user.model.ts)
@@ -118,6 +120,7 @@ Angular SPA serving the MarketHub UI. Runs on port 4200.
 | `/markets`            | MarketsComponent   | authGuard (placeholder — will be refined per-action) |
 | `/community`          | CommunityComponent | — (visible to all, actions require login)            |
 | `/profile/:username`  | ProfileComponent   | — (public, Follow gated by login)                    |
+| `/settings`           | SettingsComponent  | authGuard (private)                                  |
 | `/login`              | LoginComponent     | —                                                    |
 | `/register`           | RegisterComponent  | —                                                    |
 

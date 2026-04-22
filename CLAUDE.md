@@ -77,11 +77,12 @@ loginAttempts, lockUntil, createdAt)
 ✅ Seed script for superadmin and moderator users
 ✅ JWT auth (access token in memory, refresh token httpOnly cookie)
 ✅ Auth API: register, login, logout, refresh, me
-✅ Profile API: edit profile, change password
+✅ Profile API: edit profile (username, email, avatar, coverImage, bio), change password
 ✅ Login attempt limiting (5 attempts → 15 min lockout)
 ✅ AuthService, AuthInterceptor, AuthGuard in Angular
 ✅ Login and Register components
 ✅ Auth-aware Navbar
+✅ Settings page (`/settings`) — profile, account (email), password sections
 
 🔄 Phase 3: Community
 ✅ Models: PostX, PostReddit, Comment, CommunityPublic,

@@ -51,7 +51,7 @@ router.post('/register', async (req, res, next) => {
 
     const accessToken = signAccess(user);
     setRefreshCookie(res, signRefresh(user));
-    res.status(201).json({ success: true, accessToken, user: user.toPublicJSON() });
+    res.status(201).json({ success: true, accessToken, user: user.toPrivateJSON() });
   } catch (err) { next(err); }
 });
 
@@ -77,7 +77,7 @@ router.post('/login', async (req, res, next) => {
     await user.resetLoginAttempts();
     const accessToken = signAccess(user);
     setRefreshCookie(res, signRefresh(user));
-    res.json({ success: true, accessToken, user: user.toPublicJSON() });
+    res.json({ success: true, accessToken, user: user.toPrivateJSON() });
   } catch (err) { next(err); }
 });
 
@@ -107,7 +107,7 @@ router.get('/me', auth, async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id);
     if (!user) return fail(res, 404, 'User not found');
-    res.json({ success: true, user: user.toPublicJSON() });
+    res.json({ success: true, user: user.toPrivateJSON() });
   } catch (err) { next(err); }
 });
 
