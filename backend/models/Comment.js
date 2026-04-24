@@ -11,7 +11,10 @@ const commentSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-commentSchema.methods.toPublicJSON = function () {
+commentSchema.methods.toPublicJSON = function (currentUserId = null) {
+  const liked = currentUserId
+    ? (this.likes || []).some(id => id.toString() === currentUserId.toString())
+    : false;
   return {
     id: this._id,
     author: this.author,
@@ -21,6 +24,7 @@ commentSchema.methods.toPublicJSON = function () {
     parentComment: this.parentComment,
     replyingTo: this.replyingTo,
     likesCount: this.likes ? this.likes.length : 0,
+    liked,
     createdAt: this.createdAt,
   };
 };

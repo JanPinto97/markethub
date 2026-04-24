@@ -22,6 +22,7 @@ export class PostCardComponent {
   private toast = inject(ToastService);
 
   readonly TEXT_LIMIT = 280;
+  readonly REPLY_LIMIT = 400;
 
   expanded = signal(false);
   menuOpen = signal(false);
@@ -35,6 +36,18 @@ export class PostCardComponent {
   visibleCount = signal(5);
   newComment = signal('');
   sendingComment = signal(false);
+
+  // Reply state — single open reply box per post
+  activeReplyCommentId = signal<string | null>(null);
+  replyText = signal('');
+  replyingToUsername = signal<string>('');
+  replyingToUserId = signal<string | undefined>(undefined);
+  sendingReply = signal(false);
+  replyError = signal<string | null>(null);
+
+  // Per-comment open menu (id of comment or reply)
+  openCommentMenuId = signal<string | null>(null);
+  removingIds = signal<Set<string>>(new Set());
 
   @HostBinding('class.removing') get isRemoving() { return this.removing(); }
 
@@ -132,6 +145,7 @@ export class PostCardComponent {
   @HostListener('document:click')
   onDocClick() {
     if (this.menuOpen()) this.menuOpen.set(false);
+    if (this.openCommentMenuId()) this.openCommentMenuId.set(null);
   }
 
   requireAuth(): boolean {
@@ -219,10 +233,193 @@ export class PostCardComponent {
     return a.username || 'User';
   }
 
+  commentAuthorUsername(c: PostComment): string {
+    const a = c.author;
+    if (!a || typeof a === 'string') return '';
+    return a.username || '';
+  }
+
   commentAuthorAvatar(c: PostComment): string | undefined {
     const a = c.author;
     if (!a || typeof a === 'string') return undefined;
     return a.avatar;
+  }
+
+  commentAuthorId(c: PostComment): string {
+    const a = c.author;
+    if (!a || typeof a === 'string') return '';
+    return a._id || '';
+  }
+
+  isCommentOwner(c: PostComment): boolean {
+    const u = this.auth.currentUser();
+    if (!u) return false;
+    return this.commentAuthorId(c) === u.id;
+  }
+
+  canDeleteComment(c: PostComment): boolean {
+    return this.isCommentOwner(c) || this.isMod;
+  }
+
+  toggleCommentMenu(event: Event, id: string) {
+    event.stopPropagation();
+    this.openCommentMenuId.update(v => v === id ? null : id);
+  }
+
+  // ── Likes on comments / replies ──
+
+  toggleCommentLike(c: PostComment) {
+    if (!this.requireAuth()) return;
+    const prevLiked = c.liked;
+    const prevCount = c.likesCount;
+    c.liked = !prevLiked;
+    c.likesCount = prevCount + (c.liked ? 1 : -1);
+
+    this.svc.likeComment(this.post.id, c.id).subscribe({
+      next: (res) => { c.liked = res.liked; c.likesCount = res.likesCount; },
+      error: () => { c.liked = prevLiked; c.likesCount = prevCount; }
+    });
+  }
+
+  toggleReplyLike(parent: PostComment, r: PostComment) {
+    if (!this.requireAuth()) return;
+    const prevLiked = r.liked;
+    const prevCount = r.likesCount;
+    r.liked = !prevLiked;
+    r.likesCount = prevCount + (r.liked ? 1 : -1);
+
+    this.svc.likeReply(this.post.id, parent.id, r.id).subscribe({
+      next: (res) => { r.liked = res.liked; r.likesCount = res.likesCount; },
+      error: () => { r.liked = prevLiked; r.likesCount = prevCount; }
+    });
+  }
+
+  // ── Reply box ──
+
+  openReplyToComment(c: PostComment) {
+    if (!this.requireAuth()) return;
+    this.activeReplyCommentId.set(c.id);
+    this.replyingToUsername.set(this.commentAuthorName(c));
+    this.replyingToUserId.set(this.commentAuthorId(c) || undefined);
+    this.replyText.set('');
+    this.replyError.set(null);
+  }
+
+  openReplyToReply(parent: PostComment, r: PostComment) {
+    if (!this.requireAuth()) return;
+    this.activeReplyCommentId.set(parent.id);
+    this.replyingToUsername.set(this.commentAuthorName(r));
+    this.replyingToUserId.set(this.commentAuthorId(r) || undefined);
+    this.replyText.set('');
+    this.replyError.set(null);
+  }
+
+  closeReplyBox() {
+    this.activeReplyCommentId.set(null);
+    this.replyText.set('');
+    this.replyError.set(null);
+    this.replyingToUserId.set(undefined);
+  }
+
+  onReplyInput(event: Event) {
+    const val = (event.target as HTMLTextAreaElement).value;
+    this.replyText.set(val.slice(0, this.REPLY_LIMIT));
+  }
+
+  sendReply() {
+    const parentId = this.activeReplyCommentId();
+    if (!parentId) return;
+    const text = this.replyText().trim();
+    if (!text || this.sendingReply()) return;
+    if (!this.requireAuth()) return;
+
+    this.sendingReply.set(true);
+    this.replyError.set(null);
+
+    this.svc.addReply(this.post.id, parentId, text, this.replyingToUserId()).subscribe({
+      next: (reply) => {
+        this.comments.update(list => list.map(c => {
+          if (c.id !== parentId) return c;
+          const replies = [...(c.replies || []), reply];
+          return { ...c, replies };
+        }));
+        this.post.commentCount += 1;
+        this.sendingReply.set(false);
+        this.closeReplyBox();
+      },
+      error: () => {
+        this.sendingReply.set(false);
+        this.replyError.set('Could not send reply. Try again.');
+      }
+    });
+  }
+
+  isRemovingId(id: string): boolean {
+    return this.removingIds().has(id);
+  }
+
+  private markRemoving(id: string) {
+    const next = new Set(this.removingIds());
+    next.add(id);
+    this.removingIds.set(next);
+  }
+
+  private unmarkRemoving(id: string) {
+    const next = new Set(this.removingIds());
+    next.delete(id);
+    this.removingIds.set(next);
+  }
+
+  // ── Deletion ──
+
+  onDeleteComment(c: PostComment) {
+    this.openCommentMenuId.set(null);
+    if (!this.canDeleteComment(c)) return;
+    if (!confirm('Delete this comment? This action cannot be undone.')) return;
+
+    this.markRemoving(c.id);
+    const replyCount = (c.replies || []).length;
+
+    this.svc.deleteComment(this.post.id, c.id).subscribe({
+      next: () => {
+        this.toast.show('Comment deleted.', 'success');
+        setTimeout(() => {
+          this.comments.update(list => list.filter(x => x.id !== c.id));
+          this.post.commentCount = Math.max(0, this.post.commentCount - 1 - replyCount);
+          this.unmarkRemoving(c.id);
+        }, 300);
+      },
+      error: () => {
+        this.unmarkRemoving(c.id);
+        this.toast.show('Could not delete comment.', 'error');
+      }
+    });
+  }
+
+  onDeleteReply(parent: PostComment, r: PostComment) {
+    this.openCommentMenuId.set(null);
+    if (!this.canDeleteComment(r)) return;
+    if (!confirm('Delete this reply? This action cannot be undone.')) return;
+
+    this.markRemoving(r.id);
+
+    this.svc.deleteReply(this.post.id, parent.id, r.id).subscribe({
+      next: () => {
+        this.toast.show('Comment deleted.', 'success');
+        setTimeout(() => {
+          this.comments.update(list => list.map(c => {
+            if (c.id !== parent.id) return c;
+            return { ...c, replies: (c.replies || []).filter(x => x.id !== r.id) };
+          }));
+          this.post.commentCount = Math.max(0, this.post.commentCount - 1);
+          this.unmarkRemoving(r.id);
+        }, 300);
+      },
+      error: () => {
+        this.unmarkRemoving(r.id);
+        this.toast.show('Could not delete reply.', 'error');
+      }
+    });
   }
 
   onEdit() {

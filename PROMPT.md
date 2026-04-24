@@ -1,4 +1,4 @@
-# PROMPT 6 — Feed central: vídeos, emoji picker i polish general
+# PROMPT 7 — Comentaris: replies i likes
 
 ## Abans de començar
 
@@ -6,237 +6,177 @@
 2. Llegeix `frontend/DESIGN.md` — tots els tokens CSS. Cap valor hardcoded de color, font o espaiat.
 3. Llegeix `backend/CLAUDE.md` — endpoints disponibles i models.
 
-Aquest prompt **modifica components ja existents**. No crea cap ruta nova. Tots els canvis són a `PostCardComponent` i a `community.component` (feed central). Llegeix bé el codi existent abans de modificar res.
+Aquest prompt **modifica components ja existents**. No crea cap ruta nova. Tots els canvis són a la secció de comentaris de `PostCardComponent`. Llegeix bé el codi existent abans de modificar res.
 
 ---
 
 ## Tasca
 
-Completar i polir el feed central de `/community` amb tres grups de millores:
-
-1. Suport de vídeo a posts i caixa de creació
-2. Emoji picker real
-3. Polish general: skeletons, retry, hover states, toast d'èxit
-
----
-
-## Grup 1 — Suport de vídeo
-
-### Caixa de creació de post
-
-L'`<input type="file">` actual accepta només imatges. Modifica-ho:
-
-```html
-accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime"
-```
-
-Límits de mida (validació al frontend abans d'enviar):
-
-- Imatges: màx 10MB
-- Vídeos: màx 100MB
-
-Si l'usuari selecciona un fitxer que supera el límit → missatge d'error inline sota la previsualització, l'arxiu no s'afegeix.
-
-**Previsualització:**
-
-- Si és imatge: igual que ara (`<img>`).
-- Si és vídeo: element `<video controls preload="metadata">` amb la URL objecte local (`URL.createObjectURL`). Alçada màxima 200px. `object-fit: contain`.
-- La `x` per eliminar funciona igual en els dos casos. En eliminar, allibera la URL objecte (`URL.revokeObjectURL`) per evitar memory leaks.
-
-**Enviament:**
-
-- El camp `mediaType` del `FormData` ha de ser `'image'` o `'video'` segons el fitxer seleccionat.
-- Si no hi ha fitxer, s'envia JSON normal (sense canvis respecte a l'actual).
-
-### PostCardComponent — reproductor de vídeo
-
-Quan `post.mediaType === 'video'`, en lloc de `<img>` mostra:
-
-```html
-<video
-  controls
-  preload="metadata"
-  [src]="post.mediaUrl"
-  style="max-height: 400px; width: 100%; object-fit: contain;"
-></video>
-```
-
-- No autoplay.
-- No loop.
-- Mostra els controls natius del navegador.
-- Si el vídeo no carrega (error d'event `(error)`): mostra un placeholder amb text "Video unavailable".
+Completar el sistema de comentaris de `PostCardComponent` amb:
+1. Likes als comentaris de PostX
+2. Replies (un nivell de niament)
+3. Eliminació de comentaris per moderadors
 
 ---
 
-## Grup 2 — Emoji picker
+## Context del model de dades
 
-### Implementació sense llibreries externes
-
-Crea un component `EmojiPickerComponent` simple:
-
-```
-frontend/src/app/shared/components/emoji-picker/
-├── emoji-picker.component.ts
-├── emoji-picker.component.html
-└── emoji-picker.component.css
-```
-
-**Contingut:**
-Una graella d'emojis agrupats per categoria. Usa un fitxer de dades estàtic (array de strings dins el component, no un JSON extern):
+El backend ja suporta tot això. Recorda l'estructura:
 
 ```typescript
-const EMOJI_GROUPS = [
-  {
-    label: "Smileys",
-    emojis: ["😀", "😂", "😍", "🤔", "😎", "🙄", "😤", "🤯", "😴", "🥳"],
-  },
-  {
-    label: "Finance",
-    emojis: ["📈", "📉", "💰", "💵", "💹", "🏦", "📊", "🪙", "💎", "🚀"],
-  },
-  {
-    label: "Hands",
-    emojis: ["👍", "👎", "🙌", "👏", "🤝", "💪", "🫡", "☝️", "👀", "✅"],
-  },
-  {
-    label: "Objects",
-    emojis: ["🔥", "⚡", "🎯", "📌", "🗓️", "📰", "🔔", "⏰", "🌍", "⚠️"],
-  },
-];
-```
-
-**Comportament:**
-
-- S'obre en clicar la icona 😊 de la caixa de creació de post.
-- Apareix com un **popover** posicionat sobre la icona (no modal, no ocupa tota la pantalla).
-- En clicar un emoji: l'afegeix al text del post a la posició actual del cursor (si es pot detectar) o al final.
-- Es tanca en clicar fora del popover (usa `@HostListener('document:click')` o similar).
-- Es tanca en prémer `Escape`.
-
-**Output:**
-
-```typescript
-@Output() emojiSelected = new EventEmitter<string>();
-```
-
-El component pare (`community.component`) escolta i afegeix l'emoji al textarea.
-
----
-
-## Grup 3 — Polish general
-
-### 3.1 Loading skeletons
-
-Substitueix tots els textos de càrrega ("Loading posts…", "Loading...") per **skeleton screens** coherents.
-
-**Skeleton d'una targeta de post** (crea un component `PostSkeletonComponent`):
-
-```
-frontend/src/app/features/community/components/post-skeleton/
-├── post-skeleton.component.ts
-├── post-skeleton.component.html
-└── post-skeleton.component.css
-```
-
-Estructura visual del skeleton (blocs grisos animats amb shimmer):
-
-```
-[Cercle] [Bloc ample]   [Bloc curt]
-         [Bloc molt ample            ]
-         [Bloc ample      ]
-         [Bloc curt] [Bloc curt]
-```
-
-Animació shimmer: gradient lineal que es desplaça d'esquerra a dreta en loop (CSS pur, sense JS).
-
-```css
-@keyframes shimmer {
-  0% {
-    background-position: -400px 0;
-  }
-  100% {
-    background-position: 400px 0;
-  }
+interface Comment {
+  _id: string;
+  author: { username: string; avatar?: string };
+  text: string;
+  createdAt: string;
+  likes: string[];           // array d'userIds
+  likeCount: number;
+  parentComment?: string;    // null si és arrel, id del pare si és reply
+  replyingTo?: string;       // username al qual respon
+  replies?: Comment[];       // populat pel backend en GET comments
 }
 ```
 
-Mostra **3 skeletons** mentre el feed carrega (càrrega inicial i canvi de mode Trending/Following).
-Mostra **1 skeleton** al final de la llista mentre carrega la pàgina següent (infinite scroll).
+Els comentaris retornats per `GET /api/posts/:postId/comments` vénen ja agrupats:
+- Comentaris arrel a l'arrel de l'array.
+- Cada comentari arrel pot tenir un camp `replies: Comment[]` amb els seus fills.
+- **Màxim un nivell de niament.** Les replies no tenen replies.
 
-`PostSkeletonComponent` s'usa també al perfil d'usuari (`/profile/:username`). Importa'l allà si no es va fer al Prompt 4.
+---
 
-### 3.2 Estat d'error amb retry
-
-Quan el feed falla en carregar (xarxa, 500, etc.), en lloc del text d'error actual mostra:
-
-```
-┌──────────────────────────────────┐
-│  ⚠️  Could not load posts.       │
-│      [Try again]                 │
-└──────────────────────────────────┘
-```
-
-- El botó `Try again` torna a cridar el mateix endpoint.
-- Si falla la pàgina N del infinite scroll (no la primera): mostra el botó de retry només al final de la llista, no substitueix tot el feed.
-
-### 3.3 Toast d'èxit en crear un post
-
-Quan un post es crea correctament, mostra un toast a la cantonada superior dreta:
+## Endpoints
 
 ```
-✅  Post published successfully
+POST   /api/posts/:postId/comments                                    → crear comentari arrel
+POST   /api/posts/:postId/comments/:commentId/reply                   → crear reply
+POST   /api/posts/:postId/comments/:commentId/like                    → toggle like (comentari arrel)
+POST   /api/posts/:postId/comments/:commentId/replies/:replyId/like  → toggle like (reply)
+DELETE /api/posts/:postId/comments/:commentId                         → eliminar comentari arrel
+DELETE /api/posts/:postId/comments/:commentId/replies/:replyId        → eliminar reply
 ```
 
-**Especificació del toast:**
+---
 
-- Apareix amb una transició suau (slide-in des de la dreta, 200ms).
-- Desapareix automàticament als 3 segons (fade-out 200ms).
-- Es pot tancar manualment amb una `x`.
-- Màxim 1 toast visible alhora (si es creen posts ràpid, el segon substitueix el primer).
+## 1. Likes als comentaris
 
-Crea un `ToastComponent` reutilitzable:
+### Comentaris arrel i replies
+Ambdós tipus de comentari mostren:
+- Icona de like (polze amunt) + número de likes a la dreta del text, alineat al peu del comentari.
+- L'icona té estat visual diferenciat si l'usuari ja ha donat like (color accent, igual que als posts).
+- **Optimistic update:** actualitza el comptador i l'estat de l'icona immediatament, reverteix si la crida falla.
+- Requereix login. Si no autenticat → redirect a `/login`.
 
-```
-frontend/src/app/shared/components/toast/
-├── toast.component.ts
-├── toast.component.html
-└── toast.component.css
-```
+### Afegir mètodes al servei
 
-I un `ToastService` injectable a `root`:
-
-```
-frontend/src/app/core/services/toast.service.ts
-```
+Afegeix a `community.service.ts`:
 
 ```typescript
-// API del ToastService:
-show(message: string, type: 'success' | 'error' | 'info' = 'success'): void
+likeComment(postId: string, commentId: string): Observable<{ liked: boolean; count: number }>
+likeReply(postId: string, commentId: string, replyId: string): Observable<{ liked: boolean; count: number }>
 ```
 
-El `ToastComponent` s'afegeix a `app.component.html` (o equivalent arrel) perquè estigui disponible a tota l'app. Des de qualsevol component s'injecta `ToastService` i es crida `show(...)`.
+---
 
-**Usa el `ToastService` també a:**
+## 2. Replies
 
-- Settings (Prompt 5): si `ToastService` no existia quan es va fer, afegeix-lo ara als saves exitosos.
-- Eliminació de posts: "Post deleted."
+### Botó "Reply"
 
-### 3.4 Hover states a les targetes
+Cada comentari arrel té un botó `Reply` al seu peu (al costat del like).
+- En clicar → obre una caixa de resposta **inline** sota el comentari, sobre la llista de replies existents.
+- Si ja hi havia una caixa de resposta oberta en un altre comentari → tanca-la i obre la nova (màxim una caixa oberta alhora a tot el post).
 
-Afegeix a `PostCardComponent`:
+### Caixa de reply inline
 
-- La targeta completa: transició subtil de `background-color` o `box-shadow` en hover (coherent amb `DESIGN.md`).
-- El menú de tres punts (`···`): visible sempre en mòbil, visible en hover de la targeta en desktop.
-- Els botons de like i comentaris: canvi de color en hover i cursor pointer.
-- L'avatar i el nom de l'autor: cursor pointer (ja tenen `routerLink`).
+```
+┌─────────────────────────────────────────┐
+│  [Avatar]  Replying to @username        │
+│  ┌─────────────────────────────────────┐│
+│  │ Write a reply...              X/400 ││
+│  └─────────────────────────────────────┘│
+│  [Cancel]                      [Reply]  │
+└─────────────────────────────────────────┘
+```
 
-### 3.5 Tancar el menú de tres punts en clicar fora
+- Indica a qui es respon: `Replying to @username` (username de l'autor del comentari pare).
+- `<textarea>` amb placeholder `"Write a reply..."`, màxim 400 caràcters, comptador `X/400`.
+- Botó `Cancel` → tanca la caixa sense enviar.
+- Botó `Reply` → disabled si el textarea és buit. En clicar:
+  - `POST /api/posts/:postId/comments/:commentId/reply` amb `{ text: string }`.
+  - En èxit: afegeix la reply a la llista de replies del comentari de forma **optimista** (usa les dades de `AuthService.currentUser` per construir l'objecte local). Tanca la caixa.
+  - En error: missatge inline sota el textarea. **No** tanca la caixa.
 
-El menú de tres punts actualment queda obert. Corregeix-ho:
+### Visualització de replies
 
-- Usa `@HostListener('document:click', ['$event'])` dins `PostCardComponent`.
-- En clicar fora del menú → `isMenuOpen = false`.
-- Assegura't que el clic sobre el botó d'obertura no es propagui al document (usa `$event.stopPropagation()`).
+Les replies apareixen sagnades sota el comentari pare. Identifica-les visualment amb:
+- Una línia vertical a l'esquerra (border-left subtil, color de la paleta del `DESIGN.md`).
+- Sagnat horitzontal (~24-32px).
+
+Cada reply mostra:
+- Avatar + username + temps.
+- Text: `"@username_pare text de la reply"` — el `@username_pare` en color accent i no clicable (és decoratiu, el `replyingTo` del backend).
+- Peu: icona like + número + botó `Reply` (que obre una caixa adreçada a l'autor de la reply, però envia al comentari arrel — un sol nivell de niament).
+
+**Visibilitat de replies:**
+- Si el comentari té `replies.length > 0` → mostra-les sempre expandides per defecte.
+- No cal un toggle "Show/Hide replies" en aquest prompt.
+
+### Afegir mètodes al servei
+
+```typescript
+addReply(postId: string, commentId: string, text: string): Observable<Comment>
+deleteComment(postId: string, commentId: string): Observable<void>
+deleteReply(postId: string, commentId: string, replyId: string): Observable<void>
+```
+
+---
+
+## 3. Eliminació de comentaris i replies
+
+### Qui pot eliminar
+
+| Rol | Pot eliminar |
+|---|---|
+| Autor del comentari | El seu propi comentari / reply |
+| `moderator` de plataforma | Qualsevol comentari / reply |
+| `superadmin` | Qualsevol comentari / reply |
+
+El rol de l'usuari autenticat prové de `AuthService.currentUser.role`.
+
+### UX d'eliminació
+
+- Afegeix una opció `Delete` al menú de tres punts de cada comentari i reply (o una icona de paperera discreta visible en hover, el que quedi més net).
+- En clicar: diàleg de confirmació simple (el mateix patró que s'usa per eliminar posts — consistent amb el que ja existeix).
+- En confirmar:
+  - Crida al endpoint corresponent (comentari arrel o reply).
+  - En èxit: elimina l'element de la llista amb fade-out (igual que els posts). Si s'elimina un comentari arrel, s'eliminen visualment també les seves replies.
+  - En error: missatge inline discret.
+- Usa `ToastService` per confirmar l'eliminació: `"Comment deleted."` (ja existent del Prompt 6).
+
+---
+
+## Estructura visual final d'un comentari amb replies
+
+```
+┌──────────────────────────────────────────────────┐
+│ [Avatar] @username · 2h ago              [···]   │
+│ Text del comentari                               │
+│ 👍 3   Reply                                     │
+│                                                  │
+│ │  [Avatar] @reply_user · 1h ago       [···]    │
+│ │  @username text de la reply                   │
+│ │  👍 1   Reply                                 │
+│                                                  │
+│ │  [Avatar] @reply_user2 · 30m ago     [···]   │
+│ │  @username text de la reply 2                │
+│ │  👍 0   Reply                                │
+│                                                  │
+│ ┌──────────────────────────────────────────────┐ │
+│ │ [Avatar] Replying to @username               │ │
+│ │ Write a reply...                      0/400  │ │
+│ │ [Cancel]                            [Reply]  │ │
+│ └──────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -244,50 +184,47 @@ El menú de tres punts actualment queda obert. Corregeix-ho:
 
 - CSS custom pur. Totes les variables del `DESIGN.md`.
 - Sintaxi Angular 17+: `@if`, `@for`, `inject()`, `standalone: true`.
-- `ToastService` injectable a `root` (`providedIn: 'root'`).
-- **No instal·lis cap llibreria externa** per a l'emoji picker ni per als toasts. Tot és CSS + Angular pur.
-- Allibera sempre els `URL.createObjectURL` amb `URL.revokeObjectURL` quan ja no calguin.
-- Els `@HostListener` de document:click als components han de fer `ngOnDestroy` per evitar listeners orfes si el component es destrueix amb el menú obert.
+- **Màxim una caixa de reply oberta alhora** a tot el component de post (no per comentari, sinó per post sencer). Gestiona-ho amb un únic `activeReplyCommentId: string | null` al `PostCardComponent`.
+- **Optimistic update** per a likes de comentaris i replies: mateix patró que els likes de posts (actualitza immediatament, reverteix en error).
+- La línia vertical de les replies ha de ser un `border-left` en CSS, no un element HTML addicional.
+- Si `PostCardComponent` es fa massa gran, extreu la secció de comentaris a un `CommentSectionComponent` dins la mateixa carpeta. Decideix-ho en funció del tamany real del fitxer.
+- No implementis cap sistema de notificacions de replies en aquest prompt.
 
 ---
 
-## Resum de fitxers a crear o modificar
-
-**Crear:**
+## Resum de fitxers a modificar
 
 ```
-frontend/src/app/shared/components/emoji-picker/   (nou)
-frontend/src/app/shared/components/toast/          (nou)
-frontend/src/app/core/services/toast.service.ts    (nou)
-frontend/src/app/features/community/components/post-skeleton/  (nou)
+frontend/src/app/features/community/components/post-card/
+├── post-card.component.ts    → lògica replies, likes comments, activeReplyCommentId
+├── post-card.component.html  → estructura visual replies, caixes inline
+└── post-card.component.css   → sagnat, línia vertical, hover states nous
+
+frontend/src/app/features/community/services/
+└── community.service.ts      → nous mètodes: likeComment, likeReply, addReply,
+                                 deleteComment, deleteReply
 ```
 
-**Modificar:**
-
+Opcional si el component és massa gran:
 ```
-frontend/src/app/features/community/community.component.*   (skeletons, retry, toast)
-frontend/src/app/features/community/components/post-card/*  (vídeo, hover, menú fix)
-frontend/src/app/app.component.html                         (afegir <app-toast>)
-```
-
-**Modificar si cal (Prompt 5 ja fet):**
-
-```
-frontend/src/app/features/settings/settings.component.ts   (usar ToastService)
-frontend/src/app/features/profile/profile.component.*      (usar PostSkeletonComponent)
+frontend/src/app/features/community/components/comment-section/
+├── comment-section.component.ts
+├── comment-section.component.html
+└── comment-section.component.css
 ```
 
 ---
 
 ## Resultat esperat
 
-- ✅ Crear posts amb vídeo (mp4, webm) + validació de mida + previsualització local
-- ✅ Reproductor de vídeo natiu a `PostCardComponent`
-- ✅ Emoji picker popover sense llibreries externes
-- ✅ Skeleton screens animats (shimmer) en lloc de text de càrrega
-- ✅ Estat d'error amb botó "Try again" al feed i al infinite scroll
-- ✅ Toast d'èxit en crear posts (i en altres accions exitoses anteriors)
-- ✅ Hover states coherents a les targetes de post
-- ✅ Menú de tres punts es tanca en clicar fora
-- ✅ Cap memory leak de URL objecte de previsualització
+- ✅ Likes als comentaris arrel amb optimistic update i estat visual
+- ✅ Likes a les replies amb optimistic update i estat visual
+- ✅ Botó "Reply" a cada comentari arrel i reply
+- ✅ Màxim una caixa de reply oberta alhora per post
+- ✅ Caixa de reply amb indicador "Replying to @username", textarea, Cancel i Reply
+- ✅ Reply optimista: apareix immediatament sense esperar el servidor
+- ✅ Replies visualment sagnades amb línia vertical
+- ✅ Eliminació de comentaris i replies per autor / mod / superadmin
+- ✅ Toast de confirmació en eliminar (`ToastService` del Prompt 6)
+- ✅ Fade-out en eliminar (coherent amb l'eliminació de posts)
 - ✅ Cap valor de CSS hardcoded
