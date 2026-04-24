@@ -19,7 +19,7 @@
         <span class="pc-time">{{ relativeTime(post.createdAt) }}</span>
       </div>
       @if (post.origin === 'public_community' && communityName) {
-        <div class="pc-community-badge">in {{ communityName }}</div>
+        <a [routerLink]="'/community/c/' + communityId" class="pc-community-badge">in {{ communityName }}</a>
       }
     </div>
 

@@ -1,0 +1,219 @@
+<!-- HEADER -->
+<header class="detail-header">
+  <a routerLink="/community" class="header-brand">MarketHub</a>
+  <div class="header-actions">
+    @if (auth.isAuthenticated()) {
+      <a routerLink="/settings" class="header-icon-btn" title="Settings">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </a>
+      <a [routerLink]="'/profile/' + (auth.currentUser()?.username || '')" class="header-avatar-link">
+        @if (auth.currentUser()?.avatar) {
+          <img [src]="auth.currentUser()!.avatar" alt="Avatar" class="header-avatar" />
+        } @else {
+          <div class="header-avatar-placeholder"></div>
+        }
+      </a>
+    } @else {
+      <a routerLink="/login" class="header-login-link">Sign in</a>
+    }
+  </div>
+</header>
+
+<div class="detail-layout">
+  <div class="detail-content">
+    <!-- Loading state -->
+    @if (loading()) {
+      <div class="community-banner skeleton-banner"></div>
+      @for (_ of [1,2,3]; track $index) {
+        <app-post-skeleton></app-post-skeleton>
+      }
+    } @else if (error()) {
+      <div class="error-card">
+        <span class="error-icon">⚠️</span>
+        <span class="error-text">Could not load community.</span>
+        <button class="retry-btn" (click)="retryAll()">Try again</button>
+      </div>
+    } @else if (community(); as c) {
+      <!-- Community banner -->
+      <div class="community-banner">
+        <div class="banner-left">
+          @if (c.avatar) {
+            <img [src]="c.avatar" [alt]="c.name" class="community-avatar" />
+          } @else {
+            <div class="community-avatar community-avatar-initial" [style.background-color]="getInitialColor(c.name)">
+              {{ getInitial(c.name) }}
+            </div>
+          }
+          <div class="banner-info">
+            <h1 class="community-name">{{ c.name }}</h1>
+            <span class="community-members">{{ c.memberCount }} {{ c.memberCount === 1 ? 'member' : 'members' }}</span>
+            @if (c.description) {
+              <p class="community-description">{{ c.description }}</p>
+            }
+          </div>
+        </div>
+        <div class="banner-actions">
+          @if (auth.isAuthenticated() && c.isMember) {
+            <button class="leave-btn" (click)="onLeaveClick()" [disabled]="joiningOrLeaving()">
+              {{ joiningOrLeaving() ? 'Leaving...' : 'Leave' }}
+            </button>
+          } @else {
+            <button class="join-btn" (click)="onJoinClick()" [disabled]="joiningOrLeaving()">
+              {{ joiningOrLeaving() ? 'Joining...' : 'Join' }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Leave confirmation dialog -->
+      @if (showLeaveConfirm()) {
+        <div class="confirm-overlay" (click)="cancelLeave()">
+          <div class="confirm-dialog" (click)="$event.stopPropagation()">
+            @if (isLastMember) {
+              <p class="confirm-text confirm-warning">You are the only member. Leaving will permanently delete this community.</p>
+            } @else {
+              <p class="confirm-text">Are you sure you want to leave this community?</p>
+            }
+            <div class="confirm-actions">
+              <button class="confirm-cancel" (click)="cancelLeave()">Cancel</button>
+              <button class="confirm-leave" (click)="confirmLeave()">{{ isLastMember ? 'Leave anyway' : 'Leave' }}</button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Create post box -->
+      @if (!auth.isAuthenticated()) {
+        <div class="signin-banner">
+          Sign in and join to start posting
+        </div>
+      } @else if (!c.isMember) {
+        <div class="create-post-card disabled">
+          <div class="create-post-top">
+            <div class="post-avatar-small">
+              @if (auth.currentUser()?.avatar) {
+                <img [src]="auth.currentUser()!.avatar" alt="" />
+              } @else {
+                <div class="avatar-placeholder-sm"></div>
+              }
+            </div>
+            <input
+              type="text"
+              class="post-input"
+              placeholder="Join this community to post"
+              readonly
+            />
+          </div>
+        </div>
+      } @else {
+        <div class="create-post-card">
+          <div class="create-post-top">
+            <div class="post-avatar-small">
+              @if (auth.currentUser()?.avatar) {
+                <img [src]="auth.currentUser()!.avatar" alt="" />
+              } @else {
+                <div class="avatar-placeholder-sm"></div>
+              }
+            </div>
+            <textarea
+              #postTextarea
+              class="post-input post-textarea"
+              placeholder="What's on your mind?"
+              rows="1"
+              maxlength="400"
+              [value]="postText()"
+              (input)="onTextInput($event)"
+            ></textarea>
+          </div>
+
+          @if (mediaPreview()) {
+            <div class="media-preview">
+              @if (mediaIsVideo()) {
+                <video controls preload="metadata" [src]="mediaPreview()!"></video>
+              } @else {
+                <img [src]="mediaPreview()!" alt="Preview" />
+              }
+              <button class="media-remove" (click)="removeMedia()" title="Remove">×</button>
+            </div>
+          }
+
+          <div class="create-post-actions">
+            <div class="post-action-icons">
+              <input #fileInput type="file" accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime" hidden (change)="onFileSelected($event)" />
+              <button class="icon-btn" title="Image" (click)="triggerFilePicker(fileInput)">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+                </svg>
+              </button>
+              <div class="emoji-btn-wrap">
+                <button class="icon-btn" title="Emoji" (click)="onEmojiClick($event)">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/>
+                  </svg>
+                </button>
+                @if (emojiPickerOpen()) {
+                  <app-emoji-picker
+                    (emojiSelected)="onEmojiSelected($event)"
+                    (closed)="onEmojiClosed()">
+                  </app-emoji-picker>
+                }
+              </div>
+              @if (postText().length > 0) {
+                <span class="char-counter" [class.near-limit]="postText().length > 360">{{ postText().length }}/400</span>
+              }
+            </div>
+            <button class="post-btn" (click)="submitPost()" [disabled]="!postText().trim() || creating()">
+              {{ creating() ? 'Posting...' : 'Post' }}
+            </button>
+          </div>
+
+          @if (createError()) {
+            <div class="create-error">{{ createError() }}</div>
+          }
+        </div>
+      }
+
+      <!-- Feed -->
+      @if (feedLoading() && posts().length === 0) {
+        @for (_ of [1,2,3]; track $index) {
+          <app-post-skeleton></app-post-skeleton>
+        }
+      } @else if (feedError()) {
+        <div class="error-card">
+          <span class="error-icon">⚠️</span>
+          <span class="error-text">Could not load posts.</span>
+          <button class="retry-btn" (click)="retryFeed()">Try again</button>
+        </div>
+      } @else if (posts().length === 0) {
+        <div class="feed-empty">
+          @if (c.isMember) {
+            No posts yet. Be the first to post!
+          } @else {
+            No posts yet.
+          }
+        </div>
+      } @else {
+        @for (post of posts(); track post.id) {
+          <app-post-card [post]="post" (deleted)="onPostDeleted($event)"></app-post-card>
+        }
+      }
+
+      <!-- Infinite scroll sentinel -->
+      <div #feedSentinel class="feed-sentinel">
+        @if (loadingMore()) {
+          <app-post-skeleton></app-post-skeleton>
+        } @else if (loadMoreError()) {
+          <div class="error-card error-card-inline">
+            <span class="error-text">Could not load more posts.</span>
+            <button class="retry-btn" (click)="retryLoadMore()">Try again</button>
+          </div>
+        } @else if (!hasMore() && posts().length > 0) {
+          <div class="feed-end">You're all caught up</div>
+        }
+      </div>
+    }
+  </div>
+</div>

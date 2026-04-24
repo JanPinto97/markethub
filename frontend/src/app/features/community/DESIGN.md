@@ -157,3 +157,36 @@ These extend the global system above for the Community page layout.
 - Loading, empty, error: centered text in a `--surface-container-lowest` card with generous padding (`--spacing-6`).
 - End-of-feed message: `You're all caught up 🎉` in `--on-surface-variant`.
 - Infinite scroll: `IntersectionObserver` with `200px` rootMargin on a sentinel div at the feed bottom; spinner text "Loading more…" while fetching the next page.
+
+### Community Public Detail Page — Prompt 8
+
+- **Route:** `/community/c/:id` — no auth required to view, actions require login.
+- **Layout:** Single centered column, max-width 640px, no sidebars. Same header as community page (fixed, `--header-height`).
+- **Community banner:** `--surface-container-lowest` card, `--radius-md`, `--spacing-6` padding. Avatar 72px circle (initial fallback with HSL color). Name uses `--font-display`, `--text-display-sm`, `--weight-bold`. Member count: `--text-body-sm`, `--on-surface-variant`. Description: `--text-body-md`, `--on-surface-variant`, max 2 lines (`-webkit-line-clamp: 2`).
+- **Join button:** Signature Green Gradient (`--gradient-primary`), `--on-primary` text, `--radius-default`.
+- **Leave button:** `--surface-container-high` background, `--on-surface` text. Hover → `--surface-container-highest`.
+- **Leave confirmation dialog:** Fixed overlay `rgba(0,0,0,0.5)`, dialog uses `--surface-container-lowest`, `--radius-md`, `--shadow-ambient`. Warning text for last member uses `--error` color. Cancel button: secondary style. Leave button: `--error` background.
+- **Create post box:** Same styling as community page. Three states: not authed (sign-in banner, centered text), not member (disabled input "Join this community to post"), member (full textarea + media + emoji).
+- **Feed:** Reuses `PostCardComponent` with infinite scroll (`IntersectionObserver`, 200px rootMargin). Skeletons, error with retry, empty states.
+
+### Create Community Modal — Prompt 8
+
+- **Trigger:** "Create Community" button in sidebar opens the modal.
+- **Overlay:** Fixed, `z-index: 200`, `rgba(0,0,0,0.5)`. Closes on overlay click or Escape.
+- **Container:** `--surface-container-lowest`, `--radius-md`, max-width 480px, `--shadow-ambient`.
+- **Title:** `--font-display`, `--text-display-sm`, `--weight-bold`.
+- **Fields:** Same input styling (surface-container-low fill, radius-md, secondary ghost border on focus). Textarea for description with char counter. Avatar URL with live preview (40px circle).
+- **Type selector:** Radio buttons with `accent-color: --secondary`. Warning message below in `--surface-container-low` bg.
+- **Validation:** Name 3–50 chars required, description max 300, 409 error inline under name field, generic error above footer actions.
+- **Actions:** Cancel (secondary), Create (gradient-primary). Disabled at 50% opacity.
+
+### Community Badge on PostCard — Prompt 8
+
+- Community badge in `PostCardComponent` is now a clickable `<a>` tag linking to `/community/c/:communityId`.
+- Hover state: underline.
+
+### Sidebar Membership Sync — Prompt 8
+
+- `CommunityService.communityMembershipChanged$` Subject syncs join/leave between detail page and sidebar.
+- Join → adds community to MY COMMUNITIES list.
+- Leave → removes community from MY COMMUNITIES list.

@@ -19,6 +19,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/community/community.component').then(m => m.CommunityComponent)
   },
   {
+    path: 'community/c/:id',
+    loadComponent: () => import('./features/community/pages/community-public-detail/community-public-detail.component')
+      .then(m => m.CommunityPublicDetailComponent)
+  },
+  {
     path: 'login',
     loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent)
   },

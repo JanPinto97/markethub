@@ -1,41 +1,36 @@
 import { Component, inject, signal, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-import { AuthService } from '../../core/services/auth.service';
-import { ToastService } from '../../core/services/toast.service';
-import { CommunityService, Community, Topic, PostX } from './services/community.service';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { PostCardComponent } from './components/post-card/post-card.component';
-import { PostSkeletonComponent } from './components/post-skeleton/post-skeleton.component';
-import { EmojiPickerComponent } from '../../shared/components/emoji-picker/emoji-picker.component';
-import { CreateCommunityModalComponent } from './components/create-community-modal/create-community-modal.component';
-import { getUsernameColor } from '../../shared/utils/color.utils';
+import { AuthService } from '../../../../core/services/auth.service';
+import { ToastService } from '../../../../core/services/toast.service';
+import { CommunityService, CommunityPublic, PostX } from '../../services/community.service';
+import { PostCardComponent } from '../../components/post-card/post-card.component';
+import { PostSkeletonComponent } from '../../components/post-skeleton/post-skeleton.component';
+import { EmojiPickerComponent } from '../../../../shared/components/emoji-picker/emoji-picker.component';
+import { getUsernameColor, getInitial } from '../../../../shared/utils/color.utils';
 
 @Component({
-  selector: 'app-community',
+  selector: 'app-community-public-detail',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive, PostCardComponent, PostSkeletonComponent, EmojiPickerComponent, CreateCommunityModalComponent],
-  templateUrl: './community.component.html',
-  styleUrl: './community.component.css'
+  imports: [RouterLink, PostCardComponent, PostSkeletonComponent, EmojiPickerComponent],
+  templateUrl: './community-public-detail.component.html',
+  styleUrl: './community-public-detail.component.css'
 })
-export class CommunityComponent implements OnInit, AfterViewInit, OnDestroy {
-  auth = inject(AuthService);
+export class CommunityPublicDetailComponent implements OnInit, AfterViewInit, OnDestroy {
+  private route = inject(ActivatedRoute);
   private router = inject(Router);
-  private communityService = inject(CommunityService);
+  auth = inject(AuthService);
+  private svc = inject(CommunityService);
   private toast = inject(ToastService);
 
   @ViewChild('feedSentinel') feedSentinel?: ElementRef<HTMLDivElement>;
   @ViewChild('postTextarea') postTextarea?: ElementRef<HTMLTextAreaElement>;
 
-  activeTab: 'trending' | 'following' = 'trending';
+  communityId = '';
+  community = signal<CommunityPublic | null>(null);
+  loading = signal(true);
+  error = signal(false);
 
-  communities = signal<Community[]>([]);
-  communitiesLoading = signal(false);
-  communitiesError = signal(false);
-
-  pinnedTopics = signal<Topic[]>([]);
-  topicsLoading = signal(true);
-
-  // Feed state
   posts = signal<PostX[]>([]);
   feedLoading = signal(false);
   feedError = signal(false);
@@ -44,7 +39,6 @@ export class CommunityComponent implements OnInit, AfterViewInit, OnDestroy {
   loadingMore = signal(false);
   loadMoreError = signal(false);
 
-  // Create post state
   postText = signal('');
   mediaFile: File | null = null;
   mediaPreview = signal<string | null>(null);
@@ -53,34 +47,21 @@ export class CommunityComponent implements OnInit, AfterViewInit, OnDestroy {
   createError = signal<string | null>(null);
   emojiPickerOpen = signal(false);
 
-  showCreateCommunityModal = signal(false);
+  joiningOrLeaving = signal(false);
+  showLeaveConfirm = signal(false);
 
   private observer?: IntersectionObserver;
-  private membershipSub?: Subscription;
+  private subs: Subscription[] = [];
 
   ngOnInit() {
-    if (this.auth.isAuthenticated()) {
-      this.communitiesLoading.set(true);
-      this.loadMyCommunities();
+    this.communityId = this.route.snapshot.paramMap.get('id') || '';
+    if (!this.communityId) {
+      this.error.set(true);
+      this.loading.set(false);
+      return;
     }
-    this.loadPinnedTopics();
-    this.loadFeed(true);
-    this.membershipSub = this.communityService.communityMembershipChanged$.subscribe(event => {
-      if (event.action === 'joined' && event.community) {
-        const newComm: Community = {
-          id: event.community.id,
-          name: event.community.name,
-          type: 'public',
-          memberCount: event.community.memberCount
-        };
-        this.communities.update(list => {
-          if (list.some(c => c.id === newComm.id)) return list;
-          return [...list, newComm];
-        });
-      } else if (event.action === 'left') {
-        this.communities.update(list => list.filter(c => c.id !== event.id));
-      }
-    });
+    this.loadCommunity();
+    this.loadPosts(true);
   }
 
   ngAfterViewInit() {
@@ -89,7 +70,7 @@ export class CommunityComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy() {
     this.observer?.disconnect();
-    this.membershipSub?.unsubscribe();
+    this.subs.forEach(s => s.unsubscribe());
     if (this.mediaIsVideo() && this.mediaPreview()) {
       URL.revokeObjectURL(this.mediaPreview()!);
     }
@@ -105,14 +86,22 @@ export class CommunityComponent implements OnInit, AfterViewInit, OnDestroy {
     this.observer.observe(this.feedSentinel.nativeElement);
   }
 
-  setTab(tab: 'trending' | 'following') {
-    if (tab === this.activeTab) return;
-    if (tab === 'following' && !this.requireAuth()) return;
-    this.activeTab = tab;
-    this.loadFeed(true);
+  private loadCommunity() {
+    this.loading.set(true);
+    this.error.set(false);
+    this.svc.getCommunityPublic(this.communityId).subscribe({
+      next: (c) => {
+        this.community.set(c);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.error.set(true);
+        this.loading.set(false);
+      }
+    });
   }
 
-  private loadFeed(reset: boolean) {
+  private loadPosts(reset: boolean) {
     if (reset) {
       this.posts.set([]);
       this.feedPage.set(1);
@@ -120,12 +109,13 @@ export class CommunityComponent implements OnInit, AfterViewInit, OnDestroy {
       this.feedError.set(false);
     }
     this.feedLoading.set(true);
-    this.communityService.getFeed(this.activeTab, 1, 10).subscribe({
+    this.svc.getCommunityPublicPosts(this.communityId, 1, 10).subscribe({
       next: (res) => {
         this.posts.set(res.posts);
         this.hasMore.set(res.pagination.hasNextPage);
         this.feedPage.set(1);
         this.feedLoading.set(false);
+        setTimeout(() => this.setupObserver());
       },
       error: () => {
         this.feedError.set(true);
@@ -138,7 +128,7 @@ export class CommunityComponent implements OnInit, AfterViewInit, OnDestroy {
     const next = this.feedPage() + 1;
     this.loadingMore.set(true);
     this.loadMoreError.set(false);
-    this.communityService.getFeed(this.activeTab, next, 10).subscribe({
+    this.svc.getCommunityPublicPosts(this.communityId, next, 10).subscribe({
       next: (res) => {
         this.posts.update(list => [...list, ...res.posts]);
         this.hasMore.set(res.pagination.hasNextPage);
@@ -152,12 +142,96 @@ export class CommunityComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  retryAll() {
+    this.loadCommunity();
+    this.loadPosts(true);
+  }
+
   retryFeed() {
-    this.loadFeed(true);
+    this.loadPosts(true);
   }
 
   retryLoadMore() {
     this.loadMore();
+  }
+
+  // ── Join / Leave ──
+
+  onJoinClick() {
+    if (!this.auth.isAuthenticated()) {
+      this.router.navigate(['/login']);
+      return;
+    }
+    this.join();
+  }
+
+  private join() {
+    const c = this.community();
+    if (!c || this.joiningOrLeaving()) return;
+
+    this.joiningOrLeaving.set(true);
+    const prevMember = c.isMember;
+    const prevCount = c.memberCount;
+    this.community.set({ ...c, isMember: true, memberCount: c.memberCount + 1 });
+
+    this.svc.joinCommunityPublic(this.communityId).subscribe({
+      next: (res) => {
+        this.community.update(v => v ? { ...v, memberCount: res.memberCount } : v);
+        this.joiningOrLeaving.set(false);
+        this.svc.communityMembershipChanged$.next({
+          id: this.communityId,
+          action: 'joined',
+          community: this.community()!
+        });
+        this.toast.show('Joined community!', 'success');
+      },
+      error: () => {
+        this.community.set({ ...c, isMember: prevMember, memberCount: prevCount });
+        this.joiningOrLeaving.set(false);
+        this.toast.show('Could not join community.', 'error');
+      }
+    });
+  }
+
+  onLeaveClick() {
+    this.showLeaveConfirm.set(true);
+  }
+
+  cancelLeave() {
+    this.showLeaveConfirm.set(false);
+  }
+
+  confirmLeave() {
+    this.showLeaveConfirm.set(false);
+    const c = this.community();
+    if (!c || this.joiningOrLeaving()) return;
+
+    this.joiningOrLeaving.set(true);
+    const prevMember = c.isMember;
+    const prevCount = c.memberCount;
+    this.community.set({ ...c, isMember: false, memberCount: c.memberCount - 1 });
+
+    this.svc.leaveCommunityPublic(this.communityId).subscribe({
+      next: (res) => {
+        this.community.update(v => v ? { ...v, memberCount: res.memberCount } : v);
+        this.joiningOrLeaving.set(false);
+        this.svc.communityMembershipChanged$.next({
+          id: this.communityId,
+          action: 'left'
+        });
+        this.toast.show('Left community.', 'success');
+      },
+      error: () => {
+        this.community.set({ ...c, isMember: prevMember, memberCount: prevCount });
+        this.joiningOrLeaving.set(false);
+        this.toast.show('Could not leave community.', 'error');
+      }
+    });
+  }
+
+  get isLastMember(): boolean {
+    const c = this.community();
+    return !!c && c.memberCount <= 1 && c.isMember;
   }
 
   // ── Create post ──
@@ -171,14 +245,11 @@ export class CommunityComponent implements OnInit, AfterViewInit, OnDestroy {
     ta.style.height = Math.min(ta.scrollHeight, 200) + 'px';
   }
 
-  onCreateFocus() {
+  triggerFilePicker(fileInput: HTMLInputElement) {
     if (!this.auth.isAuthenticated()) {
       this.router.navigate(['/login']);
+      return;
     }
-  }
-
-  triggerFilePicker(fileInput: HTMLInputElement) {
-    if (!this.requireAuth()) return;
     fileInput.click();
   }
 
@@ -226,7 +297,6 @@ export class CommunityComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onEmojiClick(event: Event) {
     event.stopPropagation();
-    if (!this.requireAuth()) return;
     this.emojiPickerOpen.update(v => !v);
   }
 
@@ -258,13 +328,16 @@ export class CommunityComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   submitPost() {
-    if (!this.requireAuth()) return;
+    if (!this.auth.isAuthenticated()) {
+      this.router.navigate(['/login']);
+      return;
+    }
     const text = this.postText().trim();
     if (!text || this.creating()) return;
 
     this.creating.set(true);
     this.createError.set(null);
-    this.communityService.createPost(text, this.mediaFile).subscribe({
+    this.svc.createCommunityPost(this.communityId, text, this.mediaFile).subscribe({
       next: (newPost) => {
         this.posts.update(list => [newPost, ...list]);
         this.postText.set('');
@@ -286,80 +359,13 @@ export class CommunityComponent implements OnInit, AfterViewInit, OnDestroy {
     this.posts.update(list => list.filter(p => p.id !== postId));
   }
 
-  // ── Sidebar / other ──
-
-  openTopicSearch() {
-    if (!this.requireAuth()) return;
-    console.log('open topic search');
-  }
-
-  openCreateCommunity() {
-    if (!this.requireAuth()) return;
-    this.showCreateCommunityModal.set(true);
-  }
-
-  onCreateCommunityClose() {
-    this.showCreateCommunityModal.set(false);
-  }
-
-  onCommunityCreated(event: { community: any; type: 'public' | 'private' }) {
-    const c = event.community;
-    const newComm: Community = {
-      id: c.id,
-      name: c.name,
-      type: event.type,
-      memberCount: c.memberCount ?? 1
-    };
-    this.communities.update(list => [...list, newComm]);
-  }
-
-  requireAuth(): boolean {
-    if (this.auth.isAuthenticated()) return true;
-    this.router.navigate(['/login']);
-    return false;
-  }
+  // ── Helpers ──
 
   getInitialColor(name: string): string {
     return getUsernameColor(name);
   }
 
-  getCategoryIcon(category: string): string {
-    switch (category) {
-      case 'CORE_MARKETS': return '📈';
-      case 'ECONOMIA_I_MACRO': return '🏦';
-      case 'ASSETS_ESPECIFICS': return '💼';
-      case 'TRADING_I_INVERSIO': return '⚡';
-      default: return '📊';
-    }
-  }
-
-  private loadMyCommunities() {
-    this.communityService.getMyCommunities().subscribe({
-      next: (comms) => {
-        this.communities.set(comms);
-        this.communitiesLoading.set(false);
-      },
-      error: () => {
-        this.communitiesError.set(true);
-        this.communitiesLoading.set(false);
-      }
-    });
-  }
-
-  private loadPinnedTopics() {
-    const ids = this.communityService.getPinnedTopicIds();
-    if (ids.length === 0) {
-      this.topicsLoading.set(false);
-      return;
-    }
-    this.communityService.getTopicsByIds(ids).subscribe({
-      next: (topics) => {
-        this.pinnedTopics.set(topics);
-        this.topicsLoading.set(false);
-      },
-      error: () => {
-        this.topicsLoading.set(false);
-      }
-    });
+  getInitial(name: string): string {
+    return getInitial(name);
   }
 }

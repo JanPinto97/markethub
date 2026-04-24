@@ -224,3 +224,10 @@
   </aside>
 
 </div>
+
+@if (showCreateCommunityModal()) {
+  <app-create-community-modal
+    (closed)="onCreateCommunityClose()"
+    (created)="onCommunityCreated($event)">
+  </app-create-community-modal>
+}

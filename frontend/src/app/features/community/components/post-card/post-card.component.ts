@@ -63,6 +63,12 @@ export class PostCardComponent {
     return c.name || null;
   }
 
+  get communityId(): string | null {
+    const c = this.post.community;
+    if (!c || typeof c === 'string') return c || null;
+    return c._id || null;
+  }
+
   get isOwner(): boolean {
     const u = this.auth.currentUser();
     if (!u) return false;

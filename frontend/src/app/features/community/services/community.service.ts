@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map, of } from 'rxjs';
+import { Observable, Subject, map, of } from 'rxjs';
 import { ApiService } from '../../../core/services/api.service';
 
 export interface Community {
@@ -59,6 +59,31 @@ export interface PostComment {
   likesCount: number;
   createdAt: string;
   replies?: PostComment[];
+}
+
+export interface CommunityPublic {
+  id: string;
+  name: string;
+  description?: string;
+  avatar?: string;
+  memberCount: number;
+  isMember: boolean;
+  createdAt: string;
+}
+
+export interface CommunityPrivate {
+  id: string;
+  name: string;
+  description?: string;
+  avatar?: string;
+  memberCount: number;
+  createdAt: string;
+}
+
+export interface CreateCommunityDto {
+  name: string;
+  description?: string;
+  avatar?: string;
 }
 
 interface FeedResponse {
@@ -148,5 +173,50 @@ export class CommunityService {
   addComment(postId: string, text: string): Observable<PostComment> {
     return this.api.post<{ success: boolean; comment: PostComment }>(`/posts/${postId}/comments`, { text })
       .pipe(map(res => res.comment));
+  }
+
+  // ── Community Public Detail ──
+
+  communityMembershipChanged$ = new Subject<{
+    id: string;
+    action: 'joined' | 'left';
+    community?: CommunityPublic;
+  }>();
+
+  getCommunityPublic(id: string): Observable<CommunityPublic> {
+    return this.api.get<{ success: boolean; community: CommunityPublic }>(`/communities/public/${id}`)
+      .pipe(map(res => res.community));
+  }
+
+  getCommunityPublicPosts(id: string, page: number, limit = 10): Observable<FeedResponse> {
+    return this.api.get<FeedResponse>(`/communities/public/${id}/feed?page=${page}&limit=${limit}`);
+  }
+
+  joinCommunityPublic(id: string): Observable<{ memberCount: number }> {
+    return this.api.post<{ success: boolean; memberCount: number }>(`/communities/public/${id}/join`, {})
+      .pipe(map(res => ({ memberCount: res.memberCount })));
+  }
+
+  leaveCommunityPublic(id: string): Observable<{ memberCount: number }> {
+    return this.api.post<{ success: boolean; memberCount: number }>(`/communities/public/${id}/leave`, {})
+      .pipe(map(res => ({ memberCount: res.memberCount })));
+  }
+
+  createCommunityPublic(data: CreateCommunityDto): Observable<CommunityPublic> {
+    return this.api.post<{ success: boolean; community: CommunityPublic }>('/communities/public', data)
+      .pipe(map(res => res.community));
+  }
+
+  createCommunityPrivate(data: CreateCommunityDto): Observable<CommunityPrivate> {
+    return this.api.post<{ success: boolean; community: CommunityPrivate }>('/communities/private', data)
+      .pipe(map(res => res.community));
+  }
+
+  createCommunityPost(communityId: string, text: string, mediaFile?: File | null): Observable<PostX> {
+    const formData = new FormData();
+    formData.append('text', text);
+    if (mediaFile) formData.append('media', mediaFile);
+    return this.http.post<{ success: boolean; post: PostX }>(`${this.baseUrl}/communities/public/${communityId}/posts`, formData)
+      .pipe(map(res => res.post));
   }
 }

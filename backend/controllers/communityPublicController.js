@@ -24,8 +24,8 @@ exports.createCommunity = async (req, res, next) => {
     const community = await CommunityPublic.create({
       name,
       description: description || '',
-      avatar: req.mediaUrl || '',
-      members: [],
+      avatar: req.mediaUrl || req.body.avatar || '',
+      members: [req.user.id],
     });
 
     res.status(201).json({ success: true, community: community.toPublicJSON() });
@@ -36,7 +36,9 @@ exports.getCommunity = async (req, res, next) => {
   try {
     const community = await CommunityPublic.findById(req.params.id);
     if (!community) return fail(res, 404, 'Community not found');
-    res.json({ success: true, community: community.toPublicJSON() });
+    const json = community.toPublicJSON();
+    json.isMember = req.user ? community.members.some(m => m.toString() === req.user.id) : false;
+    res.json({ success: true, community: json });
   } catch (err) { next(err); }
 };
 
@@ -66,9 +68,9 @@ exports.leaveCommunity = async (req, res, next) => {
 
     const stillExists = await CommunityPublic.findById(req.params.id);
     if (stillExists) {
-      res.json({ success: true, message: 'Left community' });
+      res.json({ success: true, message: 'Left community', memberCount: stillExists.members.length });
     } else {
-      res.json({ success: true, message: 'Left community. Community deleted as it had no members.' });
+      res.json({ success: true, message: 'Left community. Community deleted as it had no members.', memberCount: 0 });
     }
   } catch (err) { next(err); }
 };

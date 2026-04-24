@@ -90,6 +90,11 @@
   font-size: var(--text-body-sm);
   color: var(--secondary);
   font-weight: var(--weight-medium);
+  cursor: pointer;
+}
+
+.pc-community-badge:hover {
+  text-decoration: underline;
 }
 
 /* ── MENU ── */

@@ -1,0 +1,108 @@
+<div class="modal-overlay" (click)="onOverlayClick($event)">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h2 class="modal-title">Create Community</h2>
+      <button class="modal-close" (click)="close()" title="Close">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <!-- Name -->
+      <div class="field">
+        <label class="field-label">Name <span class="required">*</span></label>
+        <input
+          type="text"
+          class="field-input"
+          [class.field-error-border]="nameError()"
+          placeholder="Community name"
+          maxlength="50"
+          [value]="name()"
+          (input)="onNameInput($any($event.target).value)"
+        />
+        @if (nameError()) {
+          <span class="field-error">{{ nameError() }}</span>
+        }
+      </div>
+
+      <!-- Description -->
+      <div class="field">
+        <label class="field-label">Description</label>
+        <textarea
+          class="field-textarea"
+          placeholder="What is this community about?"
+          maxlength="300"
+          rows="3"
+          [value]="description()"
+          (input)="onDescInput($any($event.target).value)"
+        ></textarea>
+        <span class="field-counter">{{ description().length }}/300</span>
+      </div>
+
+      <!-- Avatar URL -->
+      <div class="field">
+        <label class="field-label">Avatar URL</label>
+        <div class="avatar-field-row">
+          <input
+            type="url"
+            class="field-input avatar-url-input"
+            placeholder="https://example.com/avatar.png"
+            [value]="avatarUrl()"
+            (input)="onAvatarInput($any($event.target).value)"
+          />
+          @if (avatarUrl().trim()) {
+            <img [src]="avatarUrl()" alt="Preview" class="avatar-preview" />
+          }
+        </div>
+      </div>
+
+      <!-- Type -->
+      <div class="field">
+        <label class="field-label">Type <span class="required">*</span></label>
+        <div class="type-options">
+          <label class="type-option">
+            <input
+              type="radio"
+              name="communityType"
+              value="public"
+              [checked]="type() === 'public'"
+              (change)="type.set('public')"
+            />
+            <span class="type-label">Public</span>
+          </label>
+          <label class="type-option">
+            <input
+              type="radio"
+              name="communityType"
+              value="private"
+              [checked]="type() === 'private'"
+              (change)="type.set('private')"
+            />
+            <span class="type-label">Private</span>
+          </label>
+        </div>
+        <div class="type-warning">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span>Community type cannot be changed after creation.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      @if (generalError()) {
+        <div class="general-error">{{ generalError() }}</div>
+      }
+      <div class="modal-actions">
+        <button class="btn-cancel" (click)="close()" [disabled]="submitting()">Cancel</button>
+        <button class="btn-create" (click)="submit()" [disabled]="!canSubmit">
+          {{ submitting() ? 'Creating...' : 'Create' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
