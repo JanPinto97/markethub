@@ -6,8 +6,8 @@ exports.getMyCommunities = async (req, res, next) => {
     const userId = req.user.id;
 
     const [publicComms, privateComms] = await Promise.all([
-      CommunityPublic.find({ members: userId }).select('name members').lean(),
-      CommunityPrivate.find({ 'members.user': userId }).select('name members').lean(),
+      CommunityPublic.find({ members: userId }).select('name members avatar').lean(),
+      CommunityPrivate.find({ 'members.user': userId }).select('name members avatar').lean(),
     ]);
 
     const communities = [
@@ -16,12 +16,14 @@ exports.getMyCommunities = async (req, res, next) => {
         name: c.name,
         type: 'public',
         memberCount: c.members.length,
+        avatar: c.avatar || '',
       })),
       ...privateComms.map(c => ({
         id: c._id,
         name: c.name,
         type: 'private',
         memberCount: c.members.length,
+        avatar: c.avatar || '',
       })),
     ].sort((a, b) => a.name.localeCompare(b.name));
 

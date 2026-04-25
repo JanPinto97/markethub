@@ -1,4 +1,0 @@
-Quan escric un post en una comunitat, s'em mostra el posts com a User, i els comentaris igual.
-Quan recarrego la pagina, ja es mostra el meu usuari com a propietari del post.
-A my communities, les comunitats no mostren l'avatar que tenen assignat, sinó una lletra. Hauria de mostrar l'avatar corresponent.
-Les comunitats privades donen error de not found (GET http://localhost:3000/api/v1/communities/public/69eb8d028a82f8eead2ff546 404 (Not Found))

@@ -54,10 +54,25 @@
         <p class="sidebar-empty">You haven't joined any community yet.</p>
       } @else {
         @for (comm of communities(); track comm.id) {
-          <a [routerLink]="'/community/c/' + comm.id" class="community-item">
-            <span class="community-initial" [style.background-color]="getInitialColor(comm.name)">{{ comm.name[0].toUpperCase() }}</span>
-            <span class="community-name">{{ comm.name }} <span class="community-tag">[{{ comm.type === 'public' ? 'Public' : 'Private' }}]</span></span>
-          </a>
+          @if (comm.type === 'public') {
+            <a [routerLink]="'/community/c/' + comm.id" class="community-item">
+              @if (comm.avatar) {
+                <img [src]="comm.avatar" [alt]="comm.name" class="community-avatar-img" />
+              } @else {
+                <span class="community-initial" [style.background-color]="getInitialColor(comm.name)">{{ comm.name[0].toUpperCase() }}</span>
+              }
+              <span class="community-name">{{ comm.name }} <span class="community-tag">[Public]</span></span>
+            </a>
+          } @else {
+            <div class="community-item community-item-disabled" title="Private community page coming soon">
+              @if (comm.avatar) {
+                <img [src]="comm.avatar" [alt]="comm.name" class="community-avatar-img" />
+              } @else {
+                <span class="community-initial" [style.background-color]="getInitialColor(comm.name)">{{ comm.name[0].toUpperCase() }}</span>
+              }
+              <span class="community-name">{{ comm.name }} <span class="community-tag">[Private]</span></span>
+            </div>
+          }
         }
       }
     </div>

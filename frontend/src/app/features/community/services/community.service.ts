@@ -8,6 +8,7 @@ export interface Community {
   name: string;
   type: 'public' | 'private';
   memberCount: number;
+  avatar?: string;
 }
 
 export interface Topic {

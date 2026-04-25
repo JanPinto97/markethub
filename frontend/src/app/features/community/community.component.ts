@@ -71,7 +71,8 @@ export class CommunityComponent implements OnInit, AfterViewInit, OnDestroy {
           id: event.community.id,
           name: event.community.name,
           type: 'public',
-          memberCount: event.community.memberCount
+          memberCount: event.community.memberCount,
+          avatar: event.community.avatar || ''
         };
         this.communities.update(list => {
           if (list.some(c => c.id === newComm.id)) return list;
@@ -308,7 +309,8 @@ export class CommunityComponent implements OnInit, AfterViewInit, OnDestroy {
       id: c.id,
       name: c.name,
       type: event.type,
-      memberCount: c.memberCount ?? 1
+      memberCount: c.memberCount ?? 1,
+      avatar: c.avatar || ''
     };
     this.communities.update(list => [...list, newComm]);
   }

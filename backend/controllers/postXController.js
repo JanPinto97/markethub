@@ -188,6 +188,7 @@ exports.createComment = async (req, res, next) => {
     if (postType === 'PostX') post.trendingScore = PostX.calculateTrendingScore(post);
     await post.save();
 
+    await comment.populate('author', 'username avatar role');
     res.status(201).json({ success: true, comment: comment.toPublicJSON() });
   } catch (err) { next(err); }
 };
