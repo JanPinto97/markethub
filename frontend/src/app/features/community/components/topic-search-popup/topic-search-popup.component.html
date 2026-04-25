@@ -1,0 +1,56 @@
+<div class="tsp-popup" (click)="$event.stopPropagation()">
+  <div class="tsp-header">
+    <div class="tsp-search-wrap">
+      <svg class="tsp-search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      <input
+        type="text"
+        class="tsp-search-input"
+        placeholder="Search topics..."
+        [value]="search()"
+        (input)="onSearch($event)"
+      />
+    </div>
+    <button class="tsp-close" (click)="closed.emit()" title="Close">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="tsp-filters">
+    <button class="tsp-filter" [class.active]="activeCategory() === null" (click)="setCategory(null)">All</button>
+    @for (cat of categories; track cat[0]) {
+      <button class="tsp-filter" [class.active]="activeCategory() === cat[0]" (click)="setCategory(cat[0])">{{ cat[1] }}</button>
+    }
+  </div>
+
+  <div class="tsp-list">
+    @if (filtered().length === 0) {
+      <div class="tsp-empty">No topics found.</div>
+    }
+    @for (topic of filtered(); track topic.id) {
+      <div class="tsp-item">
+        <span class="tsp-icon">{{ getCategoryIcon(topic.category) }}</span>
+        <span class="tsp-name">{{ topic.name }}</span>
+        <div class="tsp-actions">
+          <button
+            class="tsp-pin-btn"
+            [class.pinned]="isPinned(topic.id)"
+            (click)="togglePin($event, topic)"
+            [title]="isPinned(topic.id) ? 'Unpin' : 'Pin to sidebar'">
+            <svg viewBox="0 0 24 24" width="14" height="14" [attr.fill]="isPinned(topic.id) ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
+              <path d="M12 2 L14.5 9 L22 9 L16 13.5 L18.5 21 L12 16.5 L5.5 21 L8 13.5 L2 9 L9.5 9 Z"/>
+            </svg>
+          </button>
+          <button class="tsp-go-btn" (click)="goToTopic(topic.slug)" title="Go to topic">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+</div>

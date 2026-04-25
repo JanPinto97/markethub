@@ -1,0 +1,156 @@
+<!-- HEADER -->
+<header class="td-header">
+  <a routerLink="/community" class="td-brand">MarketHub</a>
+  <div class="td-header-spacer"></div>
+  <a routerLink="/community" class="td-back-link">
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>
+    </svg>
+    Back to Community
+  </a>
+</header>
+
+<div class="td-layout">
+  <!-- Topic header -->
+  @if (topicLoading()) {
+    <div class="td-topic-skeleton">
+      <div class="skel-line skel-lg"></div>
+      <div class="skel-line skel-sm"></div>
+    </div>
+  } @else if (topicError()) {
+    <div class="td-error-card">
+      <span>Could not load topic.</span>
+      <button class="td-retry-btn" (click)="loadTopic()">Try again</button>
+    </div>
+  } @else if (topic()) {
+    <div class="td-topic-banner">
+      <div class="td-topic-icon">{{ getCategoryIcon() }}</div>
+      <div class="td-topic-info">
+        <h1 class="td-topic-name">{{ topic()!.name }}</h1>
+        <div class="td-topic-meta">
+          <span class="td-topic-category">{{ getCategoryLabel() }}</span>
+          <span class="td-topic-dot">·</span>
+          <span>{{ topic()!.postCount }} posts</span>
+        </div>
+        @if (topic()!.description) {
+          <p class="td-topic-desc">{{ topic()!.description }}</p>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Sort tabs -->
+  <div class="td-sort-tabs">
+    <button class="td-sort-btn" [class.active]="sortMode() === 'top'" (click)="setSort('top')">🔥 Top</button>
+    <button class="td-sort-btn" [class.active]="sortMode() === 'recent'" (click)="setSort('recent')">🕐 Recent</button>
+  </div>
+
+  <!-- Create post box -->
+  @if (!auth.isAuthenticated()) {
+    <div class="td-create-disabled" (click)="requireAuth()">
+      Sign in to join the discussion
+    </div>
+  } @else {
+    <div class="td-create-card">
+      <div class="td-create-title-row">
+        <input
+          #titleInput
+          type="text"
+          class="td-title-input"
+          placeholder="Title *"
+          maxlength="300"
+          [value]="postTitle()"
+          (input)="onTitleInput($event)"
+        />
+        @if (postTitle().length > 0) {
+          <span class="td-char-counter" [class.near-limit]="postTitle().length > 270">{{ postTitle().length }}/300</span>
+        }
+      </div>
+
+      <textarea
+        #textArea
+        class="td-text-input"
+        placeholder="Add more detail..."
+        rows="1"
+        maxlength="2000"
+        [value]="postText()"
+        (input)="onTextInput($event)"
+      ></textarea>
+
+      @if (mediaPreview()) {
+        <div class="td-media-preview">
+          @if (mediaIsVideo()) {
+            <video controls preload="metadata" [src]="mediaPreview()!"></video>
+          } @else {
+            <img [src]="mediaPreview()!" alt="Preview" />
+          }
+          <button class="td-media-remove" (click)="removeMedia()" title="Remove">×</button>
+        </div>
+      }
+
+      <div class="td-create-actions">
+        <div class="td-action-icons">
+          <input #fileInput type="file" accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime" hidden (change)="onFileSelected($event)" />
+          <button class="td-icon-btn" title="Image" (click)="triggerFilePicker(fileInput)">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+            </svg>
+          </button>
+          <div class="td-emoji-wrap">
+            <button class="td-icon-btn" title="Emoji" (click)="onEmojiClick($event)">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/>
+              </svg>
+            </button>
+            @if (emojiPickerOpen()) {
+              <app-emoji-picker
+                (emojiSelected)="onEmojiSelected($event)"
+                (closed)="onEmojiClosed()">
+              </app-emoji-picker>
+            }
+          </div>
+        </div>
+        <button class="td-post-btn" (click)="submitPost()" [disabled]="!postTitle().trim() || creating()">
+          {{ creating() ? 'Posting…' : 'Post' }}
+        </button>
+      </div>
+
+      @if (createError()) {
+        <div class="td-create-error">{{ createError() }}</div>
+      }
+    </div>
+  }
+
+  <!-- Feed -->
+  @if (feedLoading() && posts().length === 0) {
+    @for (_ of [1,2,3]; track $index) {
+      <app-post-skeleton></app-post-skeleton>
+    }
+  } @else if (feedError()) {
+    <div class="td-error-card">
+      <span class="td-error-icon">⚠️</span>
+      <span>Could not load posts.</span>
+      <button class="td-retry-btn" (click)="retryFeed()">Try again</button>
+    </div>
+  } @else if (posts().length === 0 && !feedLoading()) {
+    <div class="td-empty">No posts yet. Start the discussion!</div>
+  } @else {
+    @for (post of posts(); track post.id) {
+      <app-post-reddit-card [post]="post" [topicSlug]="slug" (deleted)="onPostDeleted($event)"></app-post-reddit-card>
+    }
+  }
+
+  <!-- Infinite scroll sentinel -->
+  <div #feedSentinel class="td-sentinel">
+    @if (loadingMore()) {
+      <app-post-skeleton></app-post-skeleton>
+    } @else if (loadMoreError()) {
+      <div class="td-error-card td-error-inline">
+        <span>Could not load more posts.</span>
+        <button class="td-retry-btn" (click)="retryLoadMore()">Try again</button>
+      </div>
+    } @else if (!hasMore() && posts().length > 0) {
+      <div class="td-end">You're all caught up 🎉</div>
+    }
+  </div>
+</div>

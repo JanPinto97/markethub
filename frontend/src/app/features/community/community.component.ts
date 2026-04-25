@@ -2,18 +2,19 @@ import { Component, inject, signal, OnInit, OnDestroy, ViewChild, ElementRef, Af
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
-import { CommunityService, Community, Topic, PostX } from './services/community.service';
+import { CommunityService, Community, Topic, PostX, DiscussionTopicFull } from './services/community.service';
 import { Subscription } from 'rxjs';
 import { PostCardComponent } from './components/post-card/post-card.component';
 import { PostSkeletonComponent } from './components/post-skeleton/post-skeleton.component';
 import { EmojiPickerComponent } from '../../shared/components/emoji-picker/emoji-picker.component';
 import { CreateCommunityModalComponent } from './components/create-community-modal/create-community-modal.component';
+import { TopicSearchPopupComponent } from './components/topic-search-popup/topic-search-popup.component';
 import { getUsernameColor } from '../../shared/utils/color.utils';
 
 @Component({
   selector: 'app-community',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive, PostCardComponent, PostSkeletonComponent, EmojiPickerComponent, CreateCommunityModalComponent],
+  imports: [RouterLink, RouterLinkActive, PostCardComponent, PostSkeletonComponent, EmojiPickerComponent, CreateCommunityModalComponent, TopicSearchPopupComponent],
   templateUrl: './community.component.html',
   styleUrl: './community.component.css'
 })
@@ -54,6 +55,9 @@ export class CommunityComponent implements OnInit, AfterViewInit, OnDestroy {
   emojiPickerOpen = signal(false);
 
   showCreateCommunityModal = signal(false);
+  showTopicSearchPopup = signal(false);
+  allTopics = signal<DiscussionTopicFull[]>([]);
+  allTopicsLoaded = false;
 
   private observer?: IntersectionObserver;
   private membershipSub?: Subscription;
@@ -290,8 +294,32 @@ export class CommunityComponent implements OnInit, AfterViewInit, OnDestroy {
   // ── Sidebar / other ──
 
   openTopicSearch() {
-    if (!this.requireAuth()) return;
-    console.log('open topic search');
+    if (!this.allTopicsLoaded) {
+      this.communityService.getAllTopics().subscribe({
+        next: (topics) => {
+          this.allTopics.set(topics);
+          this.allTopicsLoaded = true;
+        }
+      });
+    }
+    this.showTopicSearchPopup.update(v => !v);
+  }
+
+  onTopicSearchClose() {
+    this.showTopicSearchPopup.set(false);
+  }
+
+  onTopicPinChanged(event: { id: string; pinned: boolean }) {
+    if (event.pinned) {
+      this.communityService.addPinnedTopic(event.id);
+    } else {
+      this.communityService.removePinnedTopic(event.id);
+    }
+    this.loadPinnedTopics();
+  }
+
+  get pinnedTopicIds(): string[] {
+    return this.communityService.getPinnedTopicIds();
   }
 
   openCreateCommunity() {
