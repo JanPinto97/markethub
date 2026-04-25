@@ -124,6 +124,7 @@ exports.createCommunityPost = async (req, res, next) => {
     community.postCount += 1;
     await community.save();
 
+    await post.populate('author', 'username avatar role');
     res.status(201).json({ success: true, post: post.toPublicJSON() });
   } catch (err) { next(err); }
 };

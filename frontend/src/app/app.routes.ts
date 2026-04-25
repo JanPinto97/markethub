@@ -24,6 +24,11 @@ export const routes: Routes = [
       .then(m => m.CommunityPublicDetailComponent)
   },
   {
+    path: 'community/t/:slug',
+    loadComponent: () => import('./features/community/pages/topic-detail/topic-detail.component')
+      .then(m => m.TopicDetailComponent)
+  },
+  {
     path: 'login',
     loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent)
   },

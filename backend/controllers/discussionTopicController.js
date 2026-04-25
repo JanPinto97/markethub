@@ -60,7 +60,8 @@ exports.getTopicFeed = async (req, res, next) => {
         {
           $project: {
             _id: 1, title: 1, text: 1, mediaUrl: 1, mediaType: 1,
-            upvotes: { $size: '$upvotes' }, downvotes: { $size: '$downvotes' },
+            upvotesCount: { $size: '$upvotes' }, downvotesCount: { $size: '$downvotes' },
+            rawUpvotes: '$upvotes', rawDownvotes: '$downvotes',
             voteScore: 1, commentCount: 1, topic: 1, createdAt: 1,
             author: {
               _id: '$authorDoc._id', username: '$authorDoc.username',
@@ -70,13 +71,21 @@ exports.getTopicFeed = async (req, res, next) => {
         },
       ]);
 
-      const posts = docs.map(d => ({
-        id: d._id, author: d.author, title: d.title, text: d.text,
-        mediaUrl: d.mediaUrl, mediaType: d.mediaType,
-        upvotes: d.upvotes, downvotes: d.downvotes,
-        voteScore: d.voteScore, commentCount: d.commentCount,
-        topic: d.topic, createdAt: d.createdAt,
-      }));
+      const uid = req.user ? req.user.id : null;
+      const posts = docs.map(d => {
+        let userVote = null;
+        if (uid) {
+          if (d.rawUpvotes.some(id => id.toString() === uid)) userVote = 'up';
+          else if (d.rawDownvotes.some(id => id.toString() === uid)) userVote = 'down';
+        }
+        return {
+          id: d._id, author: d.author, title: d.title, text: d.text,
+          mediaUrl: d.mediaUrl, mediaType: d.mediaType,
+          upvotes: d.upvotesCount, downvotes: d.downvotesCount,
+          voteScore: d.voteScore, commentCount: d.commentCount,
+          topic: d.topic, createdAt: d.createdAt, userVote,
+        };
+      });
 
       const totalPages = Math.ceil(total / limit);
       return res.json({
@@ -85,17 +94,26 @@ exports.getTopicFeed = async (req, res, next) => {
       });
     }
 
-    // sort === 'new'
+    // sort === 'recent'
     const filter = { topic: topic._id };
     const [posts, total] = await Promise.all([
       PostReddit.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit)
         .populate('author', 'username avatar role'),
       PostReddit.countDocuments(filter),
     ]);
+    const uid2 = req.user ? req.user.id : null;
     const totalPages = Math.ceil(total / limit);
     res.json({
       success: true,
-      posts: posts.map(p => p.toPublicJSON()),
+      posts: posts.map(p => {
+        const json = p.toPublicJSON();
+        json.userVote = null;
+        if (uid2) {
+          if (p.upvotes.some(id => id.toString() === uid2)) json.userVote = 'up';
+          else if (p.downvotes.some(id => id.toString() === uid2)) json.userVote = 'down';
+        }
+        return json;
+      }),
       pagination: { page, limit, total, totalPages, hasNextPage: page < totalPages, hasPrevPage: page > 1 },
     });
   } catch (err) { next(err); }
@@ -123,6 +141,7 @@ exports.createTopicPost = async (req, res, next) => {
     topic.postCount += 1;
     await topic.save();
 
+    await post.populate('author', 'username avatar role');
     res.status(201).json({ success: true, post: post.toPublicJSON() });
   } catch (err) { next(err); }
 };

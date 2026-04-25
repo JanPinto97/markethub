@@ -8,6 +8,7 @@ export interface Community {
   name: string;
   type: 'public' | 'private';
   memberCount: number;
+  avatar?: string;
 }
 
 export interface Topic {
@@ -86,17 +87,50 @@ export interface CreateCommunityDto {
   avatar?: string;
 }
 
+export interface DiscussionTopicFull {
+  id: string;
+  name: string;
+  slug: string;
+  category: string;
+  description: string;
+  postCount: number;
+}
+
+export interface PostReddit {
+  id: string;
+  author: { _id: string; username: string; avatar?: string; role?: string };
+  title: string;
+  text: string;
+  mediaUrl: string;
+  mediaType: 'none' | 'image' | 'video';
+  upvotes: number;
+  downvotes: number;
+  voteScore: number;
+  userVote: 'up' | 'down' | null;
+  commentCount: number;
+  topic: string;
+  createdAt: string;
+}
+
 interface FeedResponse {
   success: boolean;
   posts: PostX[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-    hasNextPage: boolean;
-    hasPrevPage: boolean;
-  };
+  pagination: Pagination;
+}
+
+interface FeedResponseReddit {
+  success: boolean;
+  posts: PostReddit[];
+  pagination: Pagination;
+}
+
+interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
 }
 
 const STORAGE_KEY = 'mh_pinned_topics';
@@ -218,5 +252,44 @@ export class CommunityService {
     if (mediaFile) formData.append('media', mediaFile);
     return this.http.post<{ success: boolean; post: PostX }>(`${this.baseUrl}/communities/public/${communityId}/posts`, formData)
       .pipe(map(res => res.post));
+  }
+
+  // ── Discussion Topics ──
+
+  getAllTopics(): Observable<DiscussionTopicFull[]> {
+    return this.api.get<{ success: boolean; topics: DiscussionTopicFull[] }>('/topics')
+      .pipe(map(res => res.topics));
+  }
+
+  getTopicDetail(slug: string): Observable<DiscussionTopicFull> {
+    return this.api.get<{ success: boolean; topic: DiscussionTopicFull }>(`/topics/${slug}`)
+      .pipe(map(res => res.topic));
+  }
+
+  getTopicPosts(slug: string, sort: 'top' | 'recent', page: number, limit = 10): Observable<FeedResponseReddit> {
+    return this.api.get<FeedResponseReddit>(`/topics/${slug}/feed?sort=${sort}&page=${page}&limit=${limit}`);
+  }
+
+  createTopicPost(slug: string, title: string, text?: string, mediaFile?: File | null): Observable<PostReddit> {
+    if (mediaFile) {
+      const formData = new FormData();
+      formData.append('title', title);
+      if (text) formData.append('text', text);
+      formData.append('media', mediaFile);
+      return this.http.post<{ success: boolean; post: PostReddit }>(`${this.baseUrl}/topics/${slug}/posts`, formData)
+        .pipe(map(res => res.post));
+    }
+    return this.api.post<{ success: boolean; post: PostReddit }>(`/topics/${slug}/posts`, { title, text: text || '' })
+      .pipe(map(res => res.post));
+  }
+
+  voteTopicPost(slug: string, postId: string, vote: 'up' | 'down'): Observable<{ upvotes: number; downvotes: number; voteScore: number; userVote: 'up' | 'down' | null }> {
+    return this.api.post<{ success: boolean; upvotes: number; downvotes: number; voteScore: number; userVote: 'up' | 'down' | null }>(`/topics/${slug}/posts/${postId}/vote`, { vote })
+      .pipe(map(res => ({ upvotes: res.upvotes, downvotes: res.downvotes, voteScore: res.voteScore, userVote: res.userVote })));
+  }
+
+  deleteTopicPost(slug: string, postId: string): Observable<void> {
+    return this.http.delete<{ success: boolean }>(`${this.baseUrl}/topics/${slug}/posts/${postId}`)
+      .pipe(map(() => undefined));
   }
 }

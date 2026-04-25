@@ -190,3 +190,32 @@ These extend the global system above for the Community page layout.
 - `CommunityService.communityMembershipChanged$` Subject syncs join/leave between detail page and sidebar.
 - Join → adds community to MY COMMUNITIES list.
 - Leave → removes community from MY COMMUNITIES list.
+
+### Topic Search Popup — Prompt 9
+
+- Popover positioned to the right of the `+ Add Topics` button, absolute-positioned from `.topic-search-anchor`.
+- Mobile fallback: fixed centered modal with `max-height: 80vh`.
+- Search input with auto-focus, filters locally on `name` (case-insensitive substring).
+- Category filter chips: All (default), Core Markets, Macro, Assets, Trading. One active at a time, combined with search.
+- Each topic row: category icon, name, Pin button (star, green when pinned), Go button (arrow, navigates to `/community/t/:slug`).
+- Pin/unpin updates sidebar immediately without closing popup.
+- Closes on Escape and click outside (`@HostListener`).
+- Topics loaded once per component lifecycle from `GET /api/v1/topics`.
+
+### Topic Detail Page — Prompt 9
+
+- Route: `/community/t/:slug`. Centered 640px column layout, no sidebars.
+- Header: fixed top bar with MarketHub brand + "Back to Community" link.
+- Topic banner: category icon (2rem), topic name (display-md), category label (secondary color) + post count, optional description.
+- Sort tabs: "🔥 Top" (default) and "🕐 Recent" as pill buttons. Active = primary bg.
+- Create post box: Title input (required, 300 chars max with counter) + textarea (optional, 2000 chars, auto-resize) + media upload + emoji picker. Disabled state for non-authenticated users: "Sign in to join the discussion" (click → /login).
+- Feed: `PostRedditCard` components with infinite scroll (IntersectionObserver, 200px rootMargin). Skeletons, error/retry, empty state.
+
+### PostRedditCard — Prompt 9
+
+- Independent from `PostCardComponent`. Different layout: horizontal with vote column on the left.
+- Vote column: ▲ button, score (bold, green if positive, red if negative), ▼ button. Active states: upvote = secondary color, downvote = error color.
+- Optimistic voting: toggles vote (send same direction = remove vote). Reverts all three fields (upvotes, downvotes, userVote) on error.
+- Content: title (link to `/community/t/:slug/p/:postId`), meta ("Posted by @username · time"), text preview (3-line clamp), optional media (300px max height), comment count footer.
+- Three-dot menu: visible on hover (always on mobile), only for owner/mod/superadmin. Delete with confirm + fade-out + toast.
+- Hover: subtle box-shadow on card.
