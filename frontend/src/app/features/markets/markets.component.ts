@@ -17,30 +17,34 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('symbolInput') symbolInput!: ElementRef;
   @ViewChild('searchContainer') searchContainer!: ElementRef;
 
-  // CONFIGURACIÓN (API Key de Finnhub)
+  // CONFIGURACIÓN (API Keys)
   private apiKey = 'd7jo9s9r01qu1n4fg3pgd7jo9s9r01qu1n4fg3q0';
+  private twelveDataApiKey = 'b21b5589fbce4aada1a45a82a7bbbbf0';
   private socket: WebSocket | null = null;
   
   widget: any;
-  currentSymbol: string = 'BINANCE:BTCUSDT';
+  currentSymbol: string = 'CRYPTO:BTCUSD';
   displaySymbol: string = 'BTC / USD';
+  currentApiSymbol: string = 'BTC/USD';
+  currentSource: string = 'twelvedata';
   currentPriceData: any = { c: 0, dp: 0 };
+  assetNotSupported: boolean = false;
   currentYear = new Date().getFullYear();
   selectedDate: Date = new Date();
   lastSentimentUpdate: string = '';
   
-  // Ticker extendido y real
+  // 1. SÍMBOLOS Y ETIQUETAS (Dual API Strategy)
   coins: any[] = [
-    { symbol: 'BTC/USD', tech: 'BINANCE:BTCUSDT', price: 0, change: 0 },
-    { symbol: 'ETH/USD', tech: 'BINANCE:ETHUSDT', price: 0, change: 0 },
-    { symbol: 'EUR/USD', tech: 'FX_IDC:EURUSD', price: 0, change: 0 },
-    { symbol: 'S&P 500', tech: 'FOREXCOM:SPXUSD', price: 0, change: 0 },
-    { symbol: 'GOLD', tech: 'OANDA:XAUUSD', price: 0, change: 0 },
-    { symbol: 'NASDAQ', tech: 'NASDAQ:NDX', price: 0, change: 0 },
-    { symbol: 'AAPL', tech: 'AAPL', price: 0, change: 0 },
-    { symbol: 'NVDA', tech: 'NVDA', price: 0, change: 0 },
-    { symbol: 'TSLA', tech: 'TSLA', price: 0, change: 0 },
-    { symbol: 'CRUDE OIL', tech: 'TVC:USOIL', price: 0, change: 0 }
+    { symbol: 'BTC/USD', tech: 'CRYPTO:BTCUSD', apiSymbol: 'BTC/USD', source: 'twelvedata', price: 0, change: 0 },
+    { symbol: 'ETH/USD', tech: 'CRYPTO:ETHUSD', apiSymbol: 'ETH/USD', source: 'twelvedata', price: 0, change: 0 },
+    { symbol: 'EUR/USD', tech: 'FX:EURUSD', apiSymbol: 'EUR/USD', source: 'twelvedata', price: 0, change: 0 }, 
+    { symbol: 'S&P 500 (SPY)', tech: 'SPY', apiSymbol: 'SPY', source: 'finnhub', price: 0, change: 0 },       
+    { symbol: 'GOLD (XAU)', tech: 'OANDA:XAUUSD', apiSymbol: 'XAU/USD', source: 'twelvedata', price: 0, change: 0 }, 
+    { symbol: 'NASDAQ 100 (QQQ)', tech: 'QQQ', apiSymbol: 'QQQ', source: 'finnhub', price: 0, change: 0 },      
+    { symbol: 'AAPL', tech: 'AAPL', apiSymbol: 'AAPL', source: 'finnhub', price: 0, change: 0 },
+    { symbol: 'NVDA', tech: 'NVDA', apiSymbol: 'NVDA', source: 'finnhub', price: 0, change: 0 },
+    { symbol: 'TSLA', tech: 'TSLA', apiSymbol: 'TSLA', source: 'finnhub', price: 0, change: 0 },
+    { symbol: 'CRUDE OIL (WTI)', tech: 'TVC:USOIL', apiSymbol: 'WTI', source: 'twelvedata', price: 0, change: 0 }
   ];
 
   searchResults: any[] = [];
@@ -120,11 +124,12 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.selectedDate = new Date();
     this.showSearchModal = false;
     this.searchResults = [];
+    this.assetNotSupported = false;
     
     this.loadNews();
     this.loadGlobalSentiment();
     this.loadTickerPrices();
-    this.updatePrice(this.currentSymbol);
+    this.updatePrice(this.currentApiSymbol, this.currentSource);
     this.fetchCalendarData();
   }
 
@@ -137,11 +142,12 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   showPopularAssets() {
-    // Cuando está vacío, mostramos nuestros activos principales
     this.searchResults = this.coins.map(c => ({
       symbol: c.tech,
+      apiSymbol: c.apiSymbol,
       description: c.symbol,
-      type: 'POPULAR'
+      type: 'POPULAR',
+      source: c.source
     }));
     this.showSearchModal = true;
     this.cdr.detectChanges();
@@ -154,19 +160,76 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    this.http.get(`https://finnhub.io/api/v1/search?q=${query}&token=${this.apiKey}`)
+    // Buscador Potenciado por Twelve Data (Soporta Forex, Cripto y Acciones Mundiales)
+    this.http.get(`https://api.twelvedata.com/symbol_search?symbol=${query}&outputsize=10`)
       .subscribe((res: any) => {
-        this.searchResults = (res.result || []).slice(0, 10);
+        const rawResults = res.data || [];
+        
+        this.searchResults = rawResults.filter((item: any) => {
+          return item.instrument_type !== 'Index' || item.symbol === 'SPX' || item.symbol === 'NDX' || item.symbol === 'IXIC';
+        }).map((item: any) => {
+          let tvSymbol = item.symbol;
+          let apiSymbol = item.symbol;
+          let type = item.instrument_type || 'ASSET';
+          let source = 'twelvedata';
+
+          if (type === 'Physical Currency') {
+            tvSymbol = `FX:${item.symbol.replace('/', '')}`;
+            type = 'FOREX';
+          } else if (type === 'Digital Currency' || type === 'Cryptocurrency') {
+            tvSymbol = `CRYPTO:${item.symbol.replace('/', '')}`;
+            type = 'CRYPTO';
+          } else if (type === 'Common Stock') {
+            source = 'finnhub'; // Las acciones de US siguen por Finnhub
+            type = 'STOCK';
+          } else if (item.symbol === 'SPX' || item.symbol === 'NDX' || item.symbol === 'IXIC') {
+             if (item.symbol === 'SPX') { tvSymbol = 'SPY'; apiSymbol = 'SPY'; source = 'finnhub'; }
+             if (item.symbol === 'NDX' || item.symbol === 'IXIC') { tvSymbol = 'QQQ'; apiSymbol = 'QQQ'; source = 'finnhub'; }
+             type = 'INDEX ETF';
+          }
+
+          return {
+            symbol: tvSymbol,
+            apiSymbol: apiSymbol,
+            description: item.instrument_name,
+            type: type,
+            source: source
+          };
+        });
+
         this.showSearchModal = true;
         this.cdr.detectChanges();
       });
   }
 
+  onEnterSearch(value: string) {
+    if (this.searchResults.length > 0) {
+       this.selectResult(this.searchResults[0]);
+    } else {
+       this.assetNotSupported = true;
+       this.showSearchModal = false;
+       this.cdr.detectChanges();
+    }
+  }
+
   selectResult(result: any) {
-    this.onSymbolSearch(result.symbol);
+    this.unsubscribeSymbol(this.currentSymbol);
+
+    this.currentSymbol = result.symbol;
+    this.currentApiSymbol = result.apiSymbol;
+    this.currentSource = result.source;
+    
+    this.displaySymbol = this.formatDisplaySymbol(this.currentSymbol);
+    
+    this.subscribeSymbol(this.currentSymbol);
+
+    this.updatePrice(this.currentApiSymbol, this.currentSource);
+    this.loadTradingViewWidget(this.currentSymbol);
+    
     this.showSearchModal = false;
     this.searchQuery = '';
-    // Limpiamos el input físicamente en el HTML se hace con binding
+    this.assetNotSupported = false;
+    this.cdr.detectChanges();
   }
 
   loadAllData() {
@@ -178,49 +241,67 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   formatDisplaySymbol(symbol: string) {
-    if (symbol.includes('BTC') || symbol.includes('ETH') || symbol.includes('USD')) {
-       return symbol.replace('USD', ' / USD').replace('BINANCE:', '').replace('FX_IDC:', '').replace(':', ' / ');
-    }
+    if (symbol === 'SPY') return 'S&P 500 (SPY)';
+    if (symbol === 'QQQ') return 'NASDAQ 100 (QQQ)';
+    if (symbol.includes('BTC') || symbol.includes('ETH')) return symbol.replace('BINANCE:', '').replace('CRYPTO:', '').replace('USDT', ' / USD').replace('USD', ' / USD');
+    if (symbol.includes('FX:EURUSD')) return 'EUR / USD';
+    if (symbol.includes('XAUUSD')) return 'GOLD (XAU)';
+    if (symbol.includes('USOIL')) return 'CRUDE OIL (WTI)';
+    
     return symbol.split(':').pop() || symbol;
   }
 
-  onSymbolSearch(value: string) {
-    if (!value) return;
-    let formattedSymbol = value.toUpperCase().trim();
-    
-    // Desuscribimos del anterior si no está en el ticker constante
-    if (!this.coins.some(c => c.tech === this.currentSymbol)) {
-      this.unsubscribeSymbol(this.currentSymbol);
+  updatePrice(apiSymbol: string, source: string) {
+    if (source === 'twelvedata') {
+      this.http.get(`https://api.twelvedata.com/quote?symbol=${apiSymbol}&apikey=${this.twelveDataApiKey}`)
+        .subscribe((data: any) => {
+          if (data && data.close) {
+            this.currentPriceData = {
+              c: parseFloat(data.close),
+              dp: parseFloat(data.percent_change)
+            };
+            this.cdr.detectChanges();
+          }
+        });
+    } else {
+      this.http.get(`https://finnhub.io/api/v1/quote?symbol=${apiSymbol}&token=${this.apiKey}`)
+        .subscribe((data: any) => {
+          if (data && data.c !== 0) {
+            let dp = data.dp;
+            if (dp === 0 && data.pc !== 0) dp = ((data.c - data.pc) / data.pc) * 100;
+            this.currentPriceData = {
+              c: data.c,
+              dp: dp
+            };
+          }
+          this.cdr.detectChanges();
+        });
     }
-
-    this.currentSymbol = formattedSymbol;
-    this.displaySymbol = this.formatDisplaySymbol(this.currentSymbol);
-    
-    // Suscribimos al nuevo símbolo para tiempo real
-    this.subscribeSymbol(this.currentSymbol);
-
-    this.updatePrice(this.currentSymbol);
-    this.loadTradingViewWidget(this.currentSymbol);
-    this.cdr.detectChanges();
-  }
-
-  updatePrice(symbol: string) {
-    this.http.get(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${this.apiKey}`)
-      .subscribe((data: any) => {
-        // Aseguramos que si no hay datos (0), mostramos algo coherente o esperamos el siguiente tick
-        this.currentPriceData = data;
-        this.cdr.detectChanges();
-      });
   }
 
   loadTickerPrices() {
     this.coins.forEach((coin) => {
-      this.http.get(`https://finnhub.io/api/v1/quote?symbol=${coin.tech}&token=${this.apiKey}`)
-        .subscribe((data: any) => {
-          coin.price = data.c;
-          coin.change = data.dp;
-          this.cdr.detectChanges();
-        });
+      if (coin.source === 'twelvedata') {
+        this.http.get(`https://api.twelvedata.com/quote?symbol=${coin.apiSymbol}&apikey=${this.twelveDataApiKey}`)
+          .subscribe((data: any) => {
+            if (data && data.close) {
+              coin.price = parseFloat(data.close);
+              coin.change = parseFloat(data.percent_change);
+              this.cdr.detectChanges();
+            }
+          });
+      } else {
+        this.http.get(`https://finnhub.io/api/v1/quote?symbol=${coin.apiSymbol}&token=${this.apiKey}`)
+          .subscribe((data: any) => {
+            if (data && data.c !== 0) {
+              coin.price = data.c;
+              let dp = data.dp;
+              if (dp === 0 && data.pc !== 0) dp = ((data.c - data.pc) / data.pc) * 100;
+              coin.change = dp;
+            }
+            this.cdr.detectChanges();
+          });
+      }
     });
   }
 
