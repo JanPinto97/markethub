@@ -1,0 +1,109 @@
+<!-- HEADER -->
+<header class="prd-header">
+  <a routerLink="/community" class="prd-brand">MarketHub</a>
+  <div class="prd-header-spacer"></div>
+  <a [routerLink]="['/community/t', slug]" class="prd-back-link">
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>
+    </svg>
+    Back to {{ topic()?.name || 'Topic' }}
+  </a>
+</header>
+
+<div class="prd-layout">
+  @if (loading()) {
+    <article class="prd-post prd-skeleton-card">
+      <div class="prd-skel-line skel-lg"></div>
+      <div class="prd-skel-line skel-sm"></div>
+      <div class="prd-skel-line skel-md"></div>
+    </article>
+  } @else if (error() === 'notFound') {
+    <div class="prd-state-card">
+      <span>Post not found.</span>
+      <a [routerLink]="['/community/t', slug]" class="prd-state-link">← Back to topic</a>
+    </div>
+  } @else if (error() === 'network') {
+    <div class="prd-state-card">
+      <span>Could not load post.</span>
+      <button class="prd-retry-btn" (click)="retry()">Try again</button>
+    </div>
+  } @else if (post(); as p) {
+    <article class="prd-post" [class.removing]="removing()">
+      <!-- Vote column -->
+      <div class="prd-votes">
+        <button
+          class="prd-vote-btn"
+          [class.active-up]="p.userVote === 'up'"
+          (click)="vote('up')"
+          title="Upvote">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 5l-7 7h4v7h6v-7h4z"/>
+          </svg>
+        </button>
+        <span class="prd-score" [class.positive]="p.voteScore > 0" [class.negative]="p.voteScore < 0">{{ p.voteScore }}</span>
+        <button
+          class="prd-vote-btn"
+          [class.active-down]="p.userVote === 'down'"
+          (click)="vote('down')"
+          title="Downvote">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 19l7-7h-4V5H9v7H5z"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Content -->
+      <div class="prd-content">
+        <div class="prd-top">
+          <div class="prd-meta">
+            <span class="prd-meta-text">Posted by</span>
+            <a [routerLink]="'/profile/' + authorName()" class="prd-author">&#64;{{ authorName() }}</a>
+            <span class="prd-dot">·</span>
+            <span class="prd-time">{{ relativeTime(p.createdAt) }}</span>
+          </div>
+          @if (showMenu()) {
+            <div class="prd-menu-wrap">
+              <button class="prd-menu-btn" (click)="toggleMenu($event)" title="More">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                  <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
+                </svg>
+              </button>
+              @if (menuOpen()) {
+                <div class="prd-menu" (click)="$event.stopPropagation()">
+                  <button class="prd-menu-item prd-menu-danger" (click)="onDelete()">Delete</button>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <h1 class="prd-title">{{ p.title }}</h1>
+
+        @if (p.text) {
+          <p class="prd-text">{{ p.text }}</p>
+        }
+
+        @if (p.mediaUrl) {
+          <div class="prd-media">
+            @if (p.mediaType === 'video') {
+              @if (videoError()) {
+                <div class="prd-video-unavailable">Video unavailable</div>
+              } @else {
+                <video controls preload="metadata" [src]="mediaUrlFull()" (error)="videoError.set(true)"></video>
+              }
+            } @else if (p.mediaType === 'image') {
+              <img [src]="mediaUrlFull()" alt="Post media" />
+            }
+          </div>
+        }
+      </div>
+    </article>
+
+    <app-post-reddit-comment-section
+      [postId]="p.id"
+      [topicSlug]="slug"
+      [commentCount]="p.commentCount"
+      (commentCountChange)="onCommentCountChange($event)">
+    </app-post-reddit-comment-section>
+  }
+</div>

@@ -96,6 +96,18 @@ export interface DiscussionTopicFull {
   postCount: number;
 }
 
+export interface RedditComment {
+  id: string;
+  author: { _id: string; username: string; avatar?: string };
+  text: string;
+  postId: string;
+  postType: 'PostReddit';
+  parentComment: string | null;
+  replyingTo: { _id: string; username: string } | null;
+  createdAt: string;
+  replies?: RedditComment[];
+}
+
 export interface PostReddit {
   id: string;
   author: { _id: string; username: string; avatar?: string; role?: string };
@@ -292,4 +304,42 @@ export class CommunityService {
     return this.http.delete<{ success: boolean }>(`${this.baseUrl}/topics/${slug}/posts/${postId}`)
       .pipe(map(() => undefined));
   }
+
+  // ── PostReddit detail + comments ──
+
+  getTopicPostDetail(slug: string, postId: string): Observable<PostReddit> {
+    return this.api.get<{ success: boolean; post: PostReddit }>(`/topics/${slug}/posts/${postId}`)
+      .pipe(map(res => res.post));
+  }
+
+  getTopicPostComments(slug: string, postId: string, page: number, limit = 10): Observable<{ comments: RedditComment[]; hasNextPage: boolean }> {
+    return this.api.get<{ success: boolean; comments: RedditComment[]; pagination: Pagination }>(
+      `/topics/${slug}/posts/${postId}/comments?page=${page}&limit=${limit}`
+    ).pipe(map(res => ({ comments: res.comments, hasNextPage: res.pagination.hasNextPage })));
+  }
+
+  addTopicComment(slug: string, postId: string, text: string): Observable<RedditComment> {
+    return this.api.post<{ success: boolean; comment: RedditComment }>(
+      `/topics/${slug}/posts/${postId}/comments`, { text }
+    ).pipe(map(res => res.comment));
+  }
+
+  addTopicReply(slug: string, postId: string, commentId: string, text: string): Observable<RedditComment> {
+    return this.api.post<{ success: boolean; comment: RedditComment }>(
+      `/topics/${slug}/posts/${postId}/comments/${commentId}/reply`, { text }
+    ).pipe(map(res => res.comment));
+  }
+
+  deleteTopicComment(slug: string, postId: string, commentId: string): Observable<{ removed: number }> {
+    return this.http.delete<{ success: boolean; removed: number }>(
+      `${this.baseUrl}/topics/${slug}/posts/${postId}/comments/${commentId}`
+    ).pipe(map(res => ({ removed: res.removed ?? 1 })));
+  }
+
+  deleteTopicReply(slug: string, postId: string, commentId: string, replyId: string): Observable<void> {
+    return this.http.delete<{ success: boolean }>(
+      `${this.baseUrl}/topics/${slug}/posts/${postId}/comments/${commentId}/replies/${replyId}`
+    ).pipe(map(() => undefined));
+  }
+
 }

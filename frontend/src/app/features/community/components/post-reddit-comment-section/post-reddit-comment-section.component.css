@@ -1,0 +1,451 @@
+:host { display: block; }
+
+.rcs {
+  background-color: var(--surface-container-lowest);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-5);
+}
+
+.rcs-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-family: var(--font-display);
+  font-size: var(--text-display-sm);
+  font-weight: var(--weight-bold);
+  color: var(--on-surface);
+  margin: 0 0 var(--spacing-4);
+}
+
+/* ── Sign-in placeholder ── */
+.rcs-signin {
+  padding: var(--spacing-4);
+  background-color: var(--surface-container-low);
+  border-radius: var(--radius-default);
+  font-size: var(--text-body-md);
+  color: var(--on-surface-variant);
+  cursor: pointer;
+  text-align: center;
+  margin-bottom: var(--spacing-5);
+  transition: background-color 0.15s;
+}
+
+.rcs-signin:hover {
+  background-color: var(--surface-container);
+}
+
+/* ── New comment ── */
+.rcs-new {
+  background-color: var(--surface-container-low);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-3);
+  margin-bottom: var(--spacing-5);
+}
+
+.rcs-new-row {
+  display: flex;
+  gap: var(--spacing-3);
+  align-items: flex-start;
+}
+
+.rcs-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+.rcs-avatar-sm {
+  width: 28px;
+  height: 28px;
+}
+
+.rcs-avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-body-md);
+  font-weight: var(--weight-bold);
+  color: var(--on-primary);
+}
+
+.rcs-avatar-sm.rcs-avatar-fallback {
+  font-size: var(--text-body-sm);
+}
+
+.rcs-textarea {
+  flex: 1;
+  width: 100%;
+  background: none;
+  border: none;
+  resize: none;
+  outline: none;
+  font-family: var(--font-body);
+  font-size: var(--text-body-md);
+  color: var(--on-surface);
+  line-height: 1.5;
+  padding: var(--spacing-2);
+  border-radius: var(--radius-default);
+  background-color: var(--surface-container-lowest);
+  box-sizing: border-box;
+  min-height: 40px;
+}
+
+.rcs-textarea:focus {
+  background-color: var(--surface-container-highest);
+  box-shadow: inset 0 0 0 1px var(--secondary);
+}
+
+.rcs-textarea::placeholder {
+  color: var(--on-primary-container);
+}
+
+.rcs-new-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-3);
+  margin-top: var(--spacing-2);
+}
+
+.rcs-counter {
+  font-size: var(--text-body-sm);
+  color: var(--on-surface-variant);
+}
+
+.rcs-counter.near-limit { color: var(--error, #dc2626); }
+
+.rcs-submit-btn {
+  padding: var(--spacing-2) var(--spacing-5);
+  background-color: var(--primary);
+  color: var(--on-primary);
+  border: none;
+  border-radius: var(--radius-default);
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  transition: background-color 0.2s, opacity 0.2s;
+}
+
+.rcs-submit-btn:hover:not(:disabled) {
+  background-color: var(--primary-container);
+}
+
+.rcs-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.rcs-cancel-btn {
+  padding: var(--spacing-2) var(--spacing-4);
+  background-color: var(--surface-container-high);
+  color: var(--on-surface);
+  border: none;
+  border-radius: var(--radius-default);
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.rcs-cancel-btn:hover {
+  background-color: var(--surface-container-highest);
+}
+
+.rcs-error {
+  margin-top: var(--spacing-2);
+  font-size: var(--text-body-sm);
+  color: var(--error, #dc2626);
+}
+
+/* ── List ── */
+.rcs-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.rcs-item { padding: 0; }
+
+.rcs-comment {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.rcs-comment-head {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: var(--text-body-sm);
+  color: var(--on-surface-variant);
+}
+
+.rcs-author {
+  color: var(--on-surface-variant);
+  font-weight: var(--weight-medium);
+}
+
+.rcs-author:hover {
+  text-decoration: underline;
+  color: var(--on-surface);
+}
+
+.rcs-dot { color: var(--on-surface-variant); }
+
+.rcs-text {
+  font-size: var(--text-body-md);
+  line-height: 1.5;
+  color: var(--on-surface);
+  margin: 0;
+  padding-left: 40px;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.rcs-reply-mention {
+  color: var(--secondary);
+  font-weight: var(--weight-medium);
+  margin-right: var(--spacing-1);
+}
+
+.rcs-reply-mention:hover { text-decoration: underline; }
+
+.rcs-foot {
+  padding-left: 40px;
+}
+
+.rcs-reply-btn {
+  background: none;
+  border: none;
+  padding: var(--spacing-1) var(--spacing-2);
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-medium);
+  color: var(--on-surface-variant);
+  cursor: pointer;
+  border-radius: var(--radius-default);
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.rcs-reply-btn:hover {
+  background-color: var(--surface-container-low);
+  color: var(--on-surface);
+}
+
+/* ── Reply box ── */
+.rcs-reply-box {
+  margin-top: var(--spacing-2);
+  margin-left: 40px;
+  padding: var(--spacing-3);
+  background-color: var(--surface-container-low);
+  border-radius: var(--radius-md);
+}
+
+.rcs-reply-target {
+  font-size: var(--text-body-sm);
+  color: var(--on-surface-variant);
+  margin-bottom: var(--spacing-2);
+}
+
+.rcs-reply-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  margin-top: var(--spacing-2);
+}
+
+.rcs-reply-btns {
+  display: flex;
+  gap: var(--spacing-2);
+}
+
+/* ── Replies ── */
+.rcs-replies {
+  list-style: none;
+  margin: var(--spacing-3) 0 0;
+  padding: 0 0 0 var(--spacing-4);
+  margin-left: var(--spacing-4);
+  border-left: 2px solid var(--outline-variant);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.rcs-reply {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.rcs-reply .rcs-text { padding-left: 36px; }
+.rcs-reply .rcs-foot { padding-left: 36px; }
+
+/* ── Menu ── */
+.rcs-menu-wrap {
+  position: relative;
+  margin-left: auto;
+}
+
+.rcs-menu-btn {
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: none;
+  border-radius: var(--radius-full);
+  color: var(--on-surface-variant);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, background-color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rcs-comment:hover .rcs-menu-btn,
+.rcs-reply:hover .rcs-menu-btn,
+.rcs-menu-btn:focus {
+  opacity: 1;
+}
+
+.rcs-menu-btn:hover {
+  background-color: var(--surface-container);
+}
+
+.rcs-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  min-width: 120px;
+  background-color: var(--surface-container-lowest);
+  border-radius: var(--radius-default);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  padding: var(--spacing-1);
+  z-index: 10;
+}
+
+.rcs-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: var(--spacing-2) var(--spacing-3);
+  background: none;
+  border: none;
+  border-radius: var(--radius-default);
+  font-size: var(--text-body-sm);
+  color: var(--on-surface);
+  cursor: pointer;
+}
+
+.rcs-menu-item:hover { background-color: var(--surface-container-low); }
+.rcs-menu-danger { color: var(--error, #dc2626); }
+
+/* ── States ── */
+.rcs-empty {
+  padding: var(--spacing-6);
+  text-align: center;
+  color: var(--on-surface-variant);
+  font-size: var(--text-body-md);
+}
+
+.rcs-error-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-5);
+  background-color: var(--surface-container-low);
+  border-radius: var(--radius-md);
+  font-size: var(--text-body-md);
+  color: var(--on-surface-variant);
+}
+
+.rcs-retry-btn {
+  padding: var(--spacing-2) var(--spacing-4);
+  background-color: var(--surface-container-high);
+  border: none;
+  border-radius: var(--radius-default);
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-medium);
+  color: var(--on-surface);
+  cursor: pointer;
+}
+
+.rcs-retry-btn:hover { background-color: var(--surface-container-highest); }
+
+/* ── Skeleton ── */
+.rcs-skel {
+  display: flex;
+  gap: var(--spacing-3);
+  padding: var(--spacing-2) 0 var(--spacing-4);
+}
+
+.rcs-skel-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg, var(--surface-container-low) 25%, var(--surface-container-high) 50%, var(--surface-container-low) 75%);
+  background-size: 200% 100%;
+  animation: rcs-shimmer 1.5s infinite;
+  flex-shrink: 0;
+}
+
+.rcs-skel-lines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.rcs-skel-line {
+  height: 12px;
+  border-radius: var(--radius-default);
+  background: linear-gradient(90deg, var(--surface-container-low) 25%, var(--surface-container-high) 50%, var(--surface-container-low) 75%);
+  background-size: 200% 100%;
+  animation: rcs-shimmer 1.5s infinite;
+}
+
+.rcs-skel-line.skel-sm { width: 30%; height: 10px; }
+.rcs-skel-line.skel-md { width: 70%; }
+
+@keyframes rcs-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ── Load more ── */
+.rcs-load-more-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--spacing-4);
+}
+
+.rcs-load-more-btn {
+  padding: var(--spacing-2) var(--spacing-5);
+  background-color: var(--surface-container-low);
+  border: none;
+  border-radius: var(--radius-full);
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-medium);
+  color: var(--on-surface);
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.rcs-load-more-btn:hover:not(:disabled) {
+  background-color: var(--surface-container);
+}
+
+.rcs-load-more-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+@media (max-width: 640px) {
+  .rcs-menu-btn { opacity: 1; }
+  .rcs { padding: var(--spacing-4); }
+  .rcs-text, .rcs-foot { padding-left: 0; }
+  .rcs-reply .rcs-text, .rcs-reply .rcs-foot { padding-left: 0; }
+  .rcs-reply-box { margin-left: 0; }
+}

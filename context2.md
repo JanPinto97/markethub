@@ -60,6 +60,7 @@ unir-se a comunitat, etc.) són redirigits a `/login`.
 ## Sistema de rols
 
 ### Rols de plataforma (User.role)
+
 - `user` — rol per defecte en registrar-se
 - `moderator` — pot eliminar qualsevol post o comentari a tota la plataforma
 - `superadmin` — mateixos poders que moderator + pot eliminar usuaris
@@ -71,6 +72,7 @@ Mai es poden crear des de la UI.
 dels rols de comunitat privada (`CommunityPrivate.members[].role`). Mai s'han de confondre.
 
 ### Rols de comunitat privada (CommunityPrivate.members[].role)
+
 - `leader` — exactament 1 per comunitat. Poders màxims dins la comunitat.
 - `moderator` — múltiples. Pot acceptar sol·licituds i eliminar posts.
 - `little_whale` — múltiples. Bonus de posicionament al feed.
@@ -81,6 +83,7 @@ dels rols de comunitat privada (`CommunityPrivate.members[].role`). Mai s'han de
 ## Especificació detallada: tipus de posts
 
 ### PostX (estil Twitter/X)
+
 - Usat a: feed general, comunitats públiques, comunitats privades
 - Camps clau: `text` (max 400 chars), `mediaUrl`, `mediaType`, `origin`,
   `community`, `communityType`, `likes`, `trendingScore`, `isPinned`
@@ -89,6 +92,7 @@ dels rols de comunitat privada (`CommunityPrivate.members[].role`). Mai s'han de
 - Comentaris amb un nivell de niament. Likes als comentaris.
 
 ### PostReddit (estil Reddit)
+
 - Usat EXCLUSIVAMENT a: temes de discussió
 - Camps clau: `title` (max 300 chars), `text` (max 2000 chars), `mediaUrl`,
   `mediaType`, `upvotes`, `downvotes`, `topic`
@@ -104,24 +108,28 @@ en cap feed, cerca o perfil d'usuari.
 ## Especificació detallada: feed general
 
 ### Mode Trending (per defecte, públic)
+
 - Mostra PostX amb `origin: 'general'` i `origin: 'public_community'` barrejats.
 - Posts de comunitats públiques mostren una etiqueta amb el nom de la comunitat.
 - MAI mostra posts de `origin: 'private_community'`.
 - Ordenat per `trendingScore` descendent.
 
 ### Mode Following (requereix login)
+
 - Mostra PostX dels usuaris que segueixes.
 - Inclou posts de `origin: 'general'` i `origin: 'public_community'`.
 - MAI inclou posts de `origin: 'private_community'` encara que segueixis l'autor.
 - Ordenat per `createdAt` descendent.
 
 ### Algorisme de trending score
+
 ```
 baseScore = (likes × 1) + (commentCount × 2)
 Si edat < 24h  → score = baseScore × 1.0
 Si edat 24-48h → score = baseScore × 0.5
 Si edat > 48h  → score = baseScore × 0.25
 ```
+
 El `trendingScore` es recalcula cada 30 minuts via `setInterval` en `server.js`.
 
 ---
@@ -141,12 +149,14 @@ El `trendingScore` es recalcula cada 30 minuts via `setInterval` en `server.js`.
 ## Especificació detallada: comunitats privades
 
 ### Successió del líder quan marxa
+
 1. Moderador aleatori → promogut a líder
 2. Si no n'hi ha, Little Whale aleatori → promogut a líder
 3. Si no n'hi ha, membre aleatori → promogut a líder
 4. Si no hi ha ningú → comunitat eliminada automàticament
 
 ### Feed de comunitat privada
+
 - Posts ordenats per `trendingScore` + bonus de rol:
   - Líder: +50 punts
   - Moderador: +20 punts
@@ -158,6 +168,7 @@ El `trendingScore` es recalcula cada 30 minuts via `setInterval` en `server.js`.
 - Posts de comunitats privades NO apareixen al perfil públic de l'autor.
 
 ### Pàgina de detalls de comunitat privada
+
 - Tots els membres veuen: llista de membres amb rols, botó d'abandonar.
 - Líder i moderadors veuen addicionalment: sol·licituds d'entrada pendents.
   En clicar una sol·licitud → popup amb el missatge complet i opcions acceptar/rebutjar.
@@ -169,6 +180,7 @@ El `trendingScore` es recalcula cada 30 minuts via `setInterval` en `server.js`.
 ## Especificació detallada: temes de discussió
 
 ### Categories i temes
+
 Hardcodejats via seed (`npm run seed:topics`). Mai canvien via UI.
 
 **CORE_MARKETS:** Forex, Crypto, Stocks, Indices, ETFs, Bonds, Commodities, Metals, Energy
@@ -184,6 +196,7 @@ Real Estate & REITs
 Scalping, Algorithmic Trading, Quant Trading, High Frequency Trading
 
 ### Cerca de temes
+
 - Els temes NO apareixen a la cerca general.
 - Tenen un buscador popup propi accessible des de la barra lateral.
 - Es pot filtrar per categoria (estil TradingView).
@@ -194,6 +207,7 @@ Scalping, Algorithmic Trading, Quant Trading, High Frequency Trading
 ## Especificació detallada: perfil d'usuari
 
 ### Perfil públic (`/profile/:username`)
+
 Mostra: avatar, imatge de fons (`coverImage`), username, nombre de seguidors,
 nombre de seguits, bio, comunitats públiques de les quals és membre,
 i els posts públics de l'usuari.
@@ -202,6 +216,7 @@ i els posts públics de l'usuari.
 MAI mostra: posts de comunitats privades, PostReddit.
 
 ### Pàgina de configuració privada (`/settings`)
+
 Completament separada del perfil públic. Permet canviar: username, email, contrasenya.
 Per canviar la contrasenya cal introduir la contrasenya actual.
 
@@ -278,7 +293,7 @@ Filtres disponibles per tipus: `users`, `posts`, `communities`.
   ✅ API temes de discussió (PostReddit, upvotes/downvotes)
   ✅ API perfils d'usuari i seguidors
   ✅ API cerca general
-  ⬜ Frontend Community (pendent)
+  🔄 Frontend Community (en procés)
 
 ⬜ Fase 4: Markets
 ⬜ Fase 5: IA + Home
