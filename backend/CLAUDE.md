@@ -93,6 +93,11 @@ server.js            → Entry point: loads env, connects DB, starts Express
 - GET    /api/v1/topics/:slug/posts/:postId (public)
 - POST   /api/v1/topics/:slug/posts/:postId/vote (protected, body: {vote: "up"|"down"|"none"})
 - DELETE /api/v1/topics/:slug/posts/:postId (protected)
+- GET    /api/v1/topics/:slug/posts/:postId/comments (public, ?page&limit, returns root comments + populated replies, sorted createdAt desc)
+- POST   /api/v1/topics/:slug/posts/:postId/comments (protected, body: {text})
+- POST   /api/v1/topics/:slug/posts/:postId/comments/:commentId/reply (protected, body: {text}, single nesting level)
+- DELETE /api/v1/topics/:slug/posts/:postId/comments/:commentId (protected, author/mod/superadmin, deletes replies too)
+- DELETE /api/v1/topics/:slug/posts/:postId/comments/:commentId/replies/:replyId (protected, author/mod/superadmin)
 
 - GET    /api/v1/users/:username (public, optionalAuth for isFollowing)
 - GET    /api/v1/users/:username/posts (public, supports ?page&limit)

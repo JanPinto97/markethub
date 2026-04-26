@@ -92,14 +92,6 @@
       }
       <div class="topic-search-anchor">
         <button class="add-topics-btn" (click)="openTopicSearch()">+ Add Topics</button>
-        @if (showTopicSearchPopup()) {
-          <app-topic-search-popup
-            [topics]="allTopics()"
-            [pinnedIds]="pinnedTopicIds"
-            (closed)="onTopicSearchClose()"
-            (pinChanged)="onTopicPinChanged($event)">
-          </app-topic-search-popup>
-        }
       </div>
     </div>
 
@@ -255,4 +247,13 @@
     (closed)="onCreateCommunityClose()"
     (created)="onCommunityCreated($event)">
   </app-create-community-modal>
+}
+
+@if (showTopicSearchPopup()) {
+  <app-topic-search-popup
+    [topics]="allTopics()"
+    [pinnedIds]="pinnedTopicIds"
+    (closed)="onTopicSearchClose()"
+    (pinChanged)="onTopicPinChanged($event)">
+  </app-topic-search-popup>
 }

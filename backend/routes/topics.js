@@ -12,4 +12,10 @@ router.get('/:slug/posts/:postId', ctrl.getPostById);
 router.post('/:slug/posts/:postId/vote', auth, ctrl.votePost);
 router.delete('/:slug/posts/:postId', auth, ctrl.deleteTopicPost);
 
+router.get('/:slug/posts/:postId/comments', ctrl.listPostComments);
+router.post('/:slug/posts/:postId/comments', auth, ctrl.createPostComment);
+router.post('/:slug/posts/:postId/comments/:commentId/reply', auth, ctrl.createPostReply);
+router.delete('/:slug/posts/:postId/comments/:commentId', auth, ctrl.deletePostComment);
+router.delete('/:slug/posts/:postId/comments/:commentId/replies/:replyId', auth, ctrl.deletePostReply);
+
 module.exports = router;

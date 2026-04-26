@@ -34,7 +34,9 @@
       "Bash(npx --no-install tsc --noEmit --skipLibCheck -p tsconfig.app.json)",
       "Bash(npx --no-install ng build --configuration development)",
       "Bash(xargs grep *)",
-      "Bash(docker exec markethub-mongo-1 *)"
+      "Bash(docker exec markethub-mongo-1 *)",
+      "Bash(npx tsc *)",
+      "Bash(echo \"EXIT:$?\")"
     ]
   }
 }

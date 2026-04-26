@@ -1,0 +1,190 @@
+<section class="rcs">
+  <h2 class="rcs-title">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+    {{ commentCount }} comments
+  </h2>
+
+  <!-- New comment box -->
+  @if (!auth.isAuthenticated()) {
+    <div class="rcs-signin" (click)="signInRedirect()">
+      Sign in to join the discussion
+    </div>
+  } @else {
+    <div class="rcs-new">
+      <div class="rcs-new-row">
+        @if (auth.currentUser()?.avatar) {
+          <img class="rcs-avatar" [src]="auth.currentUser()!.avatar" alt="" />
+        } @else {
+          <div class="rcs-avatar rcs-avatar-fallback"
+               [style.background-color]="initialColor(auth.currentUser()?.username || '')">
+            {{ initial(auth.currentUser()?.username || '') }}
+          </div>
+        }
+        <textarea
+          #newCommentArea
+          class="rcs-textarea"
+          placeholder="Add a comment..."
+          rows="1"
+          maxlength="400"
+          [value]="newText()"
+          (input)="onNewInput($event)"></textarea>
+      </div>
+      <div class="rcs-new-actions">
+        <span class="rcs-counter" [class.near-limit]="newText().length > 370">{{ newText().length }}/400</span>
+        <button class="rcs-submit-btn" (click)="submitNew()" [disabled]="!newText().trim() || posting()">
+          {{ posting() ? 'Posting…' : 'Comment' }}
+        </button>
+      </div>
+      @if (postError()) {
+        <div class="rcs-error">{{ postError() }}</div>
+      }
+    </div>
+  }
+
+  <!-- List -->
+  @if (loading()) {
+    @for (_ of [1,2,3]; track $index) {
+      <div class="rcs-skel">
+        <div class="rcs-skel-circle"></div>
+        <div class="rcs-skel-lines">
+          <div class="rcs-skel-line skel-sm"></div>
+          <div class="rcs-skel-line"></div>
+          <div class="rcs-skel-line skel-md"></div>
+        </div>
+      </div>
+    }
+  } @else if (error()) {
+    <div class="rcs-error-card">
+      <span>Could not load comments.</span>
+      <button class="rcs-retry-btn" (click)="loadFirstPage()">Try again</button>
+    </div>
+  } @else if (comments().length === 0) {
+    <div class="rcs-empty">No comments yet. Be the first!</div>
+  } @else {
+    <ul class="rcs-list">
+      @for (comment of comments(); track comment.id) {
+        <li class="rcs-item">
+          <div class="rcs-comment">
+            <div class="rcs-comment-head">
+              @if (authorAvatar(comment)) {
+                <img class="rcs-avatar rcs-avatar-sm" [src]="authorAvatar(comment)" alt="" />
+              } @else {
+                <div class="rcs-avatar rcs-avatar-sm rcs-avatar-fallback"
+                     [style.background-color]="initialColor(authorName(comment))">
+                  {{ initial(authorName(comment)) }}
+                </div>
+              }
+              <a [routerLink]="'/profile/' + authorName(comment)" class="rcs-author">&#64;{{ authorName(comment) }}</a>
+              <span class="rcs-dot">·</span>
+              <span class="rcs-time">{{ relativeTime(comment.createdAt) }}</span>
+
+              @if (canDelete(comment)) {
+                <div class="rcs-menu-wrap">
+                  <button class="rcs-menu-btn" (click)="toggleMenu($event, comment.id)" title="More">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                      <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
+                    </svg>
+                  </button>
+                  @if (openMenuId() === comment.id) {
+                    <div class="rcs-menu" (click)="$event.stopPropagation()">
+                      <button class="rcs-menu-item rcs-menu-danger" (click)="deleteRoot(comment)">Delete</button>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+
+            <p class="rcs-text">{{ comment.text }}</p>
+
+            <div class="rcs-foot">
+              <button class="rcs-reply-btn" (click)="openReply(comment, comment)">Reply</button>
+            </div>
+
+            @if (activeReplyCommentId() === comment.id) {
+              <div class="rcs-reply-box">
+                <div class="rcs-reply-target">Replying to &#64;{{ activeReplyTargetUsername() }}</div>
+                <textarea
+                  class="rcs-textarea"
+                  placeholder="Write a reply..."
+                  rows="1"
+                  maxlength="400"
+                  [value]="activeReplyText()"
+                  (input)="onReplyInput($event)"></textarea>
+                <div class="rcs-reply-actions">
+                  <span class="rcs-counter" [class.near-limit]="activeReplyText().length > 370">{{ activeReplyText().length }}/400</span>
+                  <div class="rcs-reply-btns">
+                    <button class="rcs-cancel-btn" (click)="cancelReply()">Cancel</button>
+                    <button class="rcs-submit-btn" (click)="submitReply(comment)" [disabled]="!activeReplyText().trim() || replyPosting()">
+                      {{ replyPosting() ? 'Posting…' : 'Reply' }}
+                    </button>
+                  </div>
+                </div>
+                @if (replyError()) {
+                  <div class="rcs-error">{{ replyError() }}</div>
+                }
+              </div>
+            }
+
+            @if (comment.replies && comment.replies.length > 0) {
+              <ul class="rcs-replies">
+                @for (reply of comment.replies; track reply.id) {
+                  <li class="rcs-reply">
+                    <div class="rcs-comment-head">
+                      @if (authorAvatar(reply)) {
+                        <img class="rcs-avatar rcs-avatar-sm" [src]="authorAvatar(reply)" alt="" />
+                      } @else {
+                        <div class="rcs-avatar rcs-avatar-sm rcs-avatar-fallback"
+                             [style.background-color]="initialColor(authorName(reply))">
+                          {{ initial(authorName(reply)) }}
+                        </div>
+                      }
+                      <a [routerLink]="'/profile/' + authorName(reply)" class="rcs-author">&#64;{{ authorName(reply) }}</a>
+                      <span class="rcs-dot">·</span>
+                      <span class="rcs-time">{{ relativeTime(reply.createdAt) }}</span>
+
+                      @if (canDelete(reply)) {
+                        <div class="rcs-menu-wrap">
+                          <button class="rcs-menu-btn" (click)="toggleMenu($event, reply.id)" title="More">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                              <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
+                            </svg>
+                          </button>
+                          @if (openMenuId() === reply.id) {
+                            <div class="rcs-menu" (click)="$event.stopPropagation()">
+                              <button class="rcs-menu-item rcs-menu-danger" (click)="deleteReply(comment, reply)">Delete</button>
+                            </div>
+                          }
+                        </div>
+                      }
+                    </div>
+
+                    <p class="rcs-text">
+                      @if (reply.replyingTo) {
+                        <a [routerLink]="'/profile/' + reply.replyingTo.username" class="rcs-reply-mention">&#64;{{ reply.replyingTo.username }}</a>
+                      }
+                      {{ reply.text }}
+                    </p>
+
+                    <div class="rcs-foot">
+                      <button class="rcs-reply-btn" (click)="openReply(comment, reply)">Reply</button>
+                    </div>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        </li>
+      }
+    </ul>
+
+    @if (hasMore()) {
+      <div class="rcs-load-more-wrap">
+        <button class="rcs-load-more-btn" (click)="loadMore()" [disabled]="loadingMore()">
+          {{ loadingMore() ? 'Loading…' : 'Load more' }}
+        </button>
+      </div>
+    }
+  }
+</section>
