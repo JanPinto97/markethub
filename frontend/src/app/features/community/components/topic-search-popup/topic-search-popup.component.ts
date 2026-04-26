@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, inject, signal, computed, HostListener, ElementRef, OnInit } from '@angular/core';
+import { Component, Output, EventEmitter, inject, signal, computed, HostListener, ElementRef, OnInit, input } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommunityService, DiscussionTopicFull } from '../../services/community.service';
 
@@ -24,8 +24,8 @@ const CATEGORY_ICONS: Record<string, string> = {
   styleUrl: './topic-search-popup.component.css'
 })
 export class TopicSearchPopupComponent implements OnInit {
-  @Input() topics: DiscussionTopicFull[] = [];
-  @Input() pinnedIds: string[] = [];
+  topics = input<DiscussionTopicFull[]>([]);
+  pinnedIds = input<string[]>([]);
   @Output() closed = new EventEmitter<void>();
   @Output() pinChanged = new EventEmitter<{ id: string; pinned: boolean }>();
   @Output() navigated = new EventEmitter<string>();
@@ -40,7 +40,7 @@ export class TopicSearchPopupComponent implements OnInit {
   readonly categories = Object.entries(CATEGORY_LABELS);
 
   filtered = computed(() => {
-    let list = this.topics;
+    let list = this.topics();
     const cat = this.activeCategory();
     if (cat) list = list.filter(t => t.category === cat);
     const q = this.search().toLowerCase().trim();
@@ -57,13 +57,6 @@ export class TopicSearchPopupComponent implements OnInit {
 
   @HostListener('document:keydown.escape')
   onEscape() { this.closed.emit(); }
-
-  @HostListener('document:click', ['$event'])
-  onDocClick(event: Event) {
-    if (!this.el.nativeElement.contains(event.target)) {
-      this.closed.emit();
-    }
-  }
 
   onSearch(event: Event) {
     this.search.set((event.target as HTMLInputElement).value);
@@ -82,7 +75,7 @@ export class TopicSearchPopupComponent implements OnInit {
   }
 
   isPinned(id: string): boolean {
-    return this.pinnedIds.includes(id);
+    return this.pinnedIds().includes(id);
   }
 
   togglePin(event: Event, topic: DiscussionTopicFull) {
