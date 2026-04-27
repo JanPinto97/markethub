@@ -1,0 +1,3 @@
+-No es mostra l'avatar de la comunitat ni en el sidebar, ni en la pàgina de la comunitat
+-Quan publico un post en la comunitat privada, al principi es mostra com a @user i sense la meva foto de perfil ni el meu usuari.
+Quan recarrego la pàgina, ja es mostra bé.

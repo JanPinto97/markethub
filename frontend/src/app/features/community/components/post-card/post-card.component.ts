@@ -1,7 +1,7 @@
 import { Component, Input, Output, EventEmitter, inject, signal, computed, HostBinding, HostListener } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../../core/services/auth.service';
-import { CommunityService, PostX, PostComment } from '../../services/community.service';
+import { CommunityService, PostX, PostComment, CommunityRole } from '../../services/community.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { getUsernameColor, getInitial } from '../../../../shared/utils/color.utils';
 
@@ -14,7 +14,9 @@ import { getUsernameColor, getInitial } from '../../../../shared/utils/color.uti
 })
 export class PostCardComponent {
   @Input({ required: true }) post!: PostX;
+  @Input() communityContext?: { communityId: string; myRole: CommunityRole | null };
   @Output() deleted = new EventEmitter<string>();
+  @Output() pinToggled = new EventEmitter<{ postId: string; pinned: boolean }>();
 
   auth = inject(AuthService);
   private router = inject(Router);
@@ -229,6 +231,28 @@ export class PostCardComponent {
     const a = c.author;
     if (!a || typeof a === 'string') return undefined;
     return a.avatar;
+  }
+
+  get canPin(): boolean {
+    return !!this.communityContext && this.communityContext.myRole === 'leader';
+  }
+
+  onPin() {
+    this.closeMenu();
+    if (!this.communityContext) return;
+    const prev = this.post.isPinned;
+    this.post.isPinned = !prev;
+    this.svc.pinPost(this.communityContext.communityId, this.post.id).subscribe({
+      next: (res) => {
+        this.post.isPinned = res.pinned;
+        this.toast.show(res.pinned ? 'Post pinned.' : 'Post unpinned.', 'success');
+        this.pinToggled.emit({ postId: this.post.id, pinned: res.pinned });
+      },
+      error: () => {
+        this.post.isPinned = prev;
+        this.toast.show('Could not update pin.', 'error');
+      }
+    });
   }
 
   onEdit() {

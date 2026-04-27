@@ -72,6 +72,35 @@ export interface CommunityPublic {
   createdAt: string;
 }
 
+export type CommunityRole = 'leader' | 'moderator' | 'little_whale' | 'member';
+
+export interface CommunityMember {
+  user: { id: string; username: string; avatar?: string };
+  role: CommunityRole;
+}
+
+export interface JoinRequest {
+  _id: string;
+  user: { id: string; username: string; avatar?: string };
+  message: string;
+  createdAt: string;
+  status: 'pending' | 'accepted' | 'rejected';
+}
+
+export interface CommunityPrivateDetail {
+  id: string;
+  name: string;
+  description?: string;
+  avatar?: string;
+  memberCount: number;
+  isMember: boolean;
+  myRole: CommunityRole | null;
+  myRequestStatus?: 'pending' | 'accepted' | 'rejected' | null;
+  members?: CommunityMember[];
+  pendingRequests?: JoinRequest[];
+  createdAt: string;
+}
+
 export interface CommunityPrivate {
   id: string;
   name: string;
@@ -340,6 +369,70 @@ export class CommunityService {
     return this.http.delete<{ success: boolean }>(
       `${this.baseUrl}/topics/${slug}/posts/${postId}/comments/${commentId}/replies/${replyId}`
     ).pipe(map(() => undefined));
+  }
+
+  // ── Community Private Detail ──
+
+  getCommunityPrivate(id: string): Observable<CommunityPrivateDetail> {
+    return this.api.get<{ success: boolean; community: CommunityPrivateDetail; pendingRequests?: JoinRequest[] }>(`/communities/private/${id}`)
+      .pipe(map(res => {
+        const c = res.community;
+        if (res.pendingRequests) c.pendingRequests = res.pendingRequests;
+        return c;
+      }));
+  }
+
+  getCommunityPrivatePosts(id: string, page: number, limit = 10): Observable<{ pinnedPosts: PostX[]; posts: PostX[]; pagination: Pagination }> {
+    return this.api.get<{ success: boolean; pinnedPosts: PostX[]; posts: PostX[]; pagination: Pagination }>(`/communities/private/${id}/feed?page=${page}&limit=${limit}`)
+      .pipe(map(res => ({ pinnedPosts: res.pinnedPosts, posts: res.posts, pagination: res.pagination })));
+  }
+
+  requestJoinPrivate(id: string, message?: string): Observable<void> {
+    return this.api.post<{ success: boolean }>(`/communities/private/${id}/request`, { message: message || '' })
+      .pipe(map(() => undefined));
+  }
+
+  acceptRequest(communityId: string, requestId: string): Observable<void> {
+    return this.api.post<{ success: boolean }>(`/communities/private/${communityId}/requests/${requestId}`, { action: 'accept' })
+      .pipe(map(() => undefined));
+  }
+
+  rejectRequest(communityId: string, requestId: string): Observable<void> {
+    return this.api.post<{ success: boolean }>(`/communities/private/${communityId}/requests/${requestId}`, { action: 'reject' })
+      .pipe(map(() => undefined));
+  }
+
+  expelMember(communityId: string, userId: string): Observable<void> {
+    return this.http.delete<{ success: boolean }>(`${this.baseUrl}/communities/private/${communityId}/members/${userId}`)
+      .pipe(map(() => undefined));
+  }
+
+  changeMemberRole(communityId: string, userId: string, role: CommunityRole): Observable<void> {
+    return this.api.put<{ success: boolean }>(`/communities/private/${communityId}/members/${userId}/role`, { role })
+      .pipe(map(() => undefined));
+  }
+
+  leaveCommunityPrivate(id: string): Observable<void> {
+    return this.api.post<{ success: boolean }>(`/communities/private/${id}/leave`, {})
+      .pipe(map(() => undefined));
+  }
+
+  deleteCommunityPrivate(id: string): Observable<void> {
+    return this.http.delete<{ success: boolean }>(`${this.baseUrl}/communities/private/${id}`)
+      .pipe(map(() => undefined));
+  }
+
+  createCommunityPrivatePost(communityId: string, text: string, mediaFile?: File | null): Observable<PostX> {
+    const formData = new FormData();
+    formData.append('text', text);
+    if (mediaFile) formData.append('media', mediaFile);
+    return this.http.post<{ success: boolean; post: PostX }>(`${this.baseUrl}/communities/private/${communityId}/posts`, formData)
+      .pipe(map(res => res.post));
+  }
+
+  pinPost(communityId: string, postId: string): Observable<{ pinned: boolean }> {
+    return this.api.post<{ success: boolean; pinned: boolean }>(`/communities/private/${communityId}/posts/${postId}/pin`, {})
+      .pipe(map(res => ({ pinned: res.pinned })));
   }
 
 }

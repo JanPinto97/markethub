@@ -1,0 +1,1 @@
+Eliminar o implementar l'opció de editar un post ja penjat. El mateix amb report.

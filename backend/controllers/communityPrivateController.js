@@ -29,7 +29,7 @@ exports.createCommunity = async (req, res, next) => {
     const community = await CommunityPrivate.create({
       name,
       description: description || '',
-      avatar: req.mediaUrl || '',
+      avatar: req.mediaUrl || req.body.avatar || '',
       members: [{ user: req.user.id, role: 'leader' }],
     });
 
@@ -41,7 +41,24 @@ exports.getCommunity = async (req, res, next) => {
   try {
     const community = await CommunityPrivate.findById(req.params.id);
     if (!community) return fail(res, 404, 'Community not found');
-    if (!community.isMember(req.user.id)) return fail(res, 403, 'This is a private community');
+
+    const isMember = community.isMember(req.user.id);
+
+    if (!isMember) {
+      const myRequest = community.joinRequests.find(
+        r => r.user.toString() === req.user.id
+      );
+      const latestStatus = myRequest ? myRequest.status : null;
+      return res.json({
+        success: true,
+        community: {
+          ...community.toPublicJSON(),
+          isMember: false,
+          myRole: null,
+          myRequestStatus: latestStatus,
+        },
+      });
+    }
 
     const userRole = getUserRole(community, req.user.id);
 
@@ -54,6 +71,8 @@ exports.getCommunity = async (req, res, next) => {
 
     const detail = {
       ...community.toPublicJSON(),
+      isMember: true,
+      myRole: userRole,
       members: community.members.map(m => ({
         user: m.user && m.user.toPublicJSON ? m.user.toPublicJSON() : m.user,
         role: m.role,
@@ -61,10 +80,20 @@ exports.getCommunity = async (req, res, next) => {
       pinnedPosts: community.pinnedPosts,
     };
 
-    const result = { success: true, community: detail, userRole };
+    const result = { success: true, community: detail };
 
     if (userRole === 'leader' || userRole === 'moderator') {
-      result.pendingRequests = community.joinRequests.filter(r => r.status === 'pending');
+      const pending = community.joinRequests.filter(r => r.status === 'pending');
+      await community.populate('joinRequests.user', 'username avatar');
+      result.pendingRequests = community.joinRequests
+        .filter(r => r.status === 'pending')
+        .map(r => ({
+          _id: r._id,
+          user: r.user && r.user.toPublicJSON ? r.user.toPublicJSON() : r.user,
+          message: r.message,
+          status: r.status,
+          createdAt: r.createdAt || r._id.getTimestamp(),
+        }));
     }
 
     res.json(result);
@@ -78,15 +107,14 @@ exports.requestToJoin = async (req, res, next) => {
     if (community.isMember(req.user.id)) return fail(res, 400, 'Already a member');
 
     const { message } = req.body || {};
-    if (!message) return fail(res, 400, 'Message is required');
-    if (message.length > 150) return fail(res, 400, 'Message max 150 characters');
+    if (message && message.length > 150) return fail(res, 400, 'Message max 150 characters');
 
     const hasPending = community.joinRequests.some(
       r => r.user.toString() === req.user.id && r.status === 'pending'
     );
     if (hasPending) return fail(res, 400, 'Request already pending');
 
-    community.joinRequests.push({ user: req.user.id, message, status: 'pending' });
+    community.joinRequests.push({ user: req.user.id, message: message || '', status: 'pending' });
     await community.save();
 
     res.json({ success: true, message: 'Join request sent' });
@@ -288,6 +316,7 @@ exports.createCommunityPost = async (req, res, next) => {
     community.postCount += 1;
     await community.save();
 
+    await post.populate('author', 'username avatar role');
     res.status(201).json({ success: true, post: post.toPublicJSON() });
   } catch (err) { next(err); }
 };

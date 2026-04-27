@@ -36,7 +36,10 @@
       "Bash(xargs grep *)",
       "Bash(docker exec markethub-mongo-1 *)",
       "Bash(npx tsc *)",
-      "Bash(echo \"EXIT:$?\")"
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(git fetch *)",
+      "Bash(git checkout *)",
+      "Bash(git cherry-pick *)"
     ]
   }
 }

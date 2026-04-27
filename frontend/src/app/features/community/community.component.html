@@ -64,14 +64,14 @@
               <span class="community-name">{{ comm.name }} <span class="community-tag">[Public]</span></span>
             </a>
           } @else {
-            <div class="community-item community-item-disabled" title="Private community page coming soon">
+            <a [routerLink]="'/community/p/' + comm.id" class="community-item">
               @if (comm.avatar) {
                 <img [src]="comm.avatar" [alt]="comm.name" class="community-avatar-img" />
               } @else {
                 <span class="community-initial" [style.background-color]="getInitialColor(comm.name)">{{ comm.name[0].toUpperCase() }}</span>
               }
               <span class="community-name">{{ comm.name }} <span class="community-tag">[Private]</span></span>
-            </div>
+            </a>
           }
         }
       }

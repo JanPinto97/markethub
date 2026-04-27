@@ -1,0 +1,70 @@
+<div class="requests-panel">
+  <h3 class="panel-title">Pending Requests ({{ requests.length }})</h3>
+
+  @if (requests.length === 0) {
+    <p class="no-requests">No pending requests.</p>
+  } @else {
+    <div class="requests-list">
+      @for (req of requests; track req._id) {
+        <div class="request-row" (click)="openDetail(req)">
+          <div class="request-top">
+            @if (req.user.avatar) {
+              <img [src]="req.user.avatar" [alt]="req.user.username" class="request-avatar" />
+            } @else {
+              <div class="request-avatar request-avatar-initial" [style.background-color]="initialColor(req.user.username)">
+                {{ initial(req.user.username) }}
+              </div>
+            }
+            <div class="request-info">
+              <span class="request-username">@{{ req.user.username }}</span>
+              <span class="request-time">{{ relativeTime(req.createdAt) }}</span>
+            </div>
+          </div>
+          @if (req.message) {
+            <p class="request-preview">"{{ req.message }}"</p>
+          }
+          <div class="request-actions">
+            <button class="req-btn reject-btn" (click)="onReject(req._id); $event.stopPropagation()">Reject</button>
+            <button class="req-btn accept-btn" (click)="onAccept(req._id); $event.stopPropagation()">Accept</button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+<!-- Detail modal -->
+@if (selectedRequest(); as req) {
+  <div class="modal-overlay" (click)="closeDetail()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h4 class="modal-title">Join Request</h4>
+        <button class="modal-close" (click)="closeDetail()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-user">
+          @if (req.user.avatar) {
+            <img [src]="req.user.avatar" [alt]="req.user.username" class="modal-avatar" />
+          } @else {
+            <div class="modal-avatar request-avatar-initial" [style.background-color]="initialColor(req.user.username)">
+              {{ initial(req.user.username) }}
+            </div>
+          }
+          <div>
+            <span class="modal-username">@{{ req.user.username }}</span>
+            <span class="modal-time">Sent {{ relativeTime(req.createdAt) }}</span>
+          </div>
+        </div>
+        @if (req.message) {
+          <p class="modal-message">"{{ req.message }}"</p>
+        } @else {
+          <p class="modal-message modal-no-message">No message provided.</p>
+        }
+      </div>
+      <div class="modal-footer">
+        <button class="req-btn reject-btn" (click)="onReject(req._id)">Reject</button>
+        <button class="req-btn accept-btn" (click)="onAccept(req._id)">Accept</button>
+      </div>
+    </div>
+  </div>
+}
