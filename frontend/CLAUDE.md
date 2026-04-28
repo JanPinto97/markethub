@@ -30,6 +30,9 @@ Angular SPA serving the MarketHub UI. Runs on port 4200.
     /community
       community.component.ts → Community page
       DESIGN.md
+    /search
+      search.component.ts  → Full search results page (/search?q=&type=&page=)
+      search.service.ts    → SearchService (GET /api/v1/search)
     /profile
       profile.component.ts → Public user profile page
       profile.service.ts
@@ -47,6 +50,8 @@ Angular SPA serving the MarketHub UI. Runs on port 4200.
         toast.component.ts → Global toast notification (slide-in/fade-out)
       /emoji-picker
         emoji-picker.component.ts → Emoji popover (4 groups, close on outside click/Escape)
+      /search-bar
+        search-bar.component.ts → Reusable search input with debounced dropdown results (used in community header)
     /utils
       color.utils.ts     → getUsernameColor, getInitial (shared by PostCardComponent, CommunityComponent, ProfileComponent)
 
@@ -81,6 +86,7 @@ Angular SPA serving the MarketHub UI. Runs on port 4200.
 | `/markets`           | MarketsComponent   | Markets dashboard     |
 | `/community`         | CommunityComponent | Community feed        |
 | `/profile/:username` | ProfileComponent   | Public user profile   |
+| `/search`            | SearchComponent    | Search results page   |
 | `/settings`          | SettingsComponent  | Private settings page |
 | `/login`             | LoginComponent     | Login form            |
 | `/register`          | RegisterComponent  | Registration form     |
@@ -115,6 +121,8 @@ Angular SPA serving the MarketHub UI. Runs on port 4200.
 - CommunityPrivateDetailComponent — `/community/p/:id`. authGuard required. Two views: non-member (banner + join request flow with modal, pending/rejected states) and member (two-column: feed left 65% + side panel right 35%). Banner with avatar/name/members/description + Private badge + Leave/Delete buttons. Create post box for members. Feed shows pinned posts at top + regular posts sorted by trendingScore with role bonus. PostCardComponent extended with `communityContext` input for Pin/Unpin (leader only). Infinite scroll + skeletons + retry. Leave with confirm dialog (last member warning). Delete community (leader only) with explicit warning.
 - CommunityMembersPanelComponent — sticky right panel listing all members with role badges (👑 Leader, 🛡 Mod, 🐋 Whale, Member). Leader sees Expel button (confirm) and Promote dropdown (absolute-positioned, closes on outside click) on hover for each member (except self). Emits expel/promote events to parent.
 - PendingRequestsPanelComponent — below members panel, visible to leader/moderator. Lists pending join requests with avatar, username, time, message preview. Click opens detail modal (overlay, closes on Escape/overlay click) with full message + Accept/Reject. Emits accept/reject events.
+- SearchBarComponent — reusable search input extracted to `/shared/components/search-bar/`. Debounced (350ms) dropdown with max 3 results per category (Users/Posts/Communities). Keyboard navigation (ArrowUp/Down/Enter/Escape). Click outside closes dropdown. "See all results" link navigates to `/search?q=`. Used in CommunityComponent header.
+- SearchComponent — full search results page at `/search`. URL-driven via `ActivatedRoute.queryParams` (q, type, page). Filter tabs: All/Users/Posts/Communities. In "All" mode shows top 3 per category with "See all X" buttons. In filtered mode shows paginated results (10 per page). Skeleton loading, error retry, empty states. Uses SearchService.
 - NavbarComponent — auth-aware: shows username+avatar+logout when authed, login/register links when not
 
 ## Core done
@@ -126,6 +134,7 @@ Angular SPA serving the MarketHub UI. Runs on port 4200.
 - app.config.ts — registers interceptor and `provideAppInitializer` to restore session on startup
 - CommunityService — getMyCommunities(), getTopicsByIds(), pinned topics localStorage helpers, getFeed(mode, page, limit), createPost(text, mediaFile?) via FormData, likePost(id), deletePost(id), getComments(postId), addComment(postId, text), getCommunityPublic(id), getCommunityPublicPosts(id, page), joinCommunityPublic(id), leaveCommunityPublic(id), createCommunityPublic(data), createCommunityPrivate(data), createCommunityPost(communityId, text, mediaFile?). `communityMembershipChanged$` Subject for syncing join/leave across components. getAllTopics(), getTopicDetail(slug), getTopicPosts(slug, sort, page), createTopicPost(slug, title, text?, mediaFile?), voteTopicPost(slug, postId, vote), deleteTopicPost(slug, postId). PostReddit detail + comments: getTopicPostDetail(slug, postId), getTopicPostComments(slug, postId, page, limit), addTopicComment(slug, postId, text), addTopicReply(slug, postId, commentId, text), deleteTopicComment(slug, postId, commentId) → returns `{removed}`, deleteTopicReply(slug, postId, commentId, replyId). Private community: getCommunityPrivate(id), getCommunityPrivatePosts(id, page), requestJoinPrivate(id, message?), acceptRequest(communityId, requestId), rejectRequest(communityId, requestId), expelMember(communityId, userId), changeMemberRole(communityId, userId, role), leaveCommunityPrivate(id), deleteCommunityPrivate(id), createCommunityPrivatePost(communityId, text, mediaFile?), pinPost(communityId, postId). Exports PostX, PostAuthor, PostCommunity, PostComment, CommunityPublic, CommunityPrivate, CommunityPrivateDetail, CommunityMember, JoinRequest, CommunityRole, CreateCommunityDto, DiscussionTopicFull, PostReddit, RedditComment interfaces. Uses ApiService for JSON calls + raw HttpClient for FormData/DELETE.
 - ProfileService — getProfile(username), getUserPosts(username, page), getFollowers(username, page), getFollowing(username, page), toggleFollow(username). Maps backend `followersCount` to `followerCount` in the `UserProfile` type to match the spec. Exports UserProfile, UserSummary, FollowToggleResult, PagedPosts, PagedUsers.
+- SearchService — `search(query, type, page, limit)` calls `GET /api/v1/search` with query params. Returns `SearchResults` with users, posts, communities arrays + totals + pagination. Used by SearchBarComponent (dropdown) and SearchComponent (full page).
 - ToastService — `show(message, type)` triggers a global toast. Signal-based, one toast at a time, auto-dismiss 3s with manual close.
 
 ## Routes done
@@ -139,6 +148,7 @@ Angular SPA serving the MarketHub UI. Runs on port 4200.
 | `/community/p/:id`   | CommunityPrivateDetailComponent | authGuard (non-member sees join request view)       |
 | `/community/t/:slug` | TopicDetailComponent           | — (visible to all, create post requires login)       |
 | `/community/t/:slug/p/:postId` | PostRedditDetailComponent | — (visible to all, comment/vote require login)       |
+| `/search`            | SearchComponent                | — (public)                                           |
 | `/profile/:username` | ProfileComponent               | — (public, Follow gated by login)                    |
 | `/settings`          | SettingsComponent              | authGuard (private)                                  |
 | `/login`             | LoginComponent                 | —                                                    |

@@ -1,1 +1,3 @@
-Eliminar o implementar l'opció de editar un post ja penjat. El mateix amb report.
+-Eliminar o implementar l'opció de editar un post ja penjat. El mateix amb report.
+-(Possible) En el detall dels posts de reddit, s'haurien de poder fer replies als replies.
+-Implementar la pàgina de configuració de la comunitat privada, en contes del resum que hi ha ara.
