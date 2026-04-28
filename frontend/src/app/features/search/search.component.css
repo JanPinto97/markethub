@@ -297,3 +297,24 @@
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
 }
+
+@media (max-width: 767px) {
+  .search-page {
+    padding: var(--spacing-4) var(--spacing-3);
+  }
+
+  .search-title {
+    font-size: var(--text-display-sm);
+  }
+
+  .filter-tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .filter-tab {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+}

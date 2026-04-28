@@ -13,17 +13,17 @@
         (input)="onSearch($event)"
       />
     </div>
-    <button class="tsp-close" (click)="closed.emit()" title="Close">
+    <button class="tsp-close" (click)="closed.emit()" title="Close" aria-label="Close">
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
       </svg>
     </button>
   </div>
 
-  <div class="tsp-filters">
-    <button class="tsp-filter" [class.active]="activeCategory() === null" (click)="setCategory(null)">All</button>
+  <div class="tsp-filters" role="group" aria-label="Filter by category">
+    <button class="tsp-filter" [class.active]="activeCategory() === null" [attr.aria-pressed]="activeCategory() === null" (click)="setCategory(null)">All</button>
     @for (cat of categories; track cat[0]) {
-      <button class="tsp-filter" [class.active]="activeCategory() === cat[0]" (click)="setCategory(cat[0])">{{ cat[1] }}</button>
+      <button class="tsp-filter" [class.active]="activeCategory() === cat[0]" [attr.aria-pressed]="activeCategory() === cat[0]" (click)="setCategory(cat[0])">{{ cat[1] }}</button>
     }
   </div>
 

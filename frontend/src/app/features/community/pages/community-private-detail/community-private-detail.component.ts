@@ -57,6 +57,7 @@ export class CommunityPrivateDetailComponent implements OnInit, AfterViewInit, O
   creating = signal(false);
   createError = signal<string | null>(null);
   emojiPickerOpen = signal(false);
+  sidePanelOpen = signal(false);
 
   // Join request
   showJoinModal = signal(false);

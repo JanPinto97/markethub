@@ -74,4 +74,16 @@
   --header-height: 60px;
   --sidebar-left-width: 240px;
   --sidebar-right-width: 300px;
+
+  /* ── Breakpoints (reference only, use in @media queries) ── */
+  /* Tablet: 768px – 1023px */
+  /* Mobile: < 768px */
+  --bp-tablet: 1023px;
+  --bp-mobile: 767px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--secondary);
+  outline-offset: 2px;
+  border-radius: 4px;
 }

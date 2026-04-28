@@ -1,8 +1,9 @@
-import { Component, Output, EventEmitter, inject, signal, HostListener } from '@angular/core';
+import { Component, Output, EventEmitter, inject, signal, HostListener, AfterViewInit, OnDestroy, ElementRef, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CommunityService, CommunityPublic, CommunityPrivate } from '../../services/community.service';
 import { ToastService } from '../../../../core/services/toast.service';
+import { trapFocus } from '../../../../shared/utils/focus-trap.utils';
 
 @Component({
   selector: 'app-create-community-modal',
@@ -11,13 +12,16 @@ import { ToastService } from '../../../../core/services/toast.service';
   templateUrl: './create-community-modal.component.html',
   styleUrl: './create-community-modal.component.css'
 })
-export class CreateCommunityModalComponent {
+export class CreateCommunityModalComponent implements AfterViewInit, OnDestroy {
   @Output() closed = new EventEmitter<void>();
   @Output() created = new EventEmitter<{ community: CommunityPublic | CommunityPrivate; type: 'public' | 'private' }>();
+
+  @ViewChild('modalContainer') modalContainer!: ElementRef<HTMLElement>;
 
   private svc = inject(CommunityService);
   private toast = inject(ToastService);
   private router = inject(Router);
+  private releaseFocusTrap?: () => void;
 
   name = signal('');
   description = signal('');
@@ -26,6 +30,14 @@ export class CreateCommunityModalComponent {
   submitting = signal(false);
   nameError = signal<string | null>(null);
   generalError = signal<string | null>(null);
+
+  ngAfterViewInit() {
+    this.releaseFocusTrap = trapFocus(this.modalContainer.nativeElement);
+  }
+
+  ngOnDestroy() {
+    this.releaseFocusTrap?.();
+  }
 
   @HostListener('document:keydown.escape')
   onEscape() {
