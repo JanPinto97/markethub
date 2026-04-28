@@ -1,4 +1,7 @@
 <article class="pc-card">
+  @if (post.isPinned && communityContext) {
+    <div class="pc-pinned-badge">📌 Pinned</div>
+  }
   <!-- HEADER -->
   <div class="pc-header">
     <a [routerLink]="'/profile/' + authorUsername" class="pc-avatar-link">
@@ -31,6 +34,9 @@
       </button>
       @if (menuOpen()) {
         <div class="pc-menu" (click)="$event.stopPropagation()">
+          @if (canPin) {
+            <button class="pc-menu-item" (click)="onPin()">{{ post.isPinned ? 'Unpin' : 'Pin' }}</button>
+          }
           @if (isOwner) {
             <button class="pc-menu-item" (click)="onEdit()">Edit</button>
             <button class="pc-menu-item pc-menu-danger" (click)="onDelete()">Delete</button>

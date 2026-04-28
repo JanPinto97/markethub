@@ -24,6 +24,12 @@ export const routes: Routes = [
       .then(m => m.CommunityPublicDetailComponent)
   },
   {
+    path: 'community/p/:id',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/community/pages/community-private-detail/community-private-detail.component')
+      .then(m => m.CommunityPrivateDetailComponent)
+  },
+  {
     path: 'community/t/:slug',
     loadComponent: () => import('./features/community/pages/topic-detail/topic-detail.component')
       .then(m => m.TopicDetailComponent)
@@ -44,6 +50,10 @@ export const routes: Routes = [
   {
     path: 'profile/:username',
     loadComponent: () => import('./features/profile/profile.component').then(m => m.ProfileComponent)
+  },
+  {
+    path: 'search',
+    loadComponent: () => import('./features/search/search.component').then(m => m.SearchComponent)
   },
   {
     path: 'settings',

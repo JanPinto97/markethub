@@ -9,6 +9,13 @@
   pointer-events: none;
 }
 
+.pc-pinned-badge {
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--secondary);
+  padding-bottom: var(--spacing-2);
+}
+
 .pc-card {
   background-color: var(--surface-container-lowest);
   border-radius: var(--radius-md);

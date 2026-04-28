@@ -2,12 +2,7 @@
 <header class="community-header">
   <a routerLink="/community" class="header-brand">MarketHub</a>
 
-  <div class="header-search">
-    <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-    </svg>
-    <input type="text" placeholder="Search communities, topics..." />
-  </div>
+  <app-search-bar></app-search-bar>
 
   <div class="header-actions">
     <a routerLink="/settings" class="header-icon-btn" title="Settings">
@@ -64,14 +59,14 @@
               <span class="community-name">{{ comm.name }} <span class="community-tag">[Public]</span></span>
             </a>
           } @else {
-            <div class="community-item community-item-disabled" title="Private community page coming soon">
+            <a [routerLink]="'/community/p/' + comm.id" class="community-item">
               @if (comm.avatar) {
                 <img [src]="comm.avatar" [alt]="comm.name" class="community-avatar-img" />
               } @else {
                 <span class="community-initial" [style.background-color]="getInitialColor(comm.name)">{{ comm.name[0].toUpperCase() }}</span>
               }
               <span class="community-name">{{ comm.name }} <span class="community-tag">[Private]</span></span>
-            </div>
+            </a>
           }
         }
       }
