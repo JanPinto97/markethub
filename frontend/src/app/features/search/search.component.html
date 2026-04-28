@@ -10,11 +10,11 @@
 
   @if (query().length >= 2) {
     <!-- Filters -->
-    <div class="filter-tabs">
-      <button class="filter-tab" [class.active]="activeFilter() === 'all'" (click)="setFilter('all')">All</button>
-      <button class="filter-tab" [class.active]="activeFilter() === 'users'" (click)="setFilter('users')">Users</button>
-      <button class="filter-tab" [class.active]="activeFilter() === 'posts'" (click)="setFilter('posts')">Posts</button>
-      <button class="filter-tab" [class.active]="activeFilter() === 'communities'" (click)="setFilter('communities')">Communities</button>
+    <div class="filter-tabs" role="tablist">
+      <button role="tab" class="filter-tab" [class.active]="activeFilter() === 'all'" [attr.aria-selected]="activeFilter() === 'all'" (click)="setFilter('all')">All</button>
+      <button role="tab" class="filter-tab" [class.active]="activeFilter() === 'users'" [attr.aria-selected]="activeFilter() === 'users'" (click)="setFilter('users')">Users</button>
+      <button role="tab" class="filter-tab" [class.active]="activeFilter() === 'posts'" [attr.aria-selected]="activeFilter() === 'posts'" (click)="setFilter('posts')">Posts</button>
+      <button role="tab" class="filter-tab" [class.active]="activeFilter() === 'communities'" [attr.aria-selected]="activeFilter() === 'communities'" (click)="setFilter('communities')">Communities</button>
     </div>
 
     @if (loading()) {

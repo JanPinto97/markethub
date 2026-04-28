@@ -130,16 +130,20 @@
     <div class="pr-modal-backdrop" (click)="onModalBackdropClick($event)">
       <div class="pr-modal" role="dialog" aria-modal="true">
         <header class="pr-modal-header">
-          <div class="pr-modal-tabs">
+          <div class="pr-modal-tabs" role="tablist">
             <button
               type="button"
+              role="tab"
               class="pr-modal-tab"
               [class.active]="followersTab() === 'followers'"
+              [attr.aria-selected]="followersTab() === 'followers'"
               (click)="setModalTab('followers')">Followers</button>
             <button
               type="button"
+              role="tab"
               class="pr-modal-tab"
               [class.active]="followersTab() === 'following'"
+              [attr.aria-selected]="followersTab() === 'following'"
               (click)="setModalTab('following')">Following</button>
           </div>
           <button

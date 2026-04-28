@@ -535,3 +535,25 @@
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
 }
+
+@media (max-width: 767px) {
+  .detail-content {
+    padding: var(--spacing-3);
+  }
+
+  .community-banner {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: var(--spacing-4);
+  }
+
+  .banner-left {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .banner-actions {
+    align-self: center;
+  }
+}

@@ -727,21 +727,100 @@
   50% { opacity: 0.4; }
 }
 
-/* ── RESPONSIVE ── */
-@media (max-width: 768px) {
-  .detail-layout {
-    flex-direction: column;
+/* ── PANEL TOGGLE (hidden on desktop) ── */
+.panel-toggle-btn {
+  display: none;
+  align-items: center;
+  gap: var(--spacing-2);
+  position: fixed;
+  bottom: var(--spacing-4);
+  right: var(--spacing-4);
+  z-index: 100;
+  padding: var(--spacing-3) var(--spacing-4);
+  background: var(--gradient-primary);
+  color: var(--on-primary);
+  border: none;
+  border-radius: var(--radius-full);
+  font-size: var(--text-body-md);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.panel-overlay {
+  display: none;
+}
+
+/* ── RESPONSIVE: TABLET ── */
+@media (max-width: 1023px) {
+  .side-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    z-index: 200;
+    width: 340px;
+    height: 100vh;
+    background-color: var(--surface-container-lowest);
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.1);
+    padding: calc(var(--header-height) + var(--spacing-4)) var(--spacing-4) var(--spacing-4);
+    transform: translateX(100%);
+    transition: transform 200ms ease;
+    max-height: 100vh;
   }
 
-  .side-panel {
-    width: 100%;
-    position: static;
-    max-height: none;
-    padding-top: 0;
-    padding-bottom: var(--spacing-4);
+  .side-panel.panel-open {
+    transform: translateX(0);
+  }
+
+  .panel-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 150;
+    background-color: rgba(0, 0, 0, 0.4);
+  }
+
+  .panel-toggle-btn {
+    display: flex;
   }
 
   .feed-col {
     max-width: 100%;
+  }
+}
+
+/* ── RESPONSIVE: MOBILE ── */
+@media (max-width: 767px) {
+  .detail-header {
+    padding: 0 var(--spacing-3);
+    gap: var(--spacing-2);
+  }
+
+  .detail-layout {
+    padding-left: var(--spacing-3);
+    padding-right: var(--spacing-3);
+  }
+
+  .community-banner {
+    flex-direction: column;
+    padding: var(--spacing-4);
+  }
+
+  .banner-left {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .community-name {
+    justify-content: center;
+  }
+
+  .banner-actions {
+    align-self: center;
+  }
+
+  .side-panel {
+    width: 100%;
   }
 }

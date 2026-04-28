@@ -231,6 +231,8 @@
   border-radius: var(--radius-default);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
   padding: var(--spacing-1);
+  margin: 0;
+  list-style: none;
   z-index: 10;
 }
 
@@ -283,7 +285,8 @@
 
 .prd-retry-btn:hover { background-color: var(--surface-container-highest); }
 
-@media (max-width: 640px) {
+@media (max-width: 767px) {
   .prd-post { padding: var(--spacing-4); gap: var(--spacing-3); }
   .prd-title { font-size: var(--text-display-sm); }
+  .prd-vote-btn { min-height: 44px; min-width: 44px; }
 }

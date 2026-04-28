@@ -55,6 +55,9 @@ export class CommunityComponent implements OnInit, AfterViewInit, OnDestroy {
   createError = signal<string | null>(null);
   emojiPickerOpen = signal(false);
 
+  drawerOpen = signal(false);
+  mobileSearchOpen = signal(false);
+
   showCreateCommunityModal = signal(false);
   showTopicSearchPopup = signal(false);
   allTopics = signal<DiscussionTopicFull[]>([]);
@@ -342,6 +345,10 @@ export class CommunityComponent implements OnInit, AfterViewInit, OnDestroy {
       avatar: c.avatar || ''
     };
     this.communities.update(list => [...list, newComm]);
+  }
+
+  toggleDrawer() {
+    this.drawerOpen.update(v => !v);
   }
 
   requireAuth(): boolean {
