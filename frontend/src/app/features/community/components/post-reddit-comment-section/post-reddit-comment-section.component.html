@@ -15,7 +15,7 @@
     <div class="rcs-new">
       <div class="rcs-new-row">
         @if (auth.currentUser()?.avatar) {
-          <img class="rcs-avatar" [src]="auth.currentUser()!.avatar" alt="" />
+          <img class="rcs-avatar" [src]="auth.currentUser()!.avatar | mediaUrl" alt="" />
         } @else {
           <div class="rcs-avatar rcs-avatar-fallback"
                [style.background-color]="initialColor(auth.currentUser()?.username || '')">

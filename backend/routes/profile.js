@@ -1,7 +1,35 @@
 const router = require('express').Router();
 const bcrypt = require('bcrypt');
+const path = require('path');
+const { v4: uuidv4 } = require('uuid');
+const multer = require('multer');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
+
+const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
+const storage = multer.diskStorage({
+  destination(req, file, cb) {
+    cb(null, path.join(__dirname, '..', 'uploads', 'images'));
+  },
+  filename(req, file, cb) {
+    cb(null, `${uuidv4()}${path.extname(file.originalname)}`);
+  },
+});
+
+const profileUpload = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    if (IMAGE_TYPES.includes(file.mimetype)) return cb(null, true);
+    const err = new Error('File type not allowed');
+    err.statusCode = 400;
+    cb(err);
+  },
+  limits: { fileSize: 10 * 1024 * 1024 },
+}).fields([
+  { name: 'avatar', maxCount: 1 },
+  { name: 'coverImage', maxCount: 1 },
+]);
 
 const SALT_ROUNDS = 10;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -12,9 +40,21 @@ function fail(res, code, message) {
 
 router.use(auth);
 
-router.put('/', async (req, res, next) => {
+router.put('/', (req, res, next) => {
+  profileUpload(req, res, (err) => {
+    if (err) {
+      err.statusCode = err.statusCode || 400;
+      return next(err);
+    }
+    next();
+  });
+}, async (req, res, next) => {
   try {
-    const { username, email, avatar, bio, coverImage } = req.body || {};
+    const { username, email, bio } = req.body || {};
+    const avatarFile = req.files?.avatar?.[0];
+    const coverFile = req.files?.coverImage?.[0];
+    const avatar = avatarFile ? `/uploads/images/${avatarFile.filename}` : req.body.avatar;
+    const coverImage = coverFile ? `/uploads/images/${coverFile.filename}` : req.body.coverImage;
     const user = await User.findById(req.user.id);
     if (!user) return fail(res, 404, 'User not found');
 

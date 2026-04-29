@@ -282,8 +282,26 @@ export class CommunityService {
       .pipe(map(res => res.community));
   }
 
+  createCommunityPublicWithFile(data: CreateCommunityDto, avatarFile: File): Observable<CommunityPublic> {
+    const formData = new FormData();
+    formData.append('name', data.name);
+    if (data.description) formData.append('description', data.description);
+    formData.append('media', avatarFile);
+    return this.http.post<{ success: boolean; community: CommunityPublic }>(`${this.baseUrl}/communities/public`, formData)
+      .pipe(map(res => res.community));
+  }
+
   createCommunityPrivate(data: CreateCommunityDto): Observable<CommunityPrivate> {
     return this.api.post<{ success: boolean; community: CommunityPrivate }>('/communities/private', data)
+      .pipe(map(res => res.community));
+  }
+
+  createCommunityPrivateWithFile(data: CreateCommunityDto, avatarFile: File): Observable<CommunityPrivate> {
+    const formData = new FormData();
+    formData.append('name', data.name);
+    if (data.description) formData.append('description', data.description);
+    formData.append('media', avatarFile);
+    return this.http.post<{ success: boolean; community: CommunityPrivate }>(`${this.baseUrl}/communities/private`, formData)
       .pipe(map(res => res.community));
   }
 

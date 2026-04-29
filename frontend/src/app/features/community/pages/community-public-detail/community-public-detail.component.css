@@ -316,6 +316,15 @@
   background-color: var(--surface-container-high);
 }
 
+.avatar-initial-sm {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: var(--text-body-md);
+  font-weight: var(--weight-bold);
+}
+
 .post-input {
   flex: 1;
   padding: var(--spacing-3);

@@ -41,7 +41,7 @@
                 [class.focused]="focusedIndex() === getItemIndex('users', i)"
                 (click)="onUserClick(u)">
                 @if (u.avatar) {
-                  <img [src]="u.avatar" class="dropdown-avatar" alt="" />
+                  <img [src]="u.avatar | mediaUrl" class="dropdown-avatar" alt="" />
                 } @else {
                   <div class="dropdown-avatar dropdown-avatar-initial" [style.background-color]="initialColor(u.username)">
                     {{ initial(u.username) }}
@@ -67,15 +67,15 @@
                 class="dropdown-row"
                 [class.focused]="focusedIndex() === getItemIndex('posts', i)"
                 (click)="onPostClick()">
-                @if (p.author?.avatar) {
-                  <img [src]="p.author.avatar" class="dropdown-avatar" alt="" />
+                @if (p.author.avatar) {
+                  <img [src]="p.author.avatar | mediaUrl" class="dropdown-avatar" alt="" />
                 } @else {
-                  <div class="dropdown-avatar dropdown-avatar-initial" [style.background-color]="initialColor(p.author?.username || 'U')">
-                    {{ initial(p.author?.username || 'U') }}
+                  <div class="dropdown-avatar dropdown-avatar-initial" [style.background-color]="initialColor(p.author.username || 'U')">
+                    {{ initial(p.author.username || 'U') }}
                   </div>
                 }
                 <div class="dropdown-info">
-                  <span class="dropdown-primary">@{{ p.author?.username }} <span class="dropdown-dot">·</span> {{ relativeTime(p.createdAt) }}</span>
+                  <span class="dropdown-primary">@{{ p.author.username }} <span class="dropdown-dot">·</span> {{ relativeTime(p.createdAt) }}</span>
                   <span class="dropdown-secondary">{{ p.text }}</span>
                 </div>
               </div>
@@ -93,7 +93,7 @@
                 [class.focused]="focusedIndex() === getItemIndex('communities', i)"
                 (click)="onCommunityClick(c)">
                 @if (c.avatar) {
-                  <img [src]="c.avatar" class="dropdown-avatar" alt="" />
+                  <img [src]="c.avatar | mediaUrl" class="dropdown-avatar" alt="" />
                 } @else {
                   <div class="dropdown-avatar dropdown-avatar-initial" [style.background-color]="initialColor(c.name)">
                     {{ initial(c.name) }}

@@ -6,7 +6,7 @@
       <div class="member-row">
         <a [routerLink]="'/profile/' + m.user.username" class="member-link">
           @if (m.user.avatar) {
-            <img [src]="m.user.avatar" [alt]="m.user.username" class="member-avatar" />
+            <img [src]="m.user.avatar | mediaUrl" [alt]="m.user.username" class="member-avatar" />
           } @else {
             <div class="member-avatar member-avatar-initial" [style.background-color]="initialColor(m.user.username)">
               {{ initial(m.user.username) }}

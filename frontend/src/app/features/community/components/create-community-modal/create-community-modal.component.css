@@ -144,16 +144,42 @@
   gap: var(--spacing-3);
 }
 
-.avatar-url-input {
-  flex: 1;
-}
-
 .avatar-preview {
   width: 40px;
   height: 40px;
   border-radius: var(--radius-full);
   object-fit: cover;
   flex-shrink: 0;
+}
+
+.upload-btn {
+  padding: var(--spacing-2) var(--spacing-4);
+  background-color: var(--surface-container-high);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-default);
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-medium);
+  color: var(--on-surface);
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.upload-btn:hover {
+  background-color: var(--surface-container-highest);
+}
+
+.remove-btn {
+  padding: var(--spacing-2) var(--spacing-4);
+  background: none;
+  border: 1px solid var(--error, #dc2626);
+  border-radius: var(--radius-default);
+  font-size: var(--text-body-sm);
+  color: var(--error, #dc2626);
+  cursor: pointer;
+}
+
+.remove-btn:hover {
+  background-color: rgba(220, 38, 38, 0.1);
 }
 
 .type-options {

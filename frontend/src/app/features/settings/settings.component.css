@@ -134,9 +134,42 @@
   gap: var(--spacing-3);
 }
 
-.st-avatar-row .st-input {
-  flex: 1;
-  min-width: 0;
+.st-upload-btn {
+  padding: var(--spacing-2) var(--spacing-4);
+  background-color: var(--surface-container-high);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-default);
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-medium);
+  color: var(--on-surface);
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.st-upload-btn:hover {
+  background-color: var(--surface-container-highest);
+}
+
+.st-remove-btn {
+  padding: var(--spacing-2) var(--spacing-4);
+  background: none;
+  border: 1px solid var(--error, #dc2626);
+  border-radius: var(--radius-default);
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-medium);
+  color: var(--error, #dc2626);
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.st-remove-btn:hover {
+  background-color: rgba(220, 38, 38, 0.1);
+}
+
+.st-cover-actions {
+  display: flex;
+  gap: var(--spacing-3);
+  margin-top: var(--spacing-2);
 }
 
 .st-avatar-preview {

@@ -4,11 +4,12 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { CommunityService, RedditComment } from '../../services/community.service';
 import { getUsernameColor, getInitial } from '../../../../shared/utils/color.utils';
+import { MediaUrlPipe } from '../../../../shared/pipes/media-url.pipe';
 
 @Component({
   selector: 'app-post-reddit-comment-section',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, MediaUrlPipe],
   templateUrl: './post-reddit-comment-section.component.html',
   styleUrl: './post-reddit-comment-section.component.css'
 })

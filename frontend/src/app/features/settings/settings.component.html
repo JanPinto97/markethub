@@ -9,16 +9,8 @@
     <h2 class="st-card-title">Profile</h2>
 
     <div class="st-field">
-      <label for="avatar" class="st-label">Avatar URL</label>
+      <label class="st-label">Avatar</label>
       <div class="st-avatar-row">
-        <input
-          id="avatar"
-          type="url"
-          class="st-input"
-          formControlName="avatar"
-          placeholder="https://..."
-          autocomplete="off"
-        />
         <div class="st-avatar-preview" [style.background-color]="color()">
           @if (showAvatarImage()) {
             <img [src]="currentAvatarUrl()" alt="Avatar preview" (error)="onAvatarImgError()" />
@@ -26,19 +18,18 @@
             <span class="st-avatar-initial">{{ initial() }}</span>
           }
         </div>
+        <label class="st-upload-btn">
+          Choose image
+          <input type="file" accept="image/*" (change)="onAvatarFileChange($event)" hidden />
+        </label>
+        @if (currentAvatarUrl()) {
+          <button type="button" class="st-remove-btn" (click)="removeAvatar()">Remove</button>
+        }
       </div>
     </div>
 
     <div class="st-field">
-      <label for="coverImage" class="st-label">Cover Image URL</label>
-      <input
-        id="coverImage"
-        type="url"
-        class="st-input"
-        formControlName="coverImage"
-        placeholder="https://..."
-        autocomplete="off"
-      />
+      <label class="st-label">Cover Image</label>
       <div
         class="st-cover-preview"
         [style.background-color]="color()"
@@ -52,6 +43,15 @@
             aria-hidden="true"
             (error)="onCoverImgError()"
           />
+        }
+      </div>
+      <div class="st-cover-actions">
+        <label class="st-upload-btn">
+          Choose image
+          <input type="file" accept="image/*" (change)="onCoverFileChange($event)" hidden />
+        </label>
+        @if (currentCoverUrl()) {
+          <button type="button" class="st-remove-btn" (click)="removeCover()">Remove</button>
         }
       </div>
     </div>

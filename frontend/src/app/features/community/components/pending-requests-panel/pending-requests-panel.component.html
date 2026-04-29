@@ -9,7 +9,7 @@
         <div class="request-row" (click)="openDetail(req)">
           <div class="request-top">
             @if (req.user.avatar) {
-              <img [src]="req.user.avatar" [alt]="req.user.username" class="request-avatar" />
+              <img [src]="req.user.avatar | mediaUrl" [alt]="req.user.username" class="request-avatar" />
             } @else {
               <div class="request-avatar request-avatar-initial" [style.background-color]="initialColor(req.user.username)">
                 {{ initial(req.user.username) }}
@@ -44,7 +44,7 @@
       <div class="modal-body">
         <div class="modal-user">
           @if (req.user.avatar) {
-            <img [src]="req.user.avatar" [alt]="req.user.username" class="modal-avatar" />
+            <img [src]="req.user.avatar | mediaUrl" [alt]="req.user.username" class="modal-avatar" />
           } @else {
             <div class="modal-avatar request-avatar-initial" [style.background-color]="initialColor(req.user.username)">
               {{ initial(req.user.username) }}

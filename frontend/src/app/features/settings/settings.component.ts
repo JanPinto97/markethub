@@ -54,11 +54,14 @@ export class SettingsComponent implements AfterViewInit {
   readonly bioMax = BIO_MAX;
 
   profileForm: FormGroup = this.fb.group({
-    avatar: [''],
-    coverImage: [''],
     username: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(30)]],
     bio: [''],
   });
+
+  avatarFile: File | null = null;
+  coverFile: File | null = null;
+  removeAvatarFlag = false;
+  removeCoverFlag = false;
 
   accountForm: FormGroup = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
@@ -70,7 +73,7 @@ export class SettingsComponent implements AfterViewInit {
     confirmPassword: ['', [Validators.required]],
   });
 
-  private initialProfile = { avatar: '', coverImage: '', username: '', bio: '' };
+  private initialProfile = { username: '', bio: '' };
   private initialEmail = '';
 
   profileChanged = signal(false);
@@ -128,8 +131,6 @@ export class SettingsComponent implements AfterViewInit {
 
   private hydrateFromUser(user: User) {
     this.initialProfile = {
-      avatar: user.avatar || '',
-      coverImage: user.coverImage || '',
       username: user.username || '',
       bio: user.bio || '',
     };
@@ -138,34 +139,30 @@ export class SettingsComponent implements AfterViewInit {
     this.profileForm.patchValue(this.initialProfile, { emitEvent: false });
     this.accountForm.patchValue({ email: this.initialEmail }, { emitEvent: false });
 
-    this.currentAvatarUrl.set(this.initialProfile.avatar);
-    this.currentCoverUrl.set(this.initialProfile.coverImage);
+    const avatarUrl = user.avatar || '';
+    this.currentAvatarUrl.set(avatarUrl.startsWith('/uploads') ? `http://localhost:3000${avatarUrl}` : avatarUrl);
+    const coverUrl = user.coverImage || '';
+    this.currentCoverUrl.set(coverUrl.startsWith('/uploads') ? `http://localhost:3000${coverUrl}` : coverUrl);
     this.usernameValue.set(this.initialProfile.username);
     this.bioLength.set(this.initialProfile.bio.length);
+    this.avatarFile = null;
+    this.coverFile = null;
+    this.removeAvatarFlag = false;
+    this.removeCoverFlag = false;
   }
 
   private wireFormChangeListeners() {
     this.profileForm.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(v => {
       this.profileChanged.set(
-        (v.avatar ?? '') !== this.initialProfile.avatar ||
-        (v.coverImage ?? '') !== this.initialProfile.coverImage ||
         (v.username ?? '') !== this.initialProfile.username ||
-        (v.bio ?? '') !== this.initialProfile.bio
+        (v.bio ?? '') !== this.initialProfile.bio ||
+        !!this.avatarFile || !!this.coverFile ||
+        this.removeAvatarFlag || this.removeCoverFlag
       );
       this.profileSuccess.set(false);
       this.profileUsernameError.set(null);
       this.profileGenericError.set(null);
 
-      const nextAvatar = (v.avatar ?? '') as string;
-      if (nextAvatar !== this.currentAvatarUrl()) {
-        this.currentAvatarUrl.set(nextAvatar);
-        this.avatarPreviewFailed.set(false);
-      }
-      const nextCover = (v.coverImage ?? '') as string;
-      if (nextCover !== this.currentCoverUrl()) {
-        this.currentCoverUrl.set(nextCover);
-        this.coverPreviewFailed.set(false);
-      }
       this.usernameValue.set(((v.username ?? '') as string).trim());
       this.bioLength.set(((v.bio ?? '') as string).length);
       queueMicrotask(() => this.autoResizeBio());
@@ -211,6 +208,45 @@ export class SettingsComponent implements AfterViewInit {
     return !!this.currentCoverUrl() && !this.coverPreviewFailed();
   }
 
+  onAvatarFileChange(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    this.avatarFile = file;
+    this.removeAvatarFlag = false;
+    this.currentAvatarUrl.set(URL.createObjectURL(file));
+    this.avatarPreviewFailed.set(false);
+    this.markProfileChanged();
+  }
+
+  onCoverFileChange(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    this.coverFile = file;
+    this.removeCoverFlag = false;
+    this.currentCoverUrl.set(URL.createObjectURL(file));
+    this.coverPreviewFailed.set(false);
+    this.markProfileChanged();
+  }
+
+  removeAvatar() {
+    this.avatarFile = null;
+    this.removeAvatarFlag = true;
+    this.currentAvatarUrl.set('');
+    this.markProfileChanged();
+  }
+
+  removeCover() {
+    this.coverFile = null;
+    this.removeCoverFlag = true;
+    this.currentCoverUrl.set('');
+    this.markProfileChanged();
+  }
+
+  private markProfileChanged() {
+    this.profileChanged.set(true);
+    this.profileSuccess.set(false);
+  }
+
   // ── Password visibility ──
 
   toggleShowCurrent() { this.showCurrent.update(v => !v); }
@@ -234,15 +270,22 @@ export class SettingsComponent implements AfterViewInit {
     this.profileUsernameError.set(null);
     this.profileGenericError.set(null);
 
-    const payload = {
-      username: (this.profileForm.value.username ?? '').trim(),
-      avatar: (this.profileForm.value.avatar ?? '').trim(),
-      coverImage: (this.profileForm.value.coverImage ?? '').trim(),
-      bio: this.profileForm.value.bio ?? '',
-    };
+    const formData = new FormData();
+    formData.append('username', (this.profileForm.value.username ?? '').trim());
+    formData.append('bio', this.profileForm.value.bio ?? '');
+    if (this.avatarFile) {
+      formData.append('avatar', this.avatarFile);
+    } else if (this.removeAvatarFlag) {
+      formData.append('avatar', '');
+    }
+    if (this.coverFile) {
+      formData.append('coverImage', this.coverFile);
+    } else if (this.removeCoverFlag) {
+      formData.append('coverImage', '');
+    }
 
     this.http
-      .put<ProfileUpdateResponse>(`${this.baseUrl}/profile`, payload)
+      .put<ProfileUpdateResponse>(`${this.baseUrl}/profile`, formData)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: res => {
