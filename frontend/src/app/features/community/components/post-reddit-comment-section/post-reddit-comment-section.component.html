@@ -82,14 +82,14 @@
 
               @if (canDelete(comment)) {
                 <div class="rcs-menu-wrap">
-                  <button class="rcs-menu-btn" (click)="toggleMenu($event, comment.id)" title="More">
+                  <button class="rcs-menu-btn" (click)="toggleMenu($event, comment.id)" aria-label="Comment options" aria-haspopup="true" [attr.aria-expanded]="openMenuId() === comment.id">
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
                       <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
                     </svg>
                   </button>
                   @if (openMenuId() === comment.id) {
                     <div class="rcs-menu" (click)="$event.stopPropagation()">
-                      <button class="rcs-menu-item rcs-menu-danger" (click)="deleteRoot(comment)">Delete</button>
+                      <button class="rcs-menu-item rcs-menu-danger" (click)="deleteRoot(comment)" aria-label="Delete comment">Delete</button>
                     </div>
                   }
                 </div>
@@ -146,14 +146,14 @@
 
                       @if (canDelete(reply)) {
                         <div class="rcs-menu-wrap">
-                          <button class="rcs-menu-btn" (click)="toggleMenu($event, reply.id)" title="More">
+                          <button class="rcs-menu-btn" (click)="toggleMenu($event, reply.id)" aria-label="Comment options" aria-haspopup="true" [attr.aria-expanded]="openMenuId() === reply.id">
                             <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
                               <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
                             </svg>
                           </button>
                           @if (openMenuId() === reply.id) {
                             <div class="rcs-menu" (click)="$event.stopPropagation()">
-                              <button class="rcs-menu-item rcs-menu-danger" (click)="deleteReply(comment, reply)">Delete</button>
+                              <button class="rcs-menu-item rcs-menu-danger" (click)="deleteReply(comment, reply)" aria-label="Delete comment">Delete</button>
                             </div>
                           }
                         </div>

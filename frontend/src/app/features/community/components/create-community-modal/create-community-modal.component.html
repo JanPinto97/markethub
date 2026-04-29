@@ -1,8 +1,8 @@
 <div class="modal-overlay" (click)="onOverlayClick($event)">
-  <div class="modal-container">
+  <div #modalContainer class="modal-container" role="dialog" aria-modal="true" aria-labelledby="create-community-title">
     <div class="modal-header">
-      <h2 class="modal-title">Create Community</h2>
-      <button class="modal-close" (click)="close()" title="Close">
+      <h2 id="create-community-title" class="modal-title">Create Community</h2>
+      <button class="modal-close" (click)="close()" aria-label="Close">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
         </svg>

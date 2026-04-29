@@ -9,6 +9,13 @@
   pointer-events: none;
 }
 
+.pc-pinned-badge {
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--secondary);
+  padding-bottom: var(--spacing-2);
+}
+
 .pc-card {
   background-color: var(--surface-container-lowest);
   border-radius: var(--radius-md);
@@ -136,6 +143,8 @@
   border-radius: var(--radius-default);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
   padding: var(--spacing-1);
+  margin: 0;
+  list-style: none;
   z-index: 10;
 }
 
@@ -545,9 +554,26 @@
   cursor: not-allowed;
 }
 
-@media (max-width: 640px) {
-  .pc-menu-btn,
-  .pc-comment-menu-btn {
+@media (max-width: 767px) {
+  .pc-menu-btn {
     opacity: 1;
+  }
+
+  .pc-media img,
+  .pc-media video {
+    max-width: 100%;
+  }
+
+  .pc-action {
+    min-height: 44px;
+    padding: var(--spacing-2) var(--spacing-3);
+  }
+
+  .pc-footer {
+    gap: var(--spacing-3);
+  }
+
+  .pc-comment-send {
+    min-height: 44px;
   }
 }

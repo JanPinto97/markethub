@@ -11,13 +11,16 @@ export class ToastService {
   readonly toast = signal<Toast | null>(null);
   private hideTimer: ReturnType<typeof setTimeout> | null = null;
 
-  show(message: string, type: 'success' | 'error' | 'info' = 'success'): void {
+  show(message: string, type: 'success' | 'error' | 'info' = 'success', duration?: number): void {
     if (this.hideTimer) {
       clearTimeout(this.hideTimer);
       this.hideTimer = null;
     }
     this.toast.set({ message, type, visible: true });
-    this.hideTimer = setTimeout(() => this.dismiss(), 3000);
+    const ms = duration ?? 3000;
+    if (ms >= 0) {
+      this.hideTimer = setTimeout(() => this.dismiss(), ms);
+    }
   }
 
   dismiss(): void {

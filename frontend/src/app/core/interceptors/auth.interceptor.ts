@@ -3,6 +3,7 @@ import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, switchMap, throwError } from 'rxjs';
 import { AuthService } from '../services/auth.service';
+import { ToastService } from '../services/toast.service';
 
 function addToken(req: HttpRequest<unknown>, token: string | null): HttpRequest<unknown> {
   if (!token) return req;
@@ -12,6 +13,7 @@ function addToken(req: HttpRequest<unknown>, token: string | null): HttpRequest<
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
   const router = inject(Router);
+  const toast = inject(ToastService);
 
   const isAuthEndpoint = req.url.includes('/auth/login')
     || req.url.includes('/auth/register')
@@ -27,7 +29,10 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         switchMap(token => next(addToken(req, token))),
         catchError(refreshErr => {
           auth.logout().subscribe({ next: () => {}, error: () => {} });
-          router.navigate(['/login']);
+          toast.show('Your session has expired. Please sign in again.', 'error', -1);
+          setTimeout(() => {
+            router.navigate(['/login'], { queryParams: { reason: 'session_expired' } });
+          }, 2000);
           return throwError(() => refreshErr);
         })
       );

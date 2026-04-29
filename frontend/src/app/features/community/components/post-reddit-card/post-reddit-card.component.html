@@ -5,7 +5,8 @@
       class="prc-vote-btn"
       [class.active-up]="post.userVote === 'up'"
       (click)="vote('up')"
-      title="Upvote">
+      aria-label="Upvote"
+      [attr.aria-pressed]="post.userVote === 'up'">
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5">
         <path d="M12 5l-7 7h4v7h6v-7h4z"/>
       </svg>
@@ -15,7 +16,8 @@
       class="prc-vote-btn"
       [class.active-down]="post.userVote === 'down'"
       (click)="vote('down')"
-      title="Downvote">
+      aria-label="Downvote"
+      [attr.aria-pressed]="post.userVote === 'down'">
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5">
         <path d="M12 19l7-7h-4V5H9v7H5z"/>
       </svg>
@@ -33,15 +35,15 @@
       </div>
       @if (showMenu) {
         <div class="prc-menu-wrap">
-          <button class="prc-menu-btn" (click)="toggleMenu($event)" title="More">
+          <button class="prc-menu-btn" (click)="toggleMenu($event)" aria-label="Post options" aria-haspopup="true" [attr.aria-expanded]="menuOpen()">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
               <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
             </svg>
           </button>
           @if (menuOpen()) {
-            <div class="prc-menu" (click)="$event.stopPropagation()">
-              <button class="prc-menu-item prc-menu-danger" (click)="onDelete()">Delete</button>
-            </div>
+            <ul role="menu" class="prc-menu" (click)="$event.stopPropagation()">
+              <li role="menuitem"><button class="prc-menu-item prc-menu-danger" (click)="onDelete()" aria-label="Delete post">Delete</button></li>
+            </ul>
           }
         </div>
       }

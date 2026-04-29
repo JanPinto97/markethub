@@ -1,0 +1,52 @@
+<div class="members-panel">
+  <h3 class="panel-title">Members ({{ members.length }})</h3>
+
+  <div class="members-list">
+    @for (m of members; track m.user.id) {
+      <div class="member-row">
+        <a [routerLink]="'/profile/' + m.user.username" class="member-link">
+          @if (m.user.avatar) {
+            <img [src]="m.user.avatar" [alt]="m.user.username" class="member-avatar" />
+          } @else {
+            <div class="member-avatar member-avatar-initial" [style.background-color]="initialColor(m.user.username)">
+              {{ initial(m.user.username) }}
+            </div>
+          }
+          <span class="member-username">@{{ m.user.username }}</span>
+        </a>
+
+        <span class="member-role" [class]="roleClass(m.role)">{{ roleLabel(m.role) }}</span>
+
+        @if (canManage(m)) {
+          <div class="member-actions">
+            <div class="promote-wrap">
+              <button class="action-btn promote-btn" (click)="toggleDropdown(m.user.id, $event)" title="Change role" aria-label="Change role" aria-haspopup="true" [attr.aria-expanded]="openDropdownId() === m.user.id">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="18 15 12 9 6 15"/>
+                </svg>
+              </button>
+              @if (openDropdownId() === m.user.id) {
+                <div class="role-dropdown" (click)="$event.stopPropagation()">
+                  @for (r of availableRoles; track r) {
+                    <button
+                      class="role-option"
+                      [class.current]="r === m.role"
+                      [disabled]="r === m.role"
+                      (click)="onPromote(m.user.id, r)">
+                      {{ roleLabel(r) }}
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+            <button class="action-btn expel-btn" (click)="onExpel(m.user.id)" title="Remove member" aria-label="Remove member">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>

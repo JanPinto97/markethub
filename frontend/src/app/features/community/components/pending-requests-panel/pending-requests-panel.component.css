@@ -1,0 +1,235 @@
+.requests-panel {
+  background-color: var(--surface-container-lowest);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-4);
+  margin-top: var(--spacing-4);
+}
+
+.panel-title {
+  font-family: var(--font-display);
+  font-size: var(--text-body-md);
+  font-weight: var(--weight-semibold);
+  color: var(--on-surface);
+  margin: 0 0 var(--spacing-3);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.no-requests {
+  font-size: var(--text-body-sm);
+  color: var(--on-surface-variant);
+  margin: 0;
+}
+
+.requests-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.request-row {
+  padding: var(--spacing-3);
+  border-radius: var(--radius-default);
+  background-color: var(--surface-container-low);
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.request-row:hover {
+  background-color: var(--surface-container);
+}
+
+.request-top {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.request-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.request-avatar-initial {
+  color: #fff;
+  font-weight: var(--weight-bold);
+  font-size: var(--text-body-sm);
+}
+
+.request-info {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-2);
+  flex: 1;
+  min-width: 0;
+}
+
+.request-username {
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--on-surface);
+}
+
+.request-time {
+  font-size: var(--text-body-sm);
+  color: var(--on-surface-variant);
+}
+
+.request-preview {
+  font-size: var(--text-body-sm);
+  color: var(--on-surface-variant);
+  margin: var(--spacing-2) 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-style: italic;
+}
+
+.request-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-2);
+}
+
+.req-btn {
+  padding: var(--spacing-1) var(--spacing-3);
+  border: none;
+  border-radius: var(--radius-default);
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.req-btn:hover {
+  opacity: 0.85;
+}
+
+.accept-btn {
+  background: var(--gradient-primary);
+  color: var(--on-primary);
+}
+
+.reject-btn {
+  background-color: var(--surface-container-high);
+  color: var(--on-surface);
+}
+
+/* ── Modal ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-dialog {
+  background-color: var(--surface-container-lowest);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-6);
+  max-width: 420px;
+  width: 90%;
+  box-shadow: var(--shadow-ambient);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-4);
+}
+
+.modal-title {
+  font-family: var(--font-display);
+  font-size: var(--text-display-sm);
+  font-weight: var(--weight-bold);
+  color: var(--on-surface);
+  margin: 0;
+}
+
+.modal-close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  border-radius: var(--radius-full);
+  color: var(--on-surface-variant);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s;
+}
+
+.modal-close:hover {
+  background-color: var(--surface-container-high);
+}
+
+.modal-body {
+  margin-bottom: var(--spacing-4);
+}
+
+.modal-user {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-4);
+}
+
+.modal-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-username {
+  display: block;
+  font-size: var(--text-body-md);
+  font-weight: var(--weight-semibold);
+  color: var(--on-surface);
+}
+
+.modal-time {
+  display: block;
+  font-size: var(--text-body-sm);
+  color: var(--on-surface-variant);
+  margin-top: var(--spacing-1);
+}
+
+.modal-message {
+  font-size: var(--text-body-md);
+  color: var(--on-surface);
+  line-height: 1.6;
+  margin: 0;
+  font-style: italic;
+}
+
+.modal-no-message {
+  color: var(--on-surface-variant);
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-3);
+}
+
+.modal-footer .req-btn {
+  padding: var(--spacing-2) var(--spacing-4);
+}

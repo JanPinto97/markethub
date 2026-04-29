@@ -1,36 +1,61 @@
 <!-- HEADER -->
 <header class="community-header">
-  <a routerLink="/community" class="header-brand">MarketHub</a>
-
-  <div class="header-search">
-    <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+  <!-- Hamburger (mobile only) -->
+  <button class="hamburger-btn" (click)="toggleDrawer()" [attr.aria-label]="drawerOpen() ? 'Close menu' : 'Open menu'">
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+      <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
     </svg>
-    <input type="text" placeholder="Search communities, topics..." />
+  </button>
+
+  @if (!mobileSearchOpen()) {
+    <a routerLink="/community" class="header-brand">MarketHub</a>
+  }
+
+  <div class="header-search-desktop">
+    <app-search-bar></app-search-bar>
   </div>
 
-  <div class="header-actions">
-    <a routerLink="/settings" class="header-icon-btn" title="Settings">
-      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="3"/>
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-      </svg>
-    </a>
-    <a [routerLink]="'/profile/' + (auth.currentUser()?.username || '')" class="header-avatar">
-      @if (auth.currentUser()?.avatar) {
-        <img [src]="auth.currentUser()!.avatar" alt="Avatar" />
-      } @else {
-        <div class="avatar-placeholder"></div>
-      }
-    </a>
-  </div>
+  @if (mobileSearchOpen()) {
+    <div class="header-search-mobile-expanded">
+      <app-search-bar></app-search-bar>
+      <button class="mobile-search-cancel" (click)="mobileSearchOpen.set(false)">Cancel</button>
+    </div>
+  }
+
+  @if (!mobileSearchOpen()) {
+    <div class="header-actions">
+      <button class="header-icon-btn mobile-search-btn" (click)="mobileSearchOpen.set(true)" aria-label="Search">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+      </button>
+      <a routerLink="/settings" class="header-icon-btn" title="Settings" aria-label="Settings">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </a>
+      <a [routerLink]="'/profile/' + (auth.currentUser()?.username || '')" class="header-avatar">
+        @if (auth.currentUser()?.avatar) {
+          <img [src]="auth.currentUser()!.avatar" alt="Avatar" />
+        } @else {
+          <div class="avatar-placeholder"></div>
+        }
+      </a>
+    </div>
+  }
 </header>
+
+<!-- Drawer overlay (mobile) -->
+@if (drawerOpen()) {
+  <div class="drawer-overlay" (click)="drawerOpen.set(false)"></div>
+}
 
 <!-- MAIN LAYOUT -->
 <div class="community-layout">
 
   <!-- SIDEBAR LEFT -->
-  <aside class="sidebar-left">
+  <aside class="sidebar-left" [class.drawer-open]="drawerOpen()">
     <nav class="sidebar-section">
       <a routerLink="/community" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
@@ -64,14 +89,14 @@
               <span class="community-name">{{ comm.name }} <span class="community-tag">[Public]</span></span>
             </a>
           } @else {
-            <div class="community-item community-item-disabled" title="Private community page coming soon">
+            <a [routerLink]="'/community/p/' + comm.id" class="community-item">
               @if (comm.avatar) {
                 <img [src]="comm.avatar" [alt]="comm.name" class="community-avatar-img" />
               } @else {
                 <span class="community-initial" [style.background-color]="getInitialColor(comm.name)">{{ comm.name[0].toUpperCase() }}</span>
               }
               <span class="community-name">{{ comm.name }} <span class="community-tag">[Private]</span></span>
-            </div>
+            </a>
           }
         }
       }
@@ -103,16 +128,20 @@
   <!-- FEED CENTRAL -->
   <main class="feed-central">
     <!-- Tab selector -->
-    <div class="feed-tabs">
+    <div class="feed-tabs" role="tablist">
       <button
+        role="tab"
         class="tab-btn"
         [class.active]="activeTab === 'trending'"
+        [attr.aria-selected]="activeTab === 'trending'"
         (click)="setTab('trending')">
         Trending
       </button>
       <button
+        role="tab"
         class="tab-btn"
         [class.active]="activeTab === 'following'"
+        [attr.aria-selected]="activeTab === 'following'"
         (click)="setTab('following')">
         Following
       </button>
@@ -157,20 +186,20 @@
           } @else {
             <img [src]="mediaPreview()!" alt="Preview" />
           }
-          <button class="media-remove" (click)="removeMedia()" title="Remove">×</button>
+          <button class="media-remove" (click)="removeMedia()" title="Remove" aria-label="Remove media">×</button>
         </div>
       }
 
       <div class="create-post-actions">
         <div class="post-action-icons">
           <input #fileInput type="file" accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime" hidden (change)="onFileSelected($event)" />
-          <button class="icon-btn" title="Image" (click)="triggerFilePicker(fileInput)" [disabled]="!auth.isAuthenticated()">
+          <button class="icon-btn" title="Image" aria-label="Add image" (click)="triggerFilePicker(fileInput)" [disabled]="!auth.isAuthenticated()">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
             </svg>
           </button>
           <div class="emoji-btn-wrap">
-            <button class="icon-btn" title="Emoji" (click)="onEmojiClick($event)" [disabled]="!auth.isAuthenticated()">
+            <button class="icon-btn" title="Emoji" aria-label="Add emoji" (click)="onEmojiClick($event)" [disabled]="!auth.isAuthenticated()">
               <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/>
               </svg>

@@ -1,0 +1,124 @@
+<div class="search-bar-wrap">
+  <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+  </svg>
+  <input
+    type="text"
+    class="search-input"
+    placeholder="Search users, posts, communities..."
+    aria-label="Search"
+    [attr.aria-expanded]="dropdownOpen()"
+    aria-controls="search-dropdown"
+    [value]="query()"
+    (input)="onInput($event)"
+    (keydown)="onKeydown($event)"
+  />
+
+  @if (dropdownOpen()) {
+    <div id="search-dropdown" class="search-dropdown" role="listbox">
+      @if (loading()) {
+        @for (_ of [1,2,3]; track $index) {
+          <div class="skeleton-row">
+            <div class="skeleton-circle"></div>
+            <div class="skeleton-lines">
+              <div class="skeleton-line"></div>
+              <div class="skeleton-line short"></div>
+            </div>
+          </div>
+        }
+      } @else if (error()) {
+        <div class="dropdown-empty">Search unavailable.</div>
+      } @else if (!hasResults) {
+        <div class="dropdown-empty">No results for "{{ query() }}"</div>
+      } @else {
+        <!-- Users -->
+        @if (users().length > 0) {
+          <div class="dropdown-section">
+            <span class="dropdown-section-title">Users</span>
+            @for (u of users(); track u.username; let i = $index) {
+              <div
+                class="dropdown-row"
+                [class.focused]="focusedIndex() === getItemIndex('users', i)"
+                (click)="onUserClick(u)">
+                @if (u.avatar) {
+                  <img [src]="u.avatar" class="dropdown-avatar" alt="" />
+                } @else {
+                  <div class="dropdown-avatar dropdown-avatar-initial" [style.background-color]="initialColor(u.username)">
+                    {{ initial(u.username) }}
+                  </div>
+                }
+                <div class="dropdown-info">
+                  <span class="dropdown-primary">@{{ u.username }}</span>
+                  @if (u.bio) {
+                    <span class="dropdown-secondary">{{ u.bio }}</span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Posts -->
+        @if (posts().length > 0) {
+          <div class="dropdown-section">
+            <span class="dropdown-section-title">Posts</span>
+            @for (p of posts(); track p.id; let i = $index) {
+              <div
+                class="dropdown-row"
+                [class.focused]="focusedIndex() === getItemIndex('posts', i)"
+                (click)="onPostClick()">
+                @if (p.author?.avatar) {
+                  <img [src]="p.author.avatar" class="dropdown-avatar" alt="" />
+                } @else {
+                  <div class="dropdown-avatar dropdown-avatar-initial" [style.background-color]="initialColor(p.author?.username || 'U')">
+                    {{ initial(p.author?.username || 'U') }}
+                  </div>
+                }
+                <div class="dropdown-info">
+                  <span class="dropdown-primary">@{{ p.author?.username }} <span class="dropdown-dot">·</span> {{ relativeTime(p.createdAt) }}</span>
+                  <span class="dropdown-secondary">{{ p.text }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Communities -->
+        @if (communities().length > 0) {
+          <div class="dropdown-section">
+            <span class="dropdown-section-title">Communities</span>
+            @for (c of communities(); track c.id; let i = $index) {
+              <div
+                class="dropdown-row"
+                [class.focused]="focusedIndex() === getItemIndex('communities', i)"
+                (click)="onCommunityClick(c)">
+                @if (c.avatar) {
+                  <img [src]="c.avatar" class="dropdown-avatar" alt="" />
+                } @else {
+                  <div class="dropdown-avatar dropdown-avatar-initial" [style.background-color]="initialColor(c.name)">
+                    {{ initial(c.name) }}
+                  </div>
+                }
+                <div class="dropdown-info">
+                  <span class="dropdown-primary">
+                    {{ c.name }}
+                    <span class="type-badge">{{ c.type === 'private' ? '🔒' : '🌐' }}</span>
+                  </span>
+                  <span class="dropdown-secondary">{{ c.memberCount }} {{ c.memberCount === 1 ? 'member' : 'members' }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- See all -->
+        <div
+          class="dropdown-see-all"
+          [class.focused]="focusedIndex() === totalItems"
+          (click)="goToSearch()">
+          See all results for "{{ query() }}" →
+        </div>
+      }
+    </div>
+  }
+</div>

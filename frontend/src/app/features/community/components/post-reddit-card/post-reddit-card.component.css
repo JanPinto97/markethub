@@ -217,6 +217,8 @@
   border-radius: var(--radius-default);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
   padding: var(--spacing-1);
+  margin: 0;
+  list-style: none;
   z-index: 10;
 }
 
@@ -242,11 +244,25 @@
   color: var(--error, #dc2626);
 }
 
-@media (max-width: 640px) {
+@media (max-width: 767px) {
   .prc-menu-btn { opacity: 1; }
 
   .prc-card {
     padding: var(--spacing-3);
     gap: var(--spacing-2);
+  }
+
+  .prc-vote-btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .prc-media img,
+  .prc-media video {
+    max-width: 100%;
+  }
+
+  .prc-comments-link {
+    min-height: 44px;
   }
 }

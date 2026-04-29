@@ -9,12 +9,13 @@ import { PostSkeletonComponent } from './components/post-skeleton/post-skeleton.
 import { EmojiPickerComponent } from '../../shared/components/emoji-picker/emoji-picker.component';
 import { CreateCommunityModalComponent } from './components/create-community-modal/create-community-modal.component';
 import { TopicSearchPopupComponent } from './components/topic-search-popup/topic-search-popup.component';
+import { SearchBarComponent } from '../../shared/components/search-bar/search-bar.component';
 import { getUsernameColor } from '../../shared/utils/color.utils';
 
 @Component({
   selector: 'app-community',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive, PostCardComponent, PostSkeletonComponent, EmojiPickerComponent, CreateCommunityModalComponent, TopicSearchPopupComponent],
+  imports: [RouterLink, RouterLinkActive, PostCardComponent, PostSkeletonComponent, EmojiPickerComponent, CreateCommunityModalComponent, TopicSearchPopupComponent, SearchBarComponent],
   templateUrl: './community.component.html',
   styleUrl: './community.component.css'
 })
@@ -53,6 +54,9 @@ export class CommunityComponent implements OnInit, AfterViewInit, OnDestroy {
   creating = signal(false);
   createError = signal<string | null>(null);
   emojiPickerOpen = signal(false);
+
+  drawerOpen = signal(false);
+  mobileSearchOpen = signal(false);
 
   showCreateCommunityModal = signal(false);
   showTopicSearchPopup = signal(false);
@@ -341,6 +345,10 @@ export class CommunityComponent implements OnInit, AfterViewInit, OnDestroy {
       avatar: c.avatar || ''
     };
     this.communities.update(list => [...list, newComm]);
+  }
+
+  toggleDrawer() {
+    this.drawerOpen.update(v => !v);
   }
 
   requireAuth(): boolean {

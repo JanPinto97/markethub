@@ -1,4 +1,7 @@
 <article class="pc-card">
+  @if (post.isPinned && communityContext) {
+    <div class="pc-pinned-badge">📌 Pinned</div>
+  }
   <!-- HEADER -->
   <div class="pc-header">
     <a [routerLink]="'/profile/' + authorUsername" class="pc-avatar-link">
@@ -24,22 +27,25 @@
     </div>
 
     <div class="pc-menu-wrap">
-      <button class="pc-menu-btn" (click)="toggleMenu($event)" title="More">
+      <button class="pc-menu-btn" (click)="toggleMenu($event)" aria-label="Post options" aria-haspopup="true" [attr.aria-expanded]="menuOpen()">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
           <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
         </svg>
       </button>
       @if (menuOpen()) {
-        <div class="pc-menu" (click)="$event.stopPropagation()">
-          @if (isOwner) {
-            <button class="pc-menu-item" (click)="onEdit()">Edit</button>
-            <button class="pc-menu-item pc-menu-danger" (click)="onDelete()">Delete</button>
-          } @else if (isMod) {
-            <button class="pc-menu-item pc-menu-danger" (click)="onDelete()">Delete</button>
-          } @else {
-            <button class="pc-menu-item" (click)="onReport()">Report</button>
+        <ul role="menu" class="pc-menu" (click)="$event.stopPropagation()">
+          @if (canPin) {
+            <li role="menuitem"><button class="pc-menu-item" (click)="onPin()" [attr.aria-label]="post.isPinned ? 'Unpin post' : 'Pin post'">{{ post.isPinned ? 'Unpin' : 'Pin' }}</button></li>
           }
-        </div>
+          @if (isOwner) {
+            <li role="menuitem"><button class="pc-menu-item" (click)="onEdit()">Edit</button></li>
+            <li role="menuitem"><button class="pc-menu-item pc-menu-danger" (click)="onDelete()" aria-label="Delete post">Delete</button></li>
+          } @else if (isMod) {
+            <li role="menuitem"><button class="pc-menu-item pc-menu-danger" (click)="onDelete()" aria-label="Delete post">Delete</button></li>
+          } @else {
+            <li role="menuitem"><button class="pc-menu-item" (click)="onReport()">Report</button></li>
+          }
+        </ul>
       }
     </div>
   </div>
@@ -73,14 +79,14 @@
 
   <!-- FOOTER -->
   <div class="pc-footer">
-    <button class="pc-action" [class.liked]="post.liked" (click)="toggleLike()" title="Like">
+    <button class="pc-action" [class.liked]="post.liked" (click)="toggleLike()" [attr.aria-label]="post.liked ? 'Unlike post' : 'Like post'" [attr.aria-pressed]="post.liked">
       <svg viewBox="0 0 24 24" width="18" height="18" [attr.fill]="post.liked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
         <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
       </svg>
       <span>{{ post.likesCount }}</span>
     </button>
 
-    <button class="pc-action" [class.active]="commentsOpen()" (click)="toggleComments()" title="Comments">
+    <button class="pc-action" [class.active]="commentsOpen()" (click)="toggleComments()" aria-label="View comments">
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
       </svg>

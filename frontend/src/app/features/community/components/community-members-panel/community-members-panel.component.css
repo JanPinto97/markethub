@@ -1,0 +1,164 @@
+.members-panel {
+  background-color: var(--surface-container-lowest);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-4);
+}
+
+.panel-title {
+  font-family: var(--font-display);
+  font-size: var(--text-body-md);
+  font-weight: var(--weight-semibold);
+  color: var(--on-surface);
+  margin: 0 0 var(--spacing-3);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.members-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.member-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-2);
+  border-radius: var(--radius-default);
+  transition: background-color 0.15s;
+}
+
+.member-row:hover {
+  background-color: var(--surface-container-low);
+}
+
+.member-link {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  flex: 1;
+  min-width: 0;
+  text-decoration: none;
+}
+
+.member-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.member-avatar-initial {
+  color: #fff;
+  font-weight: var(--weight-bold);
+  font-size: var(--text-body-sm);
+}
+
+.member-username {
+  font-size: var(--text-body-sm);
+  color: var(--on-surface);
+  font-weight: var(--weight-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.member-role {
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.role-leader {
+  color: #c9901e;
+}
+
+.role-moderator {
+  color: #2563eb;
+}
+
+.role-little_whale {
+  color: var(--secondary);
+}
+
+.role-member {
+  color: var(--on-surface-variant);
+}
+
+.member-actions {
+  display: none;
+  align-items: center;
+  gap: var(--spacing-1);
+  flex-shrink: 0;
+}
+
+.member-row:hover .member-actions {
+  display: flex;
+}
+
+.action-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: none;
+  border-radius: var(--radius-full);
+  color: var(--on-surface-variant);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s;
+}
+
+.action-btn:hover {
+  background-color: var(--surface-container-high);
+}
+
+.expel-btn:hover {
+  color: var(--error, #dc2626);
+}
+
+.promote-wrap {
+  position: relative;
+}
+
+.role-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  min-width: 140px;
+  background-color: var(--surface-container-lowest);
+  border-radius: var(--radius-default);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  padding: var(--spacing-1);
+  z-index: 10;
+}
+
+.role-option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: var(--spacing-2) var(--spacing-3);
+  background: none;
+  border: none;
+  border-radius: var(--radius-default);
+  font-size: var(--text-body-sm);
+  color: var(--on-surface);
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.role-option:hover:not(:disabled) {
+  background-color: var(--surface-container-low);
+}
+
+.role-option.current {
+  opacity: 0.5;
+  cursor: default;
+}

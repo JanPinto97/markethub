@@ -40,9 +40,9 @@
   }
 
   <!-- Sort tabs -->
-  <div class="td-sort-tabs">
-    <button class="td-sort-btn" [class.active]="sortMode() === 'top'" (click)="setSort('top')">🔥 Top</button>
-    <button class="td-sort-btn" [class.active]="sortMode() === 'recent'" (click)="setSort('recent')">🕐 Recent</button>
+  <div class="td-sort-tabs" role="tablist">
+    <button role="tab" class="td-sort-btn" [class.active]="sortMode() === 'top'" [attr.aria-selected]="sortMode() === 'top'" (click)="setSort('top')">🔥 Top</button>
+    <button role="tab" class="td-sort-btn" [class.active]="sortMode() === 'recent'" [attr.aria-selected]="sortMode() === 'recent'" (click)="setSort('recent')">🕐 Recent</button>
   </div>
 
   <!-- Create post box -->

@@ -1,0 +1,180 @@
+<div class="search-page">
+  <!-- Title -->
+  @if (query().length >= 2) {
+    <h1 class="search-title">Search results for "{{ query() }}"</h1>
+  } @else if (query().length > 0) {
+    <div class="search-message">Search term must be at least 2 characters.</div>
+  } @else {
+    <div class="search-message">Enter a search term to get started.</div>
+  }
+
+  @if (query().length >= 2) {
+    <!-- Filters -->
+    <div class="filter-tabs" role="tablist">
+      <button role="tab" class="filter-tab" [class.active]="activeFilter() === 'all'" [attr.aria-selected]="activeFilter() === 'all'" (click)="setFilter('all')">All</button>
+      <button role="tab" class="filter-tab" [class.active]="activeFilter() === 'users'" [attr.aria-selected]="activeFilter() === 'users'" (click)="setFilter('users')">Users</button>
+      <button role="tab" class="filter-tab" [class.active]="activeFilter() === 'posts'" [attr.aria-selected]="activeFilter() === 'posts'" (click)="setFilter('posts')">Posts</button>
+      <button role="tab" class="filter-tab" [class.active]="activeFilter() === 'communities'" [attr.aria-selected]="activeFilter() === 'communities'" (click)="setFilter('communities')">Communities</button>
+    </div>
+
+    @if (loading()) {
+      <!-- Skeleton -->
+      @if (showUsers) {
+        <div class="result-section">
+          <h2 class="section-title">Users</h2>
+          @for (_ of [1,2,3,4,5]; track $index) {
+            <div class="skeleton-result-row">
+              <div class="skeleton-circle"></div>
+              <div class="skeleton-lines"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+            </div>
+          }
+        </div>
+      }
+      @if (showPosts) {
+        <div class="result-section">
+          <h2 class="section-title">Posts</h2>
+          @for (_ of [1,2,3,4,5]; track $index) {
+            <div class="skeleton-result-row">
+              <div class="skeleton-circle"></div>
+              <div class="skeleton-lines"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+            </div>
+          }
+        </div>
+      }
+      @if (showCommunities) {
+        <div class="result-section">
+          <h2 class="section-title">Communities</h2>
+          @for (_ of [1,2,3,4,5]; track $index) {
+            <div class="skeleton-result-row">
+              <div class="skeleton-circle"></div>
+              <div class="skeleton-lines"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+            </div>
+          }
+        </div>
+      }
+    } @else if (error()) {
+      <div class="error-card">
+        <span class="error-text">Search unavailable. Try again.</span>
+        <button class="retry-btn" (click)="retry()">Try again</button>
+      </div>
+    } @else if (!hasAnyResults) {
+      <div class="no-results">No results found for "{{ query() }}".</div>
+    } @else {
+
+      <!-- Users section -->
+      @if (showUsers && users().length > 0) {
+        <div class="result-section">
+          <h2 class="section-title">Users ({{ totals().users }})</h2>
+          @for (u of users(); track u.username) {
+            <a [routerLink]="'/profile/' + u.username" class="result-row">
+              @if (u.avatar) {
+                <img [src]="u.avatar" class="result-avatar" alt="" />
+              } @else {
+                <div class="result-avatar result-avatar-initial" [style.background-color]="initialColor(u.username)">
+                  {{ initial(u.username) }}
+                </div>
+              }
+              <div class="result-info">
+                <span class="result-primary">@{{ u.username }}</span>
+                @if (u.bio) {
+                  <span class="result-secondary result-clamp">{{ u.bio }}</span>
+                }
+                <span class="result-meta">{{ u.followerCount }} {{ u.followerCount === 1 ? 'follower' : 'followers' }}</span>
+              </div>
+            </a>
+          }
+          @if (showUsers && activeFilter() === 'all' && totals().users > 3) {
+            <button class="see-more-btn" (click)="setFilter('users')">See all {{ totals().users }} users →</button>
+          }
+        </div>
+      } @else if (showUsers && activeFilter() !== 'all' && users().length === 0) {
+        <div class="result-section">
+          <h2 class="section-title">Users</h2>
+          <div class="section-empty">No users found for "{{ query() }}".</div>
+        </div>
+      }
+
+      <!-- Posts section -->
+      @if (showPosts && posts().length > 0) {
+        <div class="result-section">
+          <h2 class="section-title">Posts ({{ totals().posts }})</h2>
+          @for (p of posts(); track p.id) {
+            <a routerLink="/community" class="result-row">
+              @if (p.author?.avatar) {
+                <img [src]="p.author.avatar" class="result-avatar" alt="" />
+              } @else {
+                <div class="result-avatar result-avatar-initial" [style.background-color]="initialColor(p.author?.username || 'U')">
+                  {{ initial(p.author?.username || 'U') }}
+                </div>
+              }
+              <div class="result-info">
+                <span class="result-primary">
+                  @{{ p.author?.username }}
+                  <span class="result-dot">·</span>
+                  <span class="result-time">{{ relativeTime(p.createdAt) }}</span>
+                </span>
+                <span class="result-secondary result-clamp-2">{{ p.text }}</span>
+                @if (p.origin === 'public_community' && p.community) {
+                  <span class="result-community-badge">in {{ $any(p.community).name || 'Community' }}</span>
+                }
+              </div>
+            </a>
+          }
+          @if (showPosts && activeFilter() === 'all' && totals().posts > 3) {
+            <button class="see-more-btn" (click)="setFilter('posts')">See all {{ totals().posts }} posts →</button>
+          }
+        </div>
+      } @else if (showPosts && activeFilter() !== 'all' && posts().length === 0) {
+        <div class="result-section">
+          <h2 class="section-title">Posts</h2>
+          <div class="section-empty">No posts found for "{{ query() }}".</div>
+        </div>
+      }
+
+      <!-- Communities section -->
+      @if (showCommunities && communities().length > 0) {
+        <div class="result-section">
+          <h2 class="section-title">Communities ({{ totals().communities }})</h2>
+          @for (c of communities(); track c.id) {
+            <a [routerLink]="communityRoute(c)" class="result-row">
+              @if (c.avatar) {
+                <img [src]="c.avatar" class="result-avatar" alt="" />
+              } @else {
+                <div class="result-avatar result-avatar-initial" [style.background-color]="initialColor(c.name)">
+                  {{ initial(c.name) }}
+                </div>
+              }
+              <div class="result-info">
+                <span class="result-primary">
+                  {{ c.name }}
+                  <span class="result-type-badge">{{ c.type === 'private' ? '🔒 Private' : '🌐 Public' }}</span>
+                </span>
+                @if (c.description) {
+                  <span class="result-secondary result-clamp">{{ c.description }}</span>
+                }
+                <span class="result-meta">{{ c.memberCount }} {{ c.memberCount === 1 ? 'member' : 'members' }}</span>
+              </div>
+            </a>
+          }
+          @if (showCommunities && activeFilter() === 'all' && totals().communities > 3) {
+            <button class="see-more-btn" (click)="setFilter('communities')">See all {{ totals().communities }} communities →</button>
+          }
+        </div>
+      } @else if (showCommunities && activeFilter() !== 'all' && communities().length === 0) {
+        <div class="result-section">
+          <h2 class="section-title">Communities</h2>
+          <div class="section-empty">No communities found for "{{ query() }}".</div>
+        </div>
+      }
+
+      <!-- Pagination (only in filtered mode, not 'all') -->
+      @if (activeFilter() !== 'all' && totalPages() > 1) {
+        <div class="pagination">
+          <button class="page-btn" [disabled]="page() <= 1" (click)="goToPage(page() - 1)">← Previous</button>
+          <span class="page-info">Page {{ page() }} of {{ totalPages() }}</span>
+          <button class="page-btn" [disabled]="page() >= totalPages()" (click)="goToPage(page() + 1)">Next →</button>
+        </div>
+      }
+    }
+  }
+</div>

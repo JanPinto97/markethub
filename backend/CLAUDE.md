@@ -72,7 +72,7 @@ server.js            → Entry point: loads env, connects DB, starts Express
 
 - GET    /api/v1/communities/private (public)
 - POST   /api/v1/communities/private (protected, multipart)
-- GET    /api/v1/communities/private/:id (protected, members only)
+- GET    /api/v1/communities/private/:id (protected; members get full detail+members+pendingRequests; non-members get limited info+myRequestStatus)
 - POST   /api/v1/communities/private/:id/request (protected)
 - POST   /api/v1/communities/private/:id/requests/:requestId (protected, leader/moderator)
 - DELETE /api/v1/communities/private/:id/members/:userId (protected, leader only)
