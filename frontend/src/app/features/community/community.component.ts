@@ -10,12 +10,13 @@ import { EmojiPickerComponent } from '../../shared/components/emoji-picker/emoji
 import { CreateCommunityModalComponent } from './components/create-community-modal/create-community-modal.component';
 import { TopicSearchPopupComponent } from './components/topic-search-popup/topic-search-popup.component';
 import { SearchBarComponent } from '../../shared/components/search-bar/search-bar.component';
-import { getUsernameColor } from '../../shared/utils/color.utils';
+import { MediaUrlPipe } from '../../shared/pipes/media-url.pipe';
+import { getUsernameColor, getInitial } from '../../shared/utils/color.utils';
 
 @Component({
   selector: 'app-community',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive, PostCardComponent, PostSkeletonComponent, EmojiPickerComponent, CreateCommunityModalComponent, TopicSearchPopupComponent, SearchBarComponent],
+  imports: [RouterLink, RouterLinkActive, PostCardComponent, PostSkeletonComponent, EmojiPickerComponent, CreateCommunityModalComponent, TopicSearchPopupComponent, SearchBarComponent, MediaUrlPipe],
   templateUrl: './community.component.html',
   styleUrl: './community.component.css'
 })
@@ -359,6 +360,10 @@ export class CommunityComponent implements OnInit, AfterViewInit, OnDestroy {
 
   getInitialColor(name: string): string {
     return getUsernameColor(name);
+  }
+
+  getInitial(name: string): string {
+    return getInitial(name);
   }
 
   getCategoryIcon(category: string): string {

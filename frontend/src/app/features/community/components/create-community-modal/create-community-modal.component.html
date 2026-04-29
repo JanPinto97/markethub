@@ -41,19 +41,19 @@
         <span class="field-counter">{{ description().length }}/300</span>
       </div>
 
-      <!-- Avatar URL -->
+      <!-- Avatar -->
       <div class="field">
-        <label class="field-label">Avatar URL</label>
+        <label class="field-label">Avatar</label>
         <div class="avatar-field-row">
-          <input
-            type="url"
-            class="field-input avatar-url-input"
-            placeholder="https://example.com/avatar.png"
-            [value]="avatarUrl()"
-            (input)="onAvatarInput($any($event.target).value)"
-          />
-          @if (avatarUrl().trim()) {
-            <img [src]="avatarUrl()" alt="Preview" class="avatar-preview" />
+          @if (avatarPreviewUrl()) {
+            <img [src]="avatarPreviewUrl()" alt="Preview" class="avatar-preview" />
+          }
+          <label class="upload-btn">
+            Choose image
+            <input type="file" accept="image/*" (change)="onAvatarFileChange($event)" hidden />
+          </label>
+          @if (avatarFile) {
+            <button type="button" class="remove-btn" (click)="removeAvatarFile()">Remove</button>
           }
         </div>
       </div>

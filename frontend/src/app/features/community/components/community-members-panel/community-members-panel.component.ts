@@ -2,11 +2,12 @@ import { Component, Input, Output, EventEmitter, signal, HostListener } from '@a
 import { RouterLink } from '@angular/router';
 import { CommunityMember, CommunityRole } from '../../services/community.service';
 import { getUsernameColor, getInitial } from '../../../../shared/utils/color.utils';
+import { MediaUrlPipe } from '../../../../shared/pipes/media-url.pipe';
 
 @Component({
   selector: 'app-community-members-panel',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, MediaUrlPipe],
   templateUrl: './community-members-panel.component.html',
   styleUrl: './community-members-panel.component.css'
 })

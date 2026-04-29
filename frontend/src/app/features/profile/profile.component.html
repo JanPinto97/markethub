@@ -32,7 +32,7 @@
       <!-- Cover -->
       <div
         class="pr-cover"
-        [style.background-image]="p.coverImage ? 'url(' + mediaUrlFull(p.coverImage) + ')' : null"
+        [style.background-image]="p.coverImage ? 'url(' + (p.coverImage | mediaUrl) + ')' : null"
         [style.background-color]="!p.coverImage ? coverBackground(p.username) : null">
       </div>
 
@@ -42,7 +42,7 @@
           class="pr-avatar"
           [style.background-color]="!p.avatar ? initialColor(p.username) : null">
           @if (p.avatar) {
-            <img [src]="mediaUrlFull(p.avatar)" [alt]="p.username" />
+            <img [src]="p.avatar | mediaUrl" [alt]="p.username" />
           } @else {
             <span class="pr-avatar-initial">{{ initial(p.username) }}</span>
           }
@@ -170,7 +170,7 @@
                   class="pr-modal-avatar"
                   [style.background-color]="!u.avatar ? initialColor(u.username) : null">
                   @if (u.avatar) {
-                    <img [src]="mediaUrlFull(u.avatar)" [alt]="u.username" />
+                    <img [src]="u.avatar | mediaUrl" [alt]="u.username" />
                   } @else {
                     <span class="pr-modal-avatar-initial">{{ initial(u.username) }}</span>
                   }

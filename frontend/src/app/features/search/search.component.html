@@ -68,7 +68,7 @@
           @for (u of users(); track u.username) {
             <a [routerLink]="'/profile/' + u.username" class="result-row">
               @if (u.avatar) {
-                <img [src]="u.avatar" class="result-avatar" alt="" />
+                <img [src]="u.avatar | mediaUrl" class="result-avatar" alt="" />
               } @else {
                 <div class="result-avatar result-avatar-initial" [style.background-color]="initialColor(u.username)">
                   {{ initial(u.username) }}
@@ -101,7 +101,7 @@
           @for (p of posts(); track p.id) {
             <a routerLink="/community" class="result-row">
               @if (p.author.avatar) {
-                <img [src]="p.author.avatar" class="result-avatar" alt="" />
+                <img [src]="p.author.avatar | mediaUrl" class="result-avatar" alt="" />
               } @else {
                 <div class="result-avatar result-avatar-initial" [style.background-color]="initialColor(p.author.username || 'U')">
                   {{ initial(p.author.username || 'U') }}
@@ -138,7 +138,7 @@
           @for (c of communities(); track c.id) {
             <a [routerLink]="communityRoute(c)" class="result-row">
               @if (c.avatar) {
-                <img [src]="c.avatar" class="result-avatar" alt="" />
+                <img [src]="c.avatar | mediaUrl" class="result-avatar" alt="" />
               } @else {
                 <div class="result-avatar result-avatar-initial" [style.background-color]="initialColor(c.name)">
                   {{ initial(c.name) }}

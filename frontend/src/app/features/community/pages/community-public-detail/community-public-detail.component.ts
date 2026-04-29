@@ -8,11 +8,12 @@ import { PostCardComponent } from '../../components/post-card/post-card.componen
 import { PostSkeletonComponent } from '../../components/post-skeleton/post-skeleton.component';
 import { EmojiPickerComponent } from '../../../../shared/components/emoji-picker/emoji-picker.component';
 import { getUsernameColor, getInitial } from '../../../../shared/utils/color.utils';
+import { MediaUrlPipe } from '../../../../shared/pipes/media-url.pipe';
 
 @Component({
   selector: 'app-community-public-detail',
   standalone: true,
-  imports: [RouterLink, PostCardComponent, PostSkeletonComponent, EmojiPickerComponent],
+  imports: [RouterLink, PostCardComponent, PostSkeletonComponent, EmojiPickerComponent, MediaUrlPipe],
   templateUrl: './community-public-detail.component.html',
   styleUrl: './community-public-detail.component.css'
 })

@@ -17,13 +17,14 @@ import { PostSkeletonComponent } from '../community/components/post-skeleton/pos
 import { PostX } from '../community/services/community.service';
 import { getInitial, getUsernameColor } from '../../shared/utils/color.utils';
 import { ProfileService, UserProfile, UserSummary } from './profile.service';
+import { MediaUrlPipe } from '../../shared/pipes/media-url.pipe';
 
 type FollowersTab = 'followers' | 'following';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [RouterLink, PostCardComponent, PostSkeletonComponent],
+  imports: [RouterLink, PostCardComponent, PostSkeletonComponent, MediaUrlPipe],
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.css',
 })

@@ -63,6 +63,15 @@
   background-color: var(--surface-container-high);
 }
 
+.avatar-initial-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-bold);
+}
+
 /* ── MAIN LAYOUT ── */
 .community-layout {
   display: flex;
@@ -250,6 +259,7 @@
 
 .feed-tabs {
   display: flex;
+  justify-content: center;
   gap: var(--spacing-2);
   margin-bottom: var(--spacing-4);
 }
@@ -304,6 +314,15 @@
   height: 40px;
   border-radius: var(--radius-full);
   background-color: var(--surface-container-high);
+}
+
+.avatar-initial-sm {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: var(--text-body-md);
+  font-weight: var(--weight-bold);
 }
 
 .post-input {

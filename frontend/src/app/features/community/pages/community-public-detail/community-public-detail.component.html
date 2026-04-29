@@ -11,7 +11,7 @@
       </a>
       <a [routerLink]="'/profile/' + (auth.currentUser()?.username || '')" class="header-avatar-link">
         @if (auth.currentUser()?.avatar) {
-          <img [src]="auth.currentUser()!.avatar" alt="Avatar" class="header-avatar" />
+          <img [src]="auth.currentUser()!.avatar | mediaUrl" alt="Avatar" class="header-avatar" />
         } @else {
           <div class="header-avatar-placeholder"></div>
         }
@@ -41,7 +41,7 @@
       <div class="community-banner">
         <div class="banner-left">
           @if (c.avatar) {
-            <img [src]="c.avatar" [alt]="c.name" class="community-avatar" />
+            <img [src]="c.avatar | mediaUrl" [alt]="c.name" class="community-avatar" />
           } @else {
             <div class="community-avatar community-avatar-initial" [style.background-color]="getInitialColor(c.name)">
               {{ getInitial(c.name) }}
@@ -95,9 +95,11 @@
           <div class="create-post-top">
             <div class="post-avatar-small">
               @if (auth.currentUser()?.avatar) {
-                <img [src]="auth.currentUser()!.avatar" alt="" />
+                <img [src]="auth.currentUser()!.avatar | mediaUrl" alt="" />
               } @else {
-                <div class="avatar-placeholder-sm"></div>
+                <div class="avatar-placeholder-sm avatar-initial-sm" [style.background-color]="getInitialColor(auth.currentUser()?.username || '')">
+                  {{ getInitial(auth.currentUser()?.username || '') }}
+                </div>
               }
             </div>
             <input
@@ -113,9 +115,11 @@
           <div class="create-post-top">
             <div class="post-avatar-small">
               @if (auth.currentUser()?.avatar) {
-                <img [src]="auth.currentUser()!.avatar" alt="" />
+                <img [src]="auth.currentUser()!.avatar | mediaUrl" alt="" />
               } @else {
-                <div class="avatar-placeholder-sm"></div>
+                <div class="avatar-placeholder-sm avatar-initial-sm" [style.background-color]="getInitialColor(auth.currentUser()?.username || '')">
+                  {{ getInitial(auth.currentUser()?.username || '') }}
+                </div>
               }
             </div>
             <textarea

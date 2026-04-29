@@ -1,11 +1,12 @@
 import { Component, Input, Output, EventEmitter, signal, HostListener } from '@angular/core';
 import { JoinRequest } from '../../services/community.service';
 import { getUsernameColor, getInitial } from '../../../../shared/utils/color.utils';
+import { MediaUrlPipe } from '../../../../shared/pipes/media-url.pipe';
 
 @Component({
   selector: 'app-pending-requests-panel',
   standalone: true,
-  imports: [],
+  imports: [MediaUrlPipe],
   templateUrl: './pending-requests-panel.component.html',
   styleUrl: './pending-requests-panel.component.css'
 })

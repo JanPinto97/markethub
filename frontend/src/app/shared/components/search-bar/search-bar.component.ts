@@ -3,11 +3,12 @@ import { Router } from '@angular/router';
 import { Subject, Subscription, debounceTime, distinctUntilChanged, switchMap, of, catchError } from 'rxjs';
 import { SearchService, UserResult, PostResult, CommunityResult } from '../../../features/search/search.service';
 import { getUsernameColor, getInitial } from '../../utils/color.utils';
+import { MediaUrlPipe } from '../../pipes/media-url.pipe';
 
 @Component({
   selector: 'app-search-bar',
   standalone: true,
-  imports: [],
+  imports: [MediaUrlPipe],
   templateUrl: './search-bar.component.html',
   styleUrl: './search-bar.component.css'
 })
