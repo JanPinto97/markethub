@@ -7,7 +7,7 @@
         <div *ngFor="let coin of coins" class="ticker-item px-12 border-r border-slate-50">
           <span class="text-slate-400 font-black uppercase text-[9px] tracking-tighter">{{ coin.symbol }}</span>
           <span [style.color]="coin.change >= 0 ? '#006c49' : '#cf352e'" class="font-mono text-[11px]">
-            {{ coin.price | currency:'USD':'symbol':'1.2-2' }}
+            {{ coin.price | currency:'USD':'symbol':getPriceFormat(coin.tech) }}
             <span class="text-[9px] font-bold ml-1">({{ coin.change | number:'1.2-2' }}%)</span>
           </span>
         </div>
@@ -105,7 +105,7 @@
             </span>
           </div>
           <div class="text-2xl font-mono font-bold text-[#191c1e] tracking-tighter leading-none">
-            {{ currentPriceData.c | currency:'USD':'symbol':'1.2-2' }}
+            {{ currentPriceData.c | currency:'USD':'symbol':getPriceFormat(currentSymbol) }}
           </div>
         </header>
         <div class="relative w-full h-[600px] bg-[#f7f9fb] rounded-2xl overflow-hidden border border-slate-50">
