@@ -25,6 +25,7 @@ export class PostCardComponent {
   private toast = inject(ToastService);
 
   readonly TEXT_LIMIT = 280;
+  readonly REPLY_LIMIT = 400;
 
   expanded = signal(false);
   menuOpen = signal(false);
@@ -38,6 +39,18 @@ export class PostCardComponent {
   visibleCount = signal(5);
   newComment = signal('');
   sendingComment = signal(false);
+
+  // Reply state — single open reply box per post
+  activeReplyCommentId = signal<string | null>(null);
+  replyText = signal('');
+  replyingToUsername = signal<string>('');
+  replyingToUserId = signal<string | undefined>(undefined);
+  sendingReply = signal(false);
+  replyError = signal<string | null>(null);
+
+  // Per-comment open menu (id of comment or reply)
+  openCommentMenuId = signal<string | null>(null);
+  removingIds = signal<Set<string>>(new Set());
 
   @HostBinding('class.removing') get isRemoving() { return this.removing(); }
 
@@ -141,6 +154,7 @@ export class PostCardComponent {
   @HostListener('document:click')
   onDocClick() {
     if (this.menuOpen()) this.menuOpen.set(false);
+    if (this.openCommentMenuId()) this.openCommentMenuId.set(null);
   }
 
   requireAuth(): boolean {
@@ -228,6 +242,12 @@ export class PostCardComponent {
     return a.username || 'User';
   }
 
+  commentAuthorUsername(c: PostComment): string {
+    const a = c.author;
+    if (!a || typeof a === 'string') return '';
+    return a.username || '';
+  }
+
   commentAuthorAvatar(c: PostComment): string | undefined {
     const a = c.author;
     if (!a || typeof a === 'string') return undefined;
@@ -252,6 +272,156 @@ export class PostCardComponent {
       error: () => {
         this.post.isPinned = prev;
         this.toast.show('Could not update pin.', 'error');
+      }
+    });
+  }
+
+  canDeleteComment(c: PostComment): boolean {
+    const u = this.auth.currentUser();
+    if (!u) return false;
+    const a = c.author;
+    if (!a || typeof a === 'string') return this.isMod;
+    return a._id === u.id || this.isMod;
+  }
+
+  isRemovingId(id: string): boolean {
+    return this.removingIds().has(id);
+  }
+
+  toggleCommentMenu(event: Event, id: string) {
+    event.stopPropagation();
+    this.openCommentMenuId.update(v => v === id ? null : id);
+  }
+
+  toggleCommentLike(c: PostComment) {
+    if (!this.requireAuth()) return;
+    const prev = c.liked;
+    const prevCount = c.likesCount;
+    c.liked = !prev;
+    c.likesCount += c.liked ? 1 : -1;
+
+    this.svc.likeComment(this.post.id, c.id).subscribe({
+      next: (res) => { c.liked = res.liked; c.likesCount = res.likesCount; },
+      error: () => { c.liked = prev; c.likesCount = prevCount; }
+    });
+  }
+
+  toggleReplyLike(c: PostComment, r: PostComment) {
+    if (!this.requireAuth()) return;
+    const prev = r.liked;
+    const prevCount = r.likesCount;
+    r.liked = !prev;
+    r.likesCount += r.liked ? 1 : -1;
+
+    this.svc.likeReply(this.post.id, c.id, r.id).subscribe({
+      next: (res) => { r.liked = res.liked; r.likesCount = res.likesCount; },
+      error: () => { r.liked = prev; r.likesCount = prevCount; }
+    });
+  }
+
+  openReplyToComment(c: PostComment) {
+    if (!this.requireAuth()) return;
+    this.activeReplyCommentId.set(c.id);
+    this.replyText.set('');
+    this.replyError.set(null);
+    const a = c.author;
+    this.replyingToUsername.set(typeof a === 'string' ? '' : a?.username || '');
+    this.replyingToUserId.set(typeof a === 'string' ? a : a?._id);
+  }
+
+  openReplyToReply(c: PostComment, r: PostComment) {
+    if (!this.requireAuth()) return;
+    this.activeReplyCommentId.set(c.id);
+    this.replyText.set('');
+    this.replyError.set(null);
+    const a = r.author;
+    this.replyingToUsername.set(typeof a === 'string' ? '' : a?.username || '');
+    this.replyingToUserId.set(typeof a === 'string' ? a : a?._id);
+  }
+
+  onReplyInput(event: Event) {
+    const val = (event.target as HTMLTextAreaElement).value;
+    this.replyText.set(val.slice(0, this.REPLY_LIMIT));
+  }
+
+  closeReplyBox() {
+    this.activeReplyCommentId.set(null);
+    this.replyText.set('');
+    this.replyError.set(null);
+    this.replyingToUsername.set('');
+    this.replyingToUserId.set(undefined);
+  }
+
+  sendReply() {
+    if (!this.requireAuth()) return;
+    const text = this.replyText().trim();
+    const commentId = this.activeReplyCommentId();
+    if (!text || !commentId || this.sendingReply()) return;
+
+    this.sendingReply.set(true);
+    this.replyError.set(null);
+
+    this.svc.addReply(this.post.id, commentId, text, this.replyingToUserId()).subscribe({
+      next: (reply) => {
+        this.comments.update(list => list.map(c => {
+          if (c.id === commentId) {
+            return { ...c, replies: [...(c.replies || []), reply] };
+          }
+          return c;
+        }));
+        this.post.commentCount += 1;
+        this.closeReplyBox();
+        this.sendingReply.set(false);
+      },
+      error: () => {
+        this.replyError.set('Could not send reply.');
+        this.sendingReply.set(false);
+      }
+    });
+  }
+
+  onDeleteComment(c: PostComment) {
+    this.openCommentMenuId.set(null);
+    if (!confirm('Delete this comment?')) return;
+    const id = c.id;
+    this.removingIds.update(s => new Set(s).add(id));
+
+    this.svc.deleteComment(this.post.id, id).subscribe({
+      next: () => {
+        const replyCount = c.replies?.length || 0;
+        setTimeout(() => {
+          this.comments.update(list => list.filter(x => x.id !== id));
+          this.post.commentCount = Math.max(0, this.post.commentCount - (1 + replyCount));
+        }, 300);
+      },
+      error: () => {
+        this.removingIds.update(s => { const n = new Set(s); n.delete(id); return n; });
+        this.toast.show('Could not delete comment.', 'error');
+      }
+    });
+  }
+
+  onDeleteReply(c: PostComment, r: PostComment) {
+    this.openCommentMenuId.set(null);
+    if (!confirm('Delete this reply?')) return;
+    const rid = r.id;
+    this.removingIds.update(s => new Set(s).add(rid));
+
+    this.svc.deleteReply(this.post.id, c.id, rid).subscribe({
+      next: () => {
+        setTimeout(() => {
+          this.comments.update(list => list.map(x => {
+            if (x.id === c.id) {
+              return { ...x, replies: (x.replies || []).filter(rep => rep.id !== rid) };
+            }
+            return x;
+          }));
+          this.post.commentCount = Math.max(0, this.post.commentCount - 1);
+        }, 300);
+      },
+      error: () => {
+        this.removingIds.update(s => { const n = new Set(s); n.delete(rid); return n; });
+        this.toast.show('Could not delete reply.', 'error');
       }
     });
   }

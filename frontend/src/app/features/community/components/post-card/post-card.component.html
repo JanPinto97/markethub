@@ -101,21 +101,118 @@
           <div class="pc-comments-empty">Be the first to comment.</div>
         }
         @for (c of visibleComments(); track c.id) {
-          <div class="pc-comment">
-            @if (commentAuthorAvatar(c)) {
-              <img [src]="commentAuthorAvatar(c) | mediaUrl" class="pc-comment-avatar" alt="" />
-            } @else {
-              <div class="pc-comment-avatar pc-avatar-initial" [style.background-color]="initialColor(commentAuthorName(c))">
-                {{ initial(commentAuthorName(c)) }}
+          <div class="pc-comment-block" [class.removing]="isRemovingId(c.id)">
+            <div class="pc-comment">
+              @if (commentAuthorAvatar(c)) {
+                <img [src]="commentAuthorAvatar(c) | mediaUrl" class="pc-comment-avatar" alt="" />
+              } @else {
+                <div class="pc-comment-avatar pc-avatar-initial" [style.background-color]="initialColor(commentAuthorName(c))">
+                  {{ initial(commentAuthorName(c)) }}
+                </div>
+              }
+              <div class="pc-comment-body">
+                <div class="pc-comment-top">
+                  <span class="pc-comment-author">{{ commentAuthorName(c) }}</span>
+                  <span class="pc-comment-time">{{ relativeTime(c.createdAt) }}</span>
+                  @if (canDeleteComment(c)) {
+                    <div class="pc-comment-menu-wrap">
+                      <button class="pc-comment-menu-btn" (click)="toggleCommentMenu($event, c.id)" title="More">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                          <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
+                        </svg>
+                      </button>
+                      @if (openCommentMenuId() === c.id) {
+                        <div class="pc-menu" (click)="$event.stopPropagation()">
+                          <button class="pc-menu-item pc-menu-danger" (click)="onDeleteComment(c)">Delete</button>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+                <p class="pc-comment-text">{{ c.text }}</p>
+                <div class="pc-comment-actions">
+                  <button class="pc-comment-action" [class.liked]="c.liked" (click)="toggleCommentLike(c)" title="Like">
+                    <svg viewBox="0 0 24 24" width="14" height="14" [attr.fill]="c.liked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
+                      <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
+                    </svg>
+                    <span>{{ c.likesCount }}</span>
+                  </button>
+                  <button class="pc-comment-action" (click)="openReplyToComment(c)">Reply</button>
+                </div>
+              </div>
+            </div>
+
+            @if (c.replies && c.replies.length > 0) {
+              <div class="pc-replies">
+                @for (r of c.replies; track r.id) {
+                  <div class="pc-comment pc-reply" [class.removing]="isRemovingId(r.id)">
+                    @if (commentAuthorAvatar(r)) {
+                      <img [src]="commentAuthorAvatar(r) | mediaUrl" class="pc-comment-avatar" alt="" />
+                    } @else {
+                      <div class="pc-comment-avatar pc-avatar-initial" [style.background-color]="initialColor(commentAuthorName(r))">
+                        {{ initial(commentAuthorName(r)) }}
+                      </div>
+                    }
+                    <div class="pc-comment-body">
+                      <div class="pc-comment-top">
+                        <span class="pc-comment-author">{{ commentAuthorName(r) }}</span>
+                        <span class="pc-comment-time">{{ relativeTime(r.createdAt) }}</span>
+                        @if (canDeleteComment(r)) {
+                          <div class="pc-comment-menu-wrap">
+                            <button class="pc-comment-menu-btn" (click)="toggleCommentMenu($event, r.id)" title="More">
+                              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                                <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
+                              </svg>
+                            </button>
+                            @if (openCommentMenuId() === r.id) {
+                              <div class="pc-menu" (click)="$event.stopPropagation()">
+                                <button class="pc-menu-item pc-menu-danger" (click)="onDeleteReply(c, r)">Delete</button>
+                              </div>
+                            }
+                          </div>
+                        }
+                      </div>
+                      <p class="pc-comment-text">
+                        @if (r.replyingTo) {
+                          <span class="pc-reply-mention">&#64;{{ r.replyingTo.username }}</span>
+                        }
+                        {{ r.text }}
+                      </p>
+                      <div class="pc-comment-actions">
+                        <button class="pc-comment-action" [class.liked]="r.liked" (click)="toggleReplyLike(c, r)" title="Like">
+                          <svg viewBox="0 0 24 24" width="14" height="14" [attr.fill]="r.liked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
+                            <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
+                          </svg>
+                          <span>{{ r.likesCount }}</span>
+                        </button>
+                        <button class="pc-comment-action" (click)="openReplyToReply(c, r)">Reply</button>
+                      </div>
+                    </div>
+                  </div>
+                }
               </div>
             }
-            <div class="pc-comment-body">
-              <div class="pc-comment-top">
-                <span class="pc-comment-author">{{ commentAuthorName(c) }}</span>
-                <span class="pc-comment-time">{{ relativeTime(c.createdAt) }}</span>
+
+            @if (activeReplyCommentId() === c.id) {
+              <div class="pc-reply-box">
+                <div class="pc-reply-box-header"><em>Replying to &#64;{{ replyingToUsername() }}'s comment</em></div>
+                <textarea
+                  class="pc-reply-textarea"
+                  placeholder="Write a reply..."
+                  [attr.maxlength]="REPLY_LIMIT"
+                  [value]="replyText()"
+                  (input)="onReplyInput($event)"
+                ></textarea>
+                <div class="pc-reply-counter">{{ replyText().length }}/{{ REPLY_LIMIT }}</div>
+                @if (replyError()) {
+                  <div class="pc-reply-error">{{ replyError() }}</div>
+                }
+                <div class="pc-reply-box-actions">
+                  <button class="pc-reply-cancel" (click)="closeReplyBox()">Cancel</button>
+                  <button class="pc-reply-send" (click)="sendReply()" [disabled]="!replyText().trim() || sendingReply()">Reply</button>
+                </div>
               </div>
-              <p class="pc-comment-text">{{ c.text }}</p>
-            </div>
+            }
           </div>
         }
         @if (comments().length > visibleCount()) {

@@ -56,7 +56,10 @@ server.js            → Entry point: loads env, connects DB, starts Express
 - GET  /api/v1/posts/:id/comments (public)
 - POST /api/v1/posts/:id/comments (protected)
 - POST /api/v1/posts/:postId/comments/:commentId/like (protected)
+- POST /api/v1/posts/:postId/comments/:commentId/reply (protected)
+- POST /api/v1/posts/:postId/comments/:commentId/replies/:replyId/like (protected)
 - DELETE /api/v1/posts/:postId/comments/:commentId (protected)
+- DELETE /api/v1/posts/:postId/comments/:commentId/replies/:replyId (protected)
 
 - GET    /api/v1/communities/public (public, supports ?search&page&limit)
 - POST   /api/v1/communities/public (protected, multipart)
