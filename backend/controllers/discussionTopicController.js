@@ -4,7 +4,6 @@ const mongoose = require('mongoose');
 const DiscussionTopic = require('../models/DiscussionTopic');
 const PostReddit = require('../models/PostReddit');
 const Comment = require('../models/Comment');
-const buildCommentTree = require('../utils/buildCommentTree');
 
 function fail(res, code, message) {
   return res.status(code).json({ success: false, message, code });
@@ -224,28 +223,17 @@ exports.listPostComments = async (req, res, next) => {
     const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 10));
     const skip = (page - 1) * limit;
 
-    const filter = { postId: post._id, postType: 'PostReddit', parentComment: null };
-    const [topLevel, total] = await Promise.all([
+    const filter = { postId: post._id, postType: 'PostReddit' };
+    const [docs, total] = await Promise.all([
       Comment.find(filter)
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
-        .populate('author', 'username avatar')
-        .populate('replyingTo', 'username'),
+        .populate('author', 'username avatar'),
       Comment.countDocuments(filter),
     ]);
 
-    const topIds = topLevel.map(c => c._id);
-    const replyMap = await buildCommentTree(topIds, 0, 3);
-
-    const comments = topLevel.map(c => {
-      const cid = c._id.toString();
-      return {
-        ...c.toPublicJSON(),
-        replies: replyMap[cid] || [],
-        hasMoreReplies: false,
-      };
-    });
+    const comments = docs.map(c => c.toPublicJSON());
 
     const totalPages = Math.ceil(total / limit);
     res.json({
@@ -281,45 +269,13 @@ exports.createPostComment = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-exports.createPostReply = async (req, res, next) => {
-  try {
-    const { error, post } = await loadPostByRoute(req);
-    if (error) return fail(res, error.code, error.message);
-
-    const { text } = req.body || {};
-    if (!text || !text.trim()) return fail(res, 400, 'Text is required');
-    if (text.length > 400) return fail(res, 400, 'Text max 400 characters');
-
-    const target = await Comment.findById(req.params.commentId);
-    if (!target || target.postId.toString() !== post._id.toString()) {
-      return fail(res, 404, 'Comment not found');
-    }
-
-    const reply = await Comment.create({
-      author: req.user.id,
-      text: text.trim(),
-      postId: post._id,
-      postType: 'PostReddit',
-      parentComment: target._id,
-      replyingTo: target.author,
-    });
-
-    post.commentCount += 1;
-    await post.save();
-
-    await reply.populate('author', 'username avatar');
-    await reply.populate('replyingTo', 'username');
-    res.status(201).json({ success: true, comment: reply.toPublicJSON() });
-  } catch (err) { next(err); }
-};
-
 exports.deletePostComment = async (req, res, next) => {
   try {
     const { error, post } = await loadPostByRoute(req);
     if (error) return fail(res, error.code, error.message);
 
     const comment = await Comment.findById(req.params.commentId);
-    if (!comment || comment.postId.toString() !== post._id.toString() || comment.parentComment) {
+    if (!comment || comment.postId.toString() !== post._id.toString()) {
       return fail(res, 404, 'Comment not found');
     }
 
@@ -327,60 +283,12 @@ exports.deletePostComment = async (req, res, next) => {
     const isPlatformMod = req.user.role === 'moderator' || req.user.role === 'superadmin';
     if (!isAuthor && !isPlatformMod) return fail(res, 403, 'Not authorized');
 
-    const replyCount = await Comment.countDocuments({ parentComment: comment._id });
-    await Comment.deleteMany({ parentComment: comment._id });
     await comment.deleteOne();
-
-    post.commentCount = Math.max(0, post.commentCount - (1 + replyCount));
-    await post.save();
-
-    res.json({ success: true, message: 'Comment deleted', removed: 1 + replyCount });
-  } catch (err) { next(err); }
-};
-
-exports.deletePostReply = async (req, res, next) => {
-  try {
-    const { error, post } = await loadPostByRoute(req);
-    if (error) return fail(res, error.code, error.message);
-
-    const reply = await Comment.findById(req.params.replyId);
-    if (
-      !reply ||
-      reply.postId.toString() !== post._id.toString() ||
-      !reply.parentComment ||
-      reply.parentComment.toString() !== req.params.commentId
-    ) {
-      return fail(res, 404, 'Reply not found');
-    }
-
-    const isAuthor = reply.author.toString() === req.user.id;
-    const isPlatformMod = req.user.role === 'moderator' || req.user.role === 'superadmin';
-    if (!isAuthor && !isPlatformMod) return fail(res, 403, 'Not authorized');
-
-    await reply.deleteOne();
 
     post.commentCount = Math.max(0, post.commentCount - 1);
     await post.save();
 
-    res.json({ success: true, message: 'Reply deleted' });
-  } catch (err) { next(err); }
-};
-
-exports.getCommentThread = async (req, res, next) => {
-  try {
-    const comment = await Comment.findById(req.params.commentId)
-      .populate('author', 'username avatar')
-      .populate('replyingTo', 'username');
-    if (!comment) return fail(res, 404, 'Comment not found');
-
-    const replyMap = await buildCommentTree([comment._id], 0, 3);
-    const node = {
-      ...comment.toPublicJSON(),
-      replies: replyMap[comment._id.toString()] || [],
-      hasMoreReplies: false,
-    };
-
-    res.json({ success: true, comment: node });
+    res.json({ success: true, message: 'Comment deleted' });
   } catch (err) { next(err); }
 };
 

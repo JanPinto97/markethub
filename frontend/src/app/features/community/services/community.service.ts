@@ -132,11 +132,7 @@ export interface RedditComment {
   text: string;
   postId: string;
   postType: 'PostReddit';
-  parentComment: string | null;
-  replyingTo: { _id: string; username: string } | null;
   createdAt: string;
-  replies?: RedditComment[];
-  hasMoreReplies?: boolean;
 }
 
 export interface PostReddit {
@@ -373,34 +369,10 @@ export class CommunityService {
     ).pipe(map(res => res.comment));
   }
 
-  addTopicReply(slug: string, postId: string, commentId: string, text: string): Observable<RedditComment> {
-    return this.api.post<{ success: boolean; comment: RedditComment }>(
-      `/topics/${slug}/posts/${postId}/comments/${commentId}/reply`, { text }
-    ).pipe(map(res => res.comment));
-  }
-
-  deleteTopicComment(slug: string, postId: string, commentId: string): Observable<{ removed: number }> {
-    return this.http.delete<{ success: boolean; removed: number }>(
-      `${this.baseUrl}/topics/${slug}/posts/${postId}/comments/${commentId}`
-    ).pipe(map(res => ({ removed: res.removed ?? 1 })));
-  }
-
-  deleteTopicReply(slug: string, postId: string, commentId: string, replyId: string): Observable<void> {
+  deleteTopicComment(slug: string, postId: string, commentId: string): Observable<void> {
     return this.http.delete<{ success: boolean }>(
-      `${this.baseUrl}/topics/${slug}/posts/${postId}/comments/${commentId}/replies/${replyId}`
+      `${this.baseUrl}/topics/${slug}/posts/${postId}/comments/${commentId}`
     ).pipe(map(() => undefined));
-  }
-
-  getTopicCommentThread(slug: string, postId: string, commentId: string): Observable<RedditComment> {
-    return this.api.get<{ success: boolean; comment: RedditComment }>(
-      `/topics/${slug}/posts/${postId}/comments/${commentId}/thread`
-    ).pipe(map(res => res.comment));
-  }
-
-  getCommentThread(postId: string, commentId: string): Observable<PostComment> {
-    return this.api.get<{ success: boolean; comment: PostComment }>(
-      `/posts/${postId}/comments/${commentId}/thread`
-    ).pipe(map(res => res.comment));
   }
 
   // ── Community Private Detail ──

@@ -40,11 +40,6 @@ export const routes: Routes = [
       .then(m => m.PostRedditDetailComponent)
   },
   {
-    path: 'community/comment/:commentId',
-    loadComponent: () => import('./features/community/pages/comment-thread-page/comment-thread-page.component')
-      .then(m => m.CommentThreadPageComponent)
-  },
-  {
     path: 'login',
     loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent)
   },

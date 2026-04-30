@@ -1,16 +1,15 @@
-import { Component, Input, Output, EventEmitter, OnInit, inject, signal, ViewChild, ElementRef } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, Input, Output, EventEmitter, OnInit, inject, signal, ViewChild, ElementRef, HostListener } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../../core/services/auth.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { CommunityService, RedditComment } from '../../services/community.service';
 import { getUsernameColor, getInitial } from '../../../../shared/utils/color.utils';
 import { MediaUrlPipe } from '../../../../shared/pipes/media-url.pipe';
-import { CommentThreadComponent } from '../comment-thread/comment-thread.component';
 
 @Component({
   selector: 'app-post-reddit-comment-section',
   standalone: true,
-  imports: [MediaUrlPipe, CommentThreadComponent],
+  imports: [RouterLink, MediaUrlPipe],
   templateUrl: './post-reddit-comment-section.component.html',
   styleUrl: './post-reddit-comment-section.component.css'
 })
@@ -38,6 +37,7 @@ export class PostRedditCommentSectionComponent implements OnInit {
   posting = signal(false);
   postError = signal<string | null>(null);
 
+  openMenuId = signal<string | null>(null);
 
   ngOnInit() {
     this.loadFirstPage();
@@ -45,6 +45,34 @@ export class PostRedditCommentSectionComponent implements OnInit {
 
   initial(name: string): string { return getInitial(name); }
   initialColor(name: string): string { return getUsernameColor(name); }
+
+  relativeTime(date: string): string {
+    const diff = Date.now() - new Date(date).getTime();
+    const s = Math.floor(diff / 1000);
+    if (s < 60) return 'now';
+    const m = Math.floor(s / 60);
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    const d = Math.floor(h / 24);
+    if (d < 7) return `${d}d ago`;
+    const w = Math.floor(d / 7);
+    if (w < 4) return `${w}w ago`;
+    const mo = Math.floor(d / 30);
+    if (mo < 12) return `${mo}mo ago`;
+    return `${Math.floor(d / 365)}y ago`;
+  }
+
+  authorName(c: RedditComment): string { return c.author?.username || 'User'; }
+  authorAvatar(c: RedditComment): string | undefined { return c.author?.avatar; }
+
+  canDelete(c: RedditComment): boolean {
+    const u = this.auth.currentUser();
+    if (!u) return false;
+    const isAuthor = c.author?._id === u.id;
+    const isMod = u.role === 'moderator' || u.role === 'superadmin';
+    return isAuthor || isMod;
+  }
 
   loadFirstPage() {
     this.loading.set(true);
@@ -81,8 +109,6 @@ export class PostRedditCommentSectionComponent implements OnInit {
     });
   }
 
-  // ── New root comment ──
-
   signInRedirect() {
     this.router.navigate(['/login']);
   }
@@ -104,8 +130,7 @@ export class PostRedditCommentSectionComponent implements OnInit {
 
     this.svc.addTopicComment(this.topicSlug, this.postId, text).subscribe({
       next: (comment) => {
-        const enriched: RedditComment = { ...comment, replies: [] };
-        this.comments.update(list => [enriched, ...list]);
+        this.comments.update(list => [comment, ...list]);
         this.newText.set('');
         if (this.newCommentArea) this.newCommentArea.nativeElement.style.height = 'auto';
         this.posting.set(false);
@@ -118,15 +143,30 @@ export class PostRedditCommentSectionComponent implements OnInit {
     });
   }
 
-  // ── Thread events ──
-
-  onThreadReplyAdded() {
-    this.bumpCount(1);
+  toggleMenu(event: Event, id: string) {
+    event.stopPropagation();
+    this.openMenuId.update(cur => cur === id ? null : id);
   }
 
-  onThreadCommentDeleted(event: { id: string; count: number }) {
-    this.comments.update(list => list.filter(c => c.id !== event.id));
-    this.bumpCount(-Math.max(1, event.count));
+  @HostListener('document:click')
+  onDocClick() {
+    if (this.openMenuId()) this.openMenuId.set(null);
+  }
+
+  deleteComment(comment: RedditComment) {
+    this.openMenuId.set(null);
+    if (!confirm('Delete this comment? This action cannot be undone.')) return;
+
+    this.svc.deleteTopicComment(this.topicSlug, this.postId, comment.id).subscribe({
+      next: () => {
+        this.comments.update(list => list.filter(c => c.id !== comment.id));
+        this.toast.show('Comment deleted.', 'success');
+        this.bumpCount(-1);
+      },
+      error: () => {
+        this.toast.show('Could not delete comment. Try again.', 'error');
+      }
+    });
   }
 
   private bumpCount(delta: number) {

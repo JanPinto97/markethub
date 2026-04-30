@@ -63,19 +63,44 @@
   } @else if (comments().length === 0) {
     <div class="rcs-empty">No comments yet. Be the first!</div>
   } @else {
-    <div class="rcs-list">
+    <ul class="rcs-list">
       @for (comment of comments(); track comment.id) {
-        <app-comment-thread
-          [comment]="comment"
-          [depth]="0"
-          [maxDepth]="3"
-          [postId]="postId"
-          [topicSlug]="topicSlug"
-          (replyAdded)="onThreadReplyAdded()"
-          (commentDeleted)="onThreadCommentDeleted($event)"
-        ></app-comment-thread>
+        <li class="rcs-item">
+          <div class="rcs-comment">
+            <div class="rcs-comment-head">
+              @if (authorAvatar(comment)) {
+                <img class="rcs-avatar rcs-avatar-sm" [src]="authorAvatar(comment) | mediaUrl" alt="" />
+              } @else {
+                <div class="rcs-avatar rcs-avatar-sm rcs-avatar-fallback"
+                     [style.background-color]="initialColor(authorName(comment))">
+                  {{ initial(authorName(comment)) }}
+                </div>
+              }
+              <a [routerLink]="'/profile/' + authorName(comment)" class="rcs-author">&#64;{{ authorName(comment) }}</a>
+              <span class="rcs-dot">·</span>
+              <span class="rcs-time">{{ relativeTime(comment.createdAt) }}</span>
+
+              @if (canDelete(comment)) {
+                <div class="rcs-menu-wrap">
+                  <button class="rcs-menu-btn" (click)="toggleMenu($event, comment.id)" aria-label="Comment options" aria-haspopup="true" [attr.aria-expanded]="openMenuId() === comment.id">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                      <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
+                    </svg>
+                  </button>
+                  @if (openMenuId() === comment.id) {
+                    <div class="rcs-menu" (click)="$event.stopPropagation()">
+                      <button class="rcs-menu-item rcs-menu-danger" (click)="deleteComment(comment)" aria-label="Delete comment">Delete</button>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+
+            <p class="rcs-text">{{ comment.text }}</p>
+          </div>
+        </li>
       }
-    </div>
+    </ul>
 
     @if (hasMore()) {
       <div class="rcs-load-more-wrap">
