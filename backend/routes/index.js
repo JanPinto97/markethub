@@ -10,6 +10,7 @@ const marketRouter = require('./markets');
 const topicsRouter = require('./topics');
 const usersRouter = require('./users');
 const searchRouter = require('./search');
+const discussionsRouter = require('./discussions');
 
 router.get('/health', (req, res) => {
   res.json({ success: true, message: 'Backend running' });
@@ -25,5 +26,6 @@ router.use('/markets', marketRouter);
 router.use('/topics', topicsRouter);
 router.use('/users', usersRouter);
 router.use('/search', searchRouter);
+router.use('/discussions', discussionsRouter);
 
 module.exports = router;

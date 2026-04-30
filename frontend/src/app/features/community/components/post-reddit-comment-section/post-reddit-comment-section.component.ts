@@ -66,6 +66,21 @@ export class PostRedditCommentSectionComponent implements OnInit {
   authorName(c: RedditComment): string { return c.author?.username || 'User'; }
   authorAvatar(c: RedditComment): string | undefined { return c.author?.avatar; }
 
+  openDiscussion(comment: RedditComment) {
+    this.svc.checkDiscussion(comment.id).subscribe({
+      next: (res) => {
+        if (res.exists && res.discussionId) {
+          this.router.navigate(['/community/discussion', res.discussionId]);
+        } else {
+          this.router.navigate(['/community/discussion/new', comment.id]);
+        }
+      },
+      error: () => {
+        this.toast.show('Could not check discussion. Try again.', 'error');
+      }
+    });
+  }
+
   canDelete(c: RedditComment): boolean {
     const u = this.auth.currentUser();
     if (!u) return false;

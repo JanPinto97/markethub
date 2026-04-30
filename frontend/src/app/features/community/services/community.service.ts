@@ -135,6 +135,41 @@ export interface RedditComment {
   createdAt: string;
 }
 
+export interface DiscussionCheck {
+  exists: boolean;
+  discussionId?: string;
+}
+
+export interface DiscussionComment {
+  _id: string;
+  text: string;
+  author: { _id: string; username: string; avatar?: string };
+  createdAt: string;
+}
+
+export interface DiscussionDetail {
+  _id: string;
+  commentId: DiscussionComment;
+  postId: string;
+  createdBy: string;
+  createdAt: string;
+}
+
+export interface DiscussionMessageReply {
+  _id: string;
+  text: string;
+  author: { username: string };
+}
+
+export interface DiscussionMessage {
+  _id: string;
+  discussionId: string;
+  author: { _id: string; username: string; avatar?: string };
+  text: string;
+  replyTo: DiscussionMessageReply | null;
+  createdAt: string;
+}
+
 export interface PostReddit {
   id: string;
   author: { _id: string; username: string; avatar?: string; role?: string };
@@ -437,6 +472,37 @@ export class CommunityService {
   pinPost(communityId: string, postId: string): Observable<{ pinned: boolean }> {
     return this.api.post<{ success: boolean; pinned: boolean }>(`/communities/private/${communityId}/posts/${postId}/pin`, {})
       .pipe(map(res => ({ pinned: res.pinned })));
+  }
+
+  // ── Discussions ──
+
+  checkDiscussion(commentId: string): Observable<DiscussionCheck> {
+    return this.api.get<{ success: boolean; exists: boolean; discussionId?: string }>(`/discussions/comment/${commentId}`)
+      .pipe(map(res => ({ exists: res.exists, discussionId: res.discussionId })));
+  }
+
+  createDiscussion(commentId: string, text: string): Observable<{ discussion: DiscussionDetail; message: DiscussionMessage }> {
+    return this.api.post<{ success: boolean; discussion: DiscussionDetail; message: DiscussionMessage }>(`/discussions/comment/${commentId}`, { text })
+      .pipe(map(res => ({ discussion: res.discussion, message: res.message })));
+  }
+
+  getDiscussion(discussionId: string): Observable<DiscussionDetail> {
+    return this.api.get<{ success: boolean; discussion: DiscussionDetail }>(`/discussions/${discussionId}`)
+      .pipe(map(res => res.discussion));
+  }
+
+  getDiscussionMessages(discussionId: string, cursor?: string, limit = 30): Observable<{ messages: DiscussionMessage[]; hasMore: boolean }> {
+    let url = `/discussions/${discussionId}/messages?limit=${limit}`;
+    if (cursor) url += `&cursor=${encodeURIComponent(cursor)}`;
+    return this.api.get<{ success: boolean; messages: DiscussionMessage[]; hasMore: boolean }>(url)
+      .pipe(map(res => ({ messages: res.messages, hasMore: res.hasMore })));
+  }
+
+  addDiscussionMessage(discussionId: string, text: string, replyTo?: string): Observable<DiscussionMessage> {
+    const body: { text: string; replyTo?: string } = { text };
+    if (replyTo) body.replyTo = replyTo;
+    return this.api.post<{ success: boolean; message: DiscussionMessage }>(`/discussions/${discussionId}/messages`, body)
+      .pipe(map(res => res.message));
   }
 
 }

@@ -11,3 +11,4 @@ casos sí que han d'apareixer.
 -Comunitats privades no apareixen al perfil de l'usuari. Les públiques si.
 -Opció de login amb nom d'usuari i contrasenya.
 -Opció de fer votacions dins les discussions per decidir qui te raó.
+-Votació fixa en les discussions que fiqui "Agree / Disagree with original point".
