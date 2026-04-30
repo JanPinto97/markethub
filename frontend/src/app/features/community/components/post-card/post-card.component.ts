@@ -4,11 +4,12 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { CommunityService, PostX, PostComment, CommunityRole } from '../../services/community.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { getUsernameColor, getInitial } from '../../../../shared/utils/color.utils';
+import { MediaUrlPipe } from '../../../../shared/pipes/media-url.pipe';
 
 @Component({
   selector: 'app-post-card',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, MediaUrlPipe],
   templateUrl: './post-card.component.html',
   styleUrl: './post-card.component.css'
 })
@@ -253,16 +254,6 @@ export class PostCardComponent {
         this.toast.show('Could not update pin.', 'error');
       }
     });
-  }
-
-  onEdit() {
-    this.closeMenu();
-    console.log('edit post', this.post.id);
-  }
-
-  onReport() {
-    this.closeMenu();
-    console.log('report post', this.post.id);
   }
 
   onDelete() {

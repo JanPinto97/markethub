@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const DiscussionTopic = require('../models/DiscussionTopic');
 const PostReddit = require('../models/PostReddit');
 const Comment = require('../models/Comment');
+const buildCommentTree = require('../utils/buildCommentTree');
 
 function fail(res, code, message) {
   return res.status(code).json({ success: false, message, code });
@@ -235,21 +236,16 @@ exports.listPostComments = async (req, res, next) => {
     ]);
 
     const topIds = topLevel.map(c => c._id);
-    const replies = await Comment.find({ parentComment: { $in: topIds } })
-      .sort({ createdAt: 1 })
-      .populate('author', 'username avatar')
-      .populate('replyingTo', 'username');
+    const replyMap = await buildCommentTree(topIds, 0, 3);
 
-    const replyMap = {};
-    for (const r of replies) {
-      const pid = r.parentComment.toString();
-      (replyMap[pid] ||= []).push(r.toPublicJSON());
-    }
-
-    const comments = topLevel.map(c => ({
-      ...c.toPublicJSON(),
-      replies: replyMap[c._id.toString()] || [],
-    }));
+    const comments = topLevel.map(c => {
+      const cid = c._id.toString();
+      return {
+        ...c.toPublicJSON(),
+        replies: replyMap[cid] || [],
+        hasMoreReplies: false,
+      };
+    });
 
     const totalPages = Math.ceil(total / limit);
     res.json({
@@ -299,15 +295,12 @@ exports.createPostReply = async (req, res, next) => {
       return fail(res, 404, 'Comment not found');
     }
 
-    // Single nesting level: replies attach to the root comment.
-    const rootId = target.parentComment ? target.parentComment : target._id;
-
     const reply = await Comment.create({
       author: req.user.id,
       text: text.trim(),
       postId: post._id,
       postType: 'PostReddit',
-      parentComment: rootId,
+      parentComment: target._id,
       replyingTo: target.author,
     });
 
@@ -370,6 +363,24 @@ exports.deletePostReply = async (req, res, next) => {
     await post.save();
 
     res.json({ success: true, message: 'Reply deleted' });
+  } catch (err) { next(err); }
+};
+
+exports.getCommentThread = async (req, res, next) => {
+  try {
+    const comment = await Comment.findById(req.params.commentId)
+      .populate('author', 'username avatar')
+      .populate('replyingTo', 'username');
+    if (!comment) return fail(res, 404, 'Comment not found');
+
+    const replyMap = await buildCommentTree([comment._id], 0, 3);
+    const node = {
+      ...comment.toPublicJSON(),
+      replies: replyMap[comment._id.toString()] || [],
+      hasMoreReplies: false,
+    };
+
+    res.json({ success: true, comment: node });
   } catch (err) { next(err); }
 };
 

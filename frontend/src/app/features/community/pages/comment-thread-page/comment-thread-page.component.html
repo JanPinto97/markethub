@@ -1,0 +1,29 @@
+<div class="ctp-wrap">
+  <a [routerLink]="backLink" class="ctp-back">← Back to post</a>
+
+  @if (loading()) {
+    <div class="ctp-loading">
+      <div class="ctp-skel">
+        <div class="ctp-skel-circle"></div>
+        <div class="ctp-skel-lines">
+          <div class="ctp-skel-line skel-sm"></div>
+          <div class="ctp-skel-line"></div>
+          <div class="ctp-skel-line skel-md"></div>
+        </div>
+      </div>
+    </div>
+  } @else if (error()) {
+    <div class="ctp-error">
+      <span>Could not load thread.</span>
+      <button class="ctp-retry-btn" (click)="loadThread()">Try again</button>
+    </div>
+  } @else if (comment()) {
+    <app-comment-thread
+      [comment]="comment()!"
+      [depth]="0"
+      [maxDepth]="3"
+      [postId]="postId"
+      [topicSlug]="topicSlug"
+    ></app-comment-thread>
+  }
+</div>

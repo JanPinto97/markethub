@@ -13,13 +13,14 @@ import { EmojiPickerComponent } from '../../../../shared/components/emoji-picker
 import { CommunityMembersPanelComponent } from '../../components/community-members-panel/community-members-panel.component';
 import { PendingRequestsPanelComponent } from '../../components/pending-requests-panel/pending-requests-panel.component';
 import { getUsernameColor, getInitial } from '../../../../shared/utils/color.utils';
+import { MediaUrlPipe } from '../../../../shared/pipes/media-url.pipe';
 
 @Component({
   selector: 'app-community-private-detail',
   standalone: true,
   imports: [
     RouterLink, PostCardComponent, PostSkeletonComponent, EmojiPickerComponent,
-    CommunityMembersPanelComponent, PendingRequestsPanelComponent
+    CommunityMembersPanelComponent, PendingRequestsPanelComponent, MediaUrlPipe
   ],
   templateUrl: './community-private-detail.component.html',
   styleUrl: './community-private-detail.component.css'

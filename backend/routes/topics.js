@@ -17,5 +17,6 @@ router.post('/:slug/posts/:postId/comments', auth, ctrl.createPostComment);
 router.post('/:slug/posts/:postId/comments/:commentId/reply', auth, ctrl.createPostReply);
 router.delete('/:slug/posts/:postId/comments/:commentId', auth, ctrl.deletePostComment);
 router.delete('/:slug/posts/:postId/comments/:commentId/replies/:replyId', auth, ctrl.deletePostReply);
+router.get('/:slug/posts/:postId/comments/:commentId/thread', ctrl.getCommentThread);
 
 module.exports = router;

@@ -1,6 +1,0 @@
--Eliminar les urls per a avatars i portades.
--Implementar upload d'imatges per a l'avatar a l'hora de crear la comunitat.
--Implementar upload d'imatges per a l'avatar d'usuari i per la portada d'usuari.
--Eliminar l'opció d'editar un post ja penjat.
--Eliminar l'opció de reportar un post.
--Canviar botons de Trending / Following.

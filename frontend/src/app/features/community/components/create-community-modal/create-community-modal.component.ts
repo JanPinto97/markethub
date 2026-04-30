@@ -25,7 +25,8 @@ export class CreateCommunityModalComponent implements AfterViewInit, OnDestroy {
 
   name = signal('');
   description = signal('');
-  avatarUrl = signal('');
+  avatarFile: File | null = null;
+  avatarPreviewUrl = signal('');
   type = signal<'public' | 'private'>('public');
   submitting = signal(false);
   nameError = signal<string | null>(null);
@@ -66,8 +67,16 @@ export class CreateCommunityModalComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  onAvatarInput(value: string) {
-    this.avatarUrl.set(value);
+  onAvatarFileChange(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    this.avatarFile = file;
+    this.avatarPreviewUrl.set(URL.createObjectURL(file));
+  }
+
+  removeAvatarFile() {
+    this.avatarFile = null;
+    this.avatarPreviewUrl.set('');
   }
 
   get canSubmit(): boolean {
@@ -87,15 +96,18 @@ export class CreateCommunityModalComponent implements AfterViewInit, OnDestroy {
     this.nameError.set(null);
     this.generalError.set(null);
 
-    const data = {
+    const data: any = {
       name: n,
       ...(this.description().trim() ? { description: this.description().trim() } : {}),
-      ...(this.avatarUrl().trim() ? { avatar: this.avatarUrl().trim() } : {})
     };
 
-    const obs = this.type() === 'public'
-      ? this.svc.createCommunityPublic(data)
-      : this.svc.createCommunityPrivate(data);
+    const obs = this.avatarFile
+      ? (this.type() === 'public'
+          ? this.svc.createCommunityPublicWithFile(data, this.avatarFile)
+          : this.svc.createCommunityPrivateWithFile(data, this.avatarFile))
+      : (this.type() === 'public'
+          ? this.svc.createCommunityPublic(data)
+          : this.svc.createCommunityPrivate(data));
 
     obs.subscribe({
       next: (community) => {

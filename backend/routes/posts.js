@@ -11,6 +11,7 @@ router.post('/:id/like', auth, ctrl.likePost);
 router.delete('/:id', auth, ctrl.deletePost);
 router.get('/:id/comments', ctrl.getComments);
 router.post('/:id/comments', auth, ctrl.createComment);
+router.get('/:postId/comments/:commentId/thread', ctrl.getCommentThread);
 router.post('/:postId/comments/:commentId/like', auth, ctrl.likeComment);
 router.delete('/:postId/comments/:commentId', auth, ctrl.deleteComment);
 

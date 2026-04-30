@@ -3,13 +3,14 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { SearchService, UserResult, PostResult, CommunityResult, SearchResults } from './search.service';
 import { getUsernameColor, getInitial } from '../../shared/utils/color.utils';
+import { MediaUrlPipe } from '../../shared/pipes/media-url.pipe';
 
 type FilterType = 'all' | 'users' | 'posts' | 'communities';
 
 @Component({
   selector: 'app-search',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, MediaUrlPipe],
   templateUrl: './search.component.html',
   styleUrl: './search.component.css'
 })

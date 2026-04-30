@@ -60,6 +60,7 @@ export interface PostComment {
   likesCount: number;
   createdAt: string;
   replies?: PostComment[];
+  hasMoreReplies?: boolean;
 }
 
 export interface CommunityPublic {
@@ -135,6 +136,7 @@ export interface RedditComment {
   replyingTo: { _id: string; username: string } | null;
   createdAt: string;
   replies?: RedditComment[];
+  hasMoreReplies?: boolean;
 }
 
 export interface PostReddit {
@@ -282,8 +284,26 @@ export class CommunityService {
       .pipe(map(res => res.community));
   }
 
+  createCommunityPublicWithFile(data: CreateCommunityDto, avatarFile: File): Observable<CommunityPublic> {
+    const formData = new FormData();
+    formData.append('name', data.name);
+    if (data.description) formData.append('description', data.description);
+    formData.append('media', avatarFile);
+    return this.http.post<{ success: boolean; community: CommunityPublic }>(`${this.baseUrl}/communities/public`, formData)
+      .pipe(map(res => res.community));
+  }
+
   createCommunityPrivate(data: CreateCommunityDto): Observable<CommunityPrivate> {
     return this.api.post<{ success: boolean; community: CommunityPrivate }>('/communities/private', data)
+      .pipe(map(res => res.community));
+  }
+
+  createCommunityPrivateWithFile(data: CreateCommunityDto, avatarFile: File): Observable<CommunityPrivate> {
+    const formData = new FormData();
+    formData.append('name', data.name);
+    if (data.description) formData.append('description', data.description);
+    formData.append('media', avatarFile);
+    return this.http.post<{ success: boolean; community: CommunityPrivate }>(`${this.baseUrl}/communities/private`, formData)
       .pipe(map(res => res.community));
   }
 
@@ -369,6 +389,18 @@ export class CommunityService {
     return this.http.delete<{ success: boolean }>(
       `${this.baseUrl}/topics/${slug}/posts/${postId}/comments/${commentId}/replies/${replyId}`
     ).pipe(map(() => undefined));
+  }
+
+  getTopicCommentThread(slug: string, postId: string, commentId: string): Observable<RedditComment> {
+    return this.api.get<{ success: boolean; comment: RedditComment }>(
+      `/topics/${slug}/posts/${postId}/comments/${commentId}/thread`
+    ).pipe(map(res => res.comment));
+  }
+
+  getCommentThread(postId: string, commentId: string): Observable<PostComment> {
+    return this.api.get<{ success: boolean; comment: PostComment }>(
+      `/posts/${postId}/comments/${commentId}/thread`
+    ).pipe(map(res => res.comment));
   }
 
   // ── Community Private Detail ──

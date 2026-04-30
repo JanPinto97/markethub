@@ -6,7 +6,7 @@
   <div class="pc-header">
     <a [routerLink]="'/profile/' + authorUsername" class="pc-avatar-link">
       @if (authorAvatar) {
-        <img [src]="authorAvatar" [alt]="authorName" class="pc-avatar" />
+        <img [src]="authorAvatar | mediaUrl" [alt]="authorName" class="pc-avatar" />
       } @else {
         <div class="pc-avatar pc-avatar-initial" [style.background-color]="initialColor(authorName)">
           {{ initial(authorName) }}
@@ -37,13 +37,8 @@
           @if (canPin) {
             <li role="menuitem"><button class="pc-menu-item" (click)="onPin()" [attr.aria-label]="post.isPinned ? 'Unpin post' : 'Pin post'">{{ post.isPinned ? 'Unpin' : 'Pin' }}</button></li>
           }
-          @if (isOwner) {
-            <li role="menuitem"><button class="pc-menu-item" (click)="onEdit()">Edit</button></li>
+          @if (isOwner || isMod) {
             <li role="menuitem"><button class="pc-menu-item pc-menu-danger" (click)="onDelete()" aria-label="Delete post">Delete</button></li>
-          } @else if (isMod) {
-            <li role="menuitem"><button class="pc-menu-item pc-menu-danger" (click)="onDelete()" aria-label="Delete post">Delete</button></li>
-          } @else {
-            <li role="menuitem"><button class="pc-menu-item" (click)="onReport()">Report</button></li>
           }
         </ul>
       }
@@ -108,7 +103,7 @@
         @for (c of visibleComments(); track c.id) {
           <div class="pc-comment">
             @if (commentAuthorAvatar(c)) {
-              <img [src]="commentAuthorAvatar(c)" class="pc-comment-avatar" alt="" />
+              <img [src]="commentAuthorAvatar(c) | mediaUrl" class="pc-comment-avatar" alt="" />
             } @else {
               <div class="pc-comment-avatar pc-avatar-initial" [style.background-color]="initialColor(commentAuthorName(c))">
                 {{ initial(commentAuthorName(c)) }}

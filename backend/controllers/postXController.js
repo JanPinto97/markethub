@@ -5,6 +5,7 @@ const PostReddit = require('../models/PostReddit');
 const Comment = require('../models/Comment');
 const User = require('../models/User');
 const CommunityPrivate = require('../models/CommunityPrivate');
+const buildCommentTree = require('../utils/buildCommentTree');
 
 async function findAnyPost(id) {
   const px = await PostX.findById(id);
@@ -143,21 +144,16 @@ exports.getComments = async (req, res, next) => {
       .populate('replyingTo', 'username');
 
     const topIds = topLevel.map(c => c._id);
-    const replies = await Comment.find({ parentComment: { $in: topIds } })
-      .sort({ createdAt: 1 })
-      .populate('author', 'username avatar')
-      .populate('replyingTo', 'username');
+    const replyMap = await buildCommentTree(topIds, 0, 3);
 
-    const replyMap = {};
-    for (const r of replies) {
-      const pid = r.parentComment.toString();
-      (replyMap[pid] ||= []).push(r.toPublicJSON());
-    }
-
-    const comments = topLevel.map(c => ({
-      ...c.toPublicJSON(),
-      replies: replyMap[c._id.toString()] || [],
-    }));
+    const comments = topLevel.map(c => {
+      const cid = c._id.toString();
+      return {
+        ...c.toPublicJSON(),
+        replies: replyMap[cid] || [],
+        hasMoreReplies: false,
+      };
+    });
 
     res.json({ success: true, comments });
   } catch (err) { next(err); }
@@ -178,7 +174,6 @@ exports.createComment = async (req, res, next) => {
     if (parentCommentId) {
       const parent = await Comment.findById(parentCommentId);
       if (!parent) return fail(res, 404, 'Parent comment not found');
-      if (parent.parentComment) return fail(res, 400, 'Cannot reply to a reply');
       data.parentComment = parentCommentId;
       data.replyingTo = parent.author;
     }
@@ -190,6 +185,24 @@ exports.createComment = async (req, res, next) => {
 
     await comment.populate('author', 'username avatar role');
     res.status(201).json({ success: true, comment: comment.toPublicJSON() });
+  } catch (err) { next(err); }
+};
+
+exports.getCommentThread = async (req, res, next) => {
+  try {
+    const comment = await Comment.findById(req.params.commentId)
+      .populate('author', 'username avatar')
+      .populate('replyingTo', 'username');
+    if (!comment) return fail(res, 404, 'Comment not found');
+
+    const replyMap = await buildCommentTree([comment._id], 0, 3);
+    const node = {
+      ...comment.toPublicJSON(),
+      replies: replyMap[comment._id.toString()] || [],
+      hasMoreReplies: false,
+    };
+
+    res.json({ success: true, comment: node });
   } catch (err) { next(err); }
 };
 

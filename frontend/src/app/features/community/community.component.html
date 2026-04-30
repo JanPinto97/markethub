@@ -37,9 +37,11 @@
       </a>
       <a [routerLink]="'/profile/' + (auth.currentUser()?.username || '')" class="header-avatar">
         @if (auth.currentUser()?.avatar) {
-          <img [src]="auth.currentUser()!.avatar" alt="Avatar" />
+          <img [src]="auth.currentUser()!.avatar | mediaUrl" alt="Avatar" />
         } @else {
-          <div class="avatar-placeholder"></div>
+          <div class="avatar-placeholder avatar-initial-header" [style.background-color]="getInitialColor(auth.currentUser()?.username || '')">
+            {{ getInitial(auth.currentUser()?.username || '') }}
+          </div>
         }
       </a>
     </div>
@@ -82,7 +84,7 @@
           @if (comm.type === 'public') {
             <a [routerLink]="'/community/c/' + comm.id" class="community-item">
               @if (comm.avatar) {
-                <img [src]="comm.avatar" [alt]="comm.name" class="community-avatar-img" />
+                <img [src]="comm.avatar | mediaUrl" [alt]="comm.name" class="community-avatar-img" />
               } @else {
                 <span class="community-initial" [style.background-color]="getInitialColor(comm.name)">{{ comm.name[0].toUpperCase() }}</span>
               }
@@ -91,7 +93,7 @@
           } @else {
             <a [routerLink]="'/community/p/' + comm.id" class="community-item">
               @if (comm.avatar) {
-                <img [src]="comm.avatar" [alt]="comm.name" class="community-avatar-img" />
+                <img [src]="comm.avatar | mediaUrl" [alt]="comm.name" class="community-avatar-img" />
               } @else {
                 <span class="community-initial" [style.background-color]="getInitialColor(comm.name)">{{ comm.name[0].toUpperCase() }}</span>
               }
@@ -152,9 +154,11 @@
       <div class="create-post-top">
         <div class="post-avatar-small">
           @if (auth.currentUser()?.avatar) {
-            <img [src]="auth.currentUser()!.avatar" alt="" />
+            <img [src]="auth.currentUser()!.avatar | mediaUrl" alt="" />
           } @else {
-            <div class="avatar-placeholder-sm"></div>
+            <div class="avatar-placeholder-sm avatar-initial-sm" [style.background-color]="getInitialColor(auth.currentUser()?.username || '')">
+              {{ getInitial(auth.currentUser()?.username || '') }}
+            </div>
           }
         </div>
         @if (auth.isAuthenticated()) {
