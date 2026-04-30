@@ -37,12 +37,6 @@ export class PostRedditCommentSectionComponent implements OnInit {
   posting = signal(false);
   postError = signal<string | null>(null);
 
-  activeReplyCommentId = signal<string | null>(null);
-  activeReplyText = signal('');
-  activeReplyTargetUsername = signal<string>('');
-  replyPosting = signal(false);
-  replyError = signal<string | null>(null);
-
   openMenuId = signal<string | null>(null);
 
   ngOnInit() {
@@ -72,19 +66,12 @@ export class PostRedditCommentSectionComponent implements OnInit {
   authorName(c: RedditComment): string { return c.author?.username || 'User'; }
   authorAvatar(c: RedditComment): string | undefined { return c.author?.avatar; }
 
-  isOwner(c: RedditComment): boolean {
+  canDelete(c: RedditComment): boolean {
     const u = this.auth.currentUser();
     if (!u) return false;
-    return c.author?._id === u.id;
-  }
-
-  isMod(): boolean {
-    const u = this.auth.currentUser();
-    return u?.role === 'moderator' || u?.role === 'superadmin';
-  }
-
-  canDelete(c: RedditComment): boolean {
-    return this.isOwner(c) || this.isMod();
+    const isAuthor = c.author?._id === u.id;
+    const isMod = u.role === 'moderator' || u.role === 'superadmin';
+    return isAuthor || isMod;
   }
 
   loadFirstPage() {
@@ -122,8 +109,6 @@ export class PostRedditCommentSectionComponent implements OnInit {
     });
   }
 
-  // ── New root comment ──
-
   signInRedirect() {
     this.router.navigate(['/login']);
   }
@@ -145,8 +130,7 @@ export class PostRedditCommentSectionComponent implements OnInit {
 
     this.svc.addTopicComment(this.topicSlug, this.postId, text).subscribe({
       next: (comment) => {
-        const enriched: RedditComment = { ...comment, replies: [] };
-        this.comments.update(list => [enriched, ...list]);
+        this.comments.update(list => [comment, ...list]);
         this.newText.set('');
         if (this.newCommentArea) this.newCommentArea.nativeElement.style.height = 'auto';
         this.posting.set(false);
@@ -159,59 +143,6 @@ export class PostRedditCommentSectionComponent implements OnInit {
     });
   }
 
-  // ── Reply ──
-
-  openReply(rootComment: RedditComment, target: RedditComment) {
-    if (!this.auth.isAuthenticated()) {
-      this.router.navigate(['/login']);
-      return;
-    }
-    this.activeReplyCommentId.set(rootComment.id);
-    this.activeReplyText.set('');
-    this.activeReplyTargetUsername.set(this.authorName(target));
-    this.replyError.set(null);
-  }
-
-  cancelReply() {
-    this.activeReplyCommentId.set(null);
-    this.activeReplyText.set('');
-    this.replyError.set(null);
-  }
-
-  onReplyInput(event: Event) {
-    const ta = event.target as HTMLTextAreaElement;
-    let val = ta.value;
-    if (val.length > 400) val = val.slice(0, 400);
-    this.activeReplyText.set(val);
-    ta.style.height = 'auto';
-    ta.style.height = Math.min(ta.scrollHeight, 200) + 'px';
-  }
-
-  submitReply(rootComment: RedditComment) {
-    const text = this.activeReplyText().trim();
-    if (!text || this.replyPosting()) return;
-    this.replyPosting.set(true);
-    this.replyError.set(null);
-
-    this.svc.addTopicReply(this.topicSlug, this.postId, rootComment.id, text).subscribe({
-      next: (reply) => {
-        this.comments.update(list => list.map(c => {
-          if (c.id !== rootComment.id) return c;
-          return { ...c, replies: [...(c.replies || []), reply] };
-        }));
-        this.replyPosting.set(false);
-        this.cancelReply();
-        this.bumpCount(1);
-      },
-      error: (err) => {
-        this.replyError.set(err?.error?.message || 'Could not post reply.');
-        this.replyPosting.set(false);
-      }
-    });
-  }
-
-  // ── Menus ──
-
   toggleMenu(event: Event, id: string) {
     event.stopPropagation();
     this.openMenuId.update(cur => cur === id ? null : id);
@@ -222,39 +153,18 @@ export class PostRedditCommentSectionComponent implements OnInit {
     if (this.openMenuId()) this.openMenuId.set(null);
   }
 
-  // ── Delete ──
-
-  deleteRoot(comment: RedditComment) {
+  deleteComment(comment: RedditComment) {
     this.openMenuId.set(null);
     if (!confirm('Delete this comment? This action cannot be undone.')) return;
 
     this.svc.deleteTopicComment(this.topicSlug, this.postId, comment.id).subscribe({
-      next: (res) => {
-        this.comments.update(list => list.filter(c => c.id !== comment.id));
-        this.toast.show('Comment deleted.', 'success');
-        this.bumpCount(-Math.max(1, res.removed));
-      },
-      error: () => {
-        this.toast.show('Could not delete comment. Try again.', 'error');
-      }
-    });
-  }
-
-  deleteReply(rootComment: RedditComment, reply: RedditComment) {
-    this.openMenuId.set(null);
-    if (!confirm('Delete this reply? This action cannot be undone.')) return;
-
-    this.svc.deleteTopicReply(this.topicSlug, this.postId, rootComment.id, reply.id).subscribe({
       next: () => {
-        this.comments.update(list => list.map(c => {
-          if (c.id !== rootComment.id) return c;
-          return { ...c, replies: (c.replies || []).filter(r => r.id !== reply.id) };
-        }));
+        this.comments.update(list => list.filter(c => c.id !== comment.id));
         this.toast.show('Comment deleted.', 'success');
         this.bumpCount(-1);
       },
       error: () => {
-        this.toast.show('Could not delete reply. Try again.', 'error');
+        this.toast.show('Could not delete comment. Try again.', 'error');
       }
     });
   }

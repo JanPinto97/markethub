@@ -61,6 +61,7 @@ export interface PostComment {
   likesCount: number;
   createdAt: string;
   replies?: PostComment[];
+  hasMoreReplies?: boolean;
 }
 
 export interface CommunityPublic {
@@ -132,10 +133,7 @@ export interface RedditComment {
   text: string;
   postId: string;
   postType: 'PostReddit';
-  parentComment: string | null;
-  replyingTo: { _id: string; username: string } | null;
   createdAt: string;
-  replies?: RedditComment[];
 }
 
 export interface PostReddit {
@@ -400,21 +398,9 @@ export class CommunityService {
     ).pipe(map(res => res.comment));
   }
 
-  addTopicReply(slug: string, postId: string, commentId: string, text: string): Observable<RedditComment> {
-    return this.api.post<{ success: boolean; comment: RedditComment }>(
-      `/topics/${slug}/posts/${postId}/comments/${commentId}/reply`, { text }
-    ).pipe(map(res => res.comment));
-  }
-
-  deleteTopicComment(slug: string, postId: string, commentId: string): Observable<{ removed: number }> {
-    return this.http.delete<{ success: boolean; removed: number }>(
-      `${this.baseUrl}/topics/${slug}/posts/${postId}/comments/${commentId}`
-    ).pipe(map(res => ({ removed: res.removed ?? 1 })));
-  }
-
-  deleteTopicReply(slug: string, postId: string, commentId: string, replyId: string): Observable<void> {
+  deleteTopicComment(slug: string, postId: string, commentId: string): Observable<void> {
     return this.http.delete<{ success: boolean }>(
-      `${this.baseUrl}/topics/${slug}/posts/${postId}/comments/${commentId}/replies/${replyId}`
+      `${this.baseUrl}/topics/${slug}/posts/${postId}/comments/${commentId}`
     ).pipe(map(() => undefined));
   }
 

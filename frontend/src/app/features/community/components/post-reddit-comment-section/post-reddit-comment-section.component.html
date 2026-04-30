@@ -69,7 +69,7 @@
           <div class="rcs-comment">
             <div class="rcs-comment-head">
               @if (authorAvatar(comment)) {
-                <img class="rcs-avatar rcs-avatar-sm" [src]="authorAvatar(comment)" alt="" />
+                <img class="rcs-avatar rcs-avatar-sm" [src]="authorAvatar(comment) | mediaUrl" alt="" />
               } @else {
                 <div class="rcs-avatar rcs-avatar-sm rcs-avatar-fallback"
                      [style.background-color]="initialColor(authorName(comment))">
@@ -89,7 +89,7 @@
                   </button>
                   @if (openMenuId() === comment.id) {
                     <div class="rcs-menu" (click)="$event.stopPropagation()">
-                      <button class="rcs-menu-item rcs-menu-danger" (click)="deleteRoot(comment)" aria-label="Delete comment">Delete</button>
+                      <button class="rcs-menu-item rcs-menu-danger" (click)="deleteComment(comment)" aria-label="Delete comment">Delete</button>
                     </div>
                   }
                 </div>
@@ -97,83 +97,6 @@
             </div>
 
             <p class="rcs-text">{{ comment.text }}</p>
-
-            <div class="rcs-foot">
-              <button class="rcs-reply-btn" (click)="openReply(comment, comment)">Reply</button>
-            </div>
-
-            @if (activeReplyCommentId() === comment.id) {
-              <div class="rcs-reply-box">
-                <div class="rcs-reply-target">Replying to &#64;{{ activeReplyTargetUsername() }}</div>
-                <textarea
-                  class="rcs-textarea"
-                  placeholder="Write a reply..."
-                  rows="1"
-                  maxlength="400"
-                  [value]="activeReplyText()"
-                  (input)="onReplyInput($event)"></textarea>
-                <div class="rcs-reply-actions">
-                  <span class="rcs-counter" [class.near-limit]="activeReplyText().length > 370">{{ activeReplyText().length }}/400</span>
-                  <div class="rcs-reply-btns">
-                    <button class="rcs-cancel-btn" (click)="cancelReply()">Cancel</button>
-                    <button class="rcs-submit-btn" (click)="submitReply(comment)" [disabled]="!activeReplyText().trim() || replyPosting()">
-                      {{ replyPosting() ? 'Posting…' : 'Reply' }}
-                    </button>
-                  </div>
-                </div>
-                @if (replyError()) {
-                  <div class="rcs-error">{{ replyError() }}</div>
-                }
-              </div>
-            }
-
-            @if (comment.replies && comment.replies.length > 0) {
-              <ul class="rcs-replies">
-                @for (reply of comment.replies; track reply.id) {
-                  <li class="rcs-reply">
-                    <div class="rcs-comment-head">
-                      @if (authorAvatar(reply)) {
-                        <img class="rcs-avatar rcs-avatar-sm" [src]="authorAvatar(reply)" alt="" />
-                      } @else {
-                        <div class="rcs-avatar rcs-avatar-sm rcs-avatar-fallback"
-                             [style.background-color]="initialColor(authorName(reply))">
-                          {{ initial(authorName(reply)) }}
-                        </div>
-                      }
-                      <a [routerLink]="'/profile/' + authorName(reply)" class="rcs-author">&#64;{{ authorName(reply) }}</a>
-                      <span class="rcs-dot">·</span>
-                      <span class="rcs-time">{{ relativeTime(reply.createdAt) }}</span>
-
-                      @if (canDelete(reply)) {
-                        <div class="rcs-menu-wrap">
-                          <button class="rcs-menu-btn" (click)="toggleMenu($event, reply.id)" aria-label="Comment options" aria-haspopup="true" [attr.aria-expanded]="openMenuId() === reply.id">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                              <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
-                            </svg>
-                          </button>
-                          @if (openMenuId() === reply.id) {
-                            <div class="rcs-menu" (click)="$event.stopPropagation()">
-                              <button class="rcs-menu-item rcs-menu-danger" (click)="deleteReply(comment, reply)" aria-label="Delete comment">Delete</button>
-                            </div>
-                          }
-                        </div>
-                      }
-                    </div>
-
-                    <p class="rcs-text">
-                      @if (reply.replyingTo) {
-                        <a [routerLink]="'/profile/' + reply.replyingTo.username" class="rcs-reply-mention">&#64;{{ reply.replyingTo.username }}</a>
-                      }
-                      {{ reply.text }}
-                    </p>
-
-                    <div class="rcs-foot">
-                      <button class="rcs-reply-btn" (click)="openReply(comment, reply)">Reply</button>
-                    </div>
-                  </li>
-                }
-              </ul>
-            }
           </div>
         </li>
       }

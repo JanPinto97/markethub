@@ -30,7 +30,7 @@
       <button class="pc-menu-btn" (click)="toggleMenu($event)" aria-label="Post options" aria-haspopup="true" [attr.aria-expanded]="menuOpen()">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
           <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
-        </svg>
+       </svg>
       </button>
       @if (menuOpen()) {
         <ul role="menu" class="pc-menu" (click)="$event.stopPropagation()">
@@ -101,44 +101,18 @@
           <div class="pc-comments-empty">Be the first to comment.</div>
         }
         @for (c of visibleComments(); track c.id) {
-          <div class="pc-comment-block" [class.removing]="isRemovingId(c.id)">
-            <div class="pc-comment">
-              @if (commentAuthorAvatar(c)) {
-                <img [src]="commentAuthorAvatar(c) | mediaUrl" class="pc-comment-avatar" alt="" />
-              } @else {
-                <div class="pc-comment-avatar pc-avatar-initial" [style.background-color]="initialColor(commentAuthorName(c))">
-                  {{ initial(commentAuthorName(c)) }}
-                </div>
-              }
-              <div class="pc-comment-body">
-                <div class="pc-comment-top">
-                  <span class="pc-comment-author">{{ commentAuthorName(c) }}</span>
-                  <span class="pc-comment-time">{{ relativeTime(c.createdAt) }}</span>
-                  @if (canDeleteComment(c)) {
-                    <div class="pc-comment-menu-wrap">
-                      <button class="pc-comment-menu-btn" (click)="toggleCommentMenu($event, c.id)" title="More">
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-                          <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
-                        </svg>
-                      </button>
-                      @if (openCommentMenuId() === c.id) {
-                        <div class="pc-menu" (click)="$event.stopPropagation()">
-                          <button class="pc-menu-item pc-menu-danger" (click)="onDeleteComment(c)">Delete</button>
-                        </div>
-                      }
-                    </div>
-                  }
-                </div>
-                <p class="pc-comment-text">{{ c.text }}</p>
-                <div class="pc-comment-actions">
-                  <button class="pc-comment-action" [class.liked]="c.liked" (click)="toggleCommentLike(c)" title="Like">
-                    <svg viewBox="0 0 24 24" width="14" height="14" [attr.fill]="c.liked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
-                      <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
-                    </svg>
-                    <span>{{ c.likesCount }}</span>
-                  </button>
-                  <button class="pc-comment-action" (click)="openReplyToComment(c)">Reply</button>
-                </div>
+          <div class="pc-comment">
+            @if (commentAuthorAvatar(c)) {
+              <img [src]="commentAuthorAvatar(c) | mediaUrl" class="pc-comment-avatar" alt="" />
+            } @else {
+              <div class="pc-comment-avatar pc-avatar-initial" [style.background-color]="initialColor(commentAuthorName(c))">
+                {{ initial(commentAuthorName(c)) }}
+              </div>
+            }
+            <div class="pc-comment-body">
+              <div class="pc-comment-top">
+                <span class="pc-comment-author">{{ commentAuthorName(c) }}</span>
+                <span class="pc-comment-time">{{ relativeTime(c.createdAt) }}</span>
               </div>
             </div>
 

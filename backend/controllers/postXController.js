@@ -5,6 +5,7 @@ const PostReddit = require('../models/PostReddit');
 const Comment = require('../models/Comment');
 const User = require('../models/User');
 const CommunityPrivate = require('../models/CommunityPrivate');
+const buildCommentTree = require('../utils/buildCommentTree');
 
 async function findAnyPost(id) {
   const px = await PostX.findById(id);
@@ -143,22 +144,16 @@ exports.getComments = async (req, res, next) => {
       .populate('replyingTo', 'username');
 
     const topIds = topLevel.map(c => c._id);
-    const replies = await Comment.find({ parentComment: { $in: topIds } })
-      .sort({ createdAt: 1 })
-      .populate('author', 'username avatar')
-      .populate('replyingTo', 'username');
+    const replyMap = await buildCommentTree(topIds, 0, 3);
 
-    const uid = req.user ? req.user.id : null;
-    const replyMap = {};
-    for (const r of replies) {
-      const pid = r.parentComment.toString();
-      (replyMap[pid] ||= []).push(r.toPublicJSON(uid));
-    }
-
-    const comments = topLevel.map(c => ({
-      ...c.toPublicJSON(uid),
-      replies: replyMap[c._id.toString()] || [],
-    }));
+    const comments = topLevel.map(c => {
+      const cid = c._id.toString();
+      return {
+        ...c.toPublicJSON(),
+        replies: replyMap[cid] || [],
+        hasMoreReplies: false,
+      };
+    });
 
     res.json({ success: true, comments });
   } catch (err) { next(err); }
@@ -179,7 +174,6 @@ exports.createComment = async (req, res, next) => {
     if (parentCommentId) {
       const parent = await Comment.findById(parentCommentId);
       if (!parent) return fail(res, 404, 'Parent comment not found');
-      if (parent.parentComment) return fail(res, 400, 'Cannot reply to a reply');
       data.parentComment = parentCommentId;
       data.replyingTo = parent.author;
     }
@@ -189,46 +183,26 @@ exports.createComment = async (req, res, next) => {
     if (postType === 'PostX') post.trendingScore = PostX.calculateTrendingScore(post);
     await post.save();
 
-    await comment.populate('author', 'username avatar');
-    await comment.populate('replyingTo', 'username');
-
-    res.status(201).json({ success: true, comment: comment.toPublicJSON(req.user.id) });
+    await comment.populate('author', 'username avatar role');
+    res.status(201).json({ success: true, comment: comment.toPublicJSON() });
   } catch (err) { next(err); }
 };
 
-exports.createReply = async (req, res, next) => {
+exports.getCommentThread = async (req, res, next) => {
   try {
-    const { text } = req.body || {};
-    if (!text) return fail(res, 400, 'Text is required');
-    if (text.length > 400) return fail(res, 400, 'Text max 400 characters');
+    const comment = await Comment.findById(req.params.commentId)
+      .populate('author', 'username avatar')
+      .populate('replyingTo', 'username');
+    if (!comment) return fail(res, 404, 'Comment not found');
 
-    const found = await findAnyPost(req.params.postId);
-    if (!found) return fail(res, 404, 'Post not found');
-    const { post, postType } = found;
+    const replyMap = await buildCommentTree([comment._id], 0, 3);
+    const node = {
+      ...comment.toPublicJSON(),
+      replies: replyMap[comment._id.toString()] || [],
+      hasMoreReplies: false,
+    };
 
-    const parent = await Comment.findById(req.params.commentId);
-    if (!parent) return fail(res, 404, 'Parent comment not found');
-    if (parent.parentComment) return fail(res, 400, 'Cannot reply to a reply');
-
-    const replyingToId = req.body.replyingToUserId || parent.author;
-
-    const comment = await Comment.create({
-      author: req.user.id,
-      text,
-      postId: post._id,
-      postType,
-      parentComment: parent._id,
-      replyingTo: replyingToId,
-    });
-
-    post.commentCount += 1;
-    if (postType === 'PostX') post.trendingScore = PostX.calculateTrendingScore(post);
-    await post.save();
-
-    await comment.populate('author', 'username avatar');
-    await comment.populate('replyingTo', 'username');
-
-    res.status(201).json({ success: true, comment: comment.toPublicJSON(req.user.id) });
+    res.json({ success: true, comment: node });
   } catch (err) { next(err); }
 };
 
