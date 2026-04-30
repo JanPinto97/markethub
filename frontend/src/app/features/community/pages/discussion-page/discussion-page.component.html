@@ -1,0 +1,147 @@
+<div class="disc-page">
+  <header class="disc-header">
+    <button class="disc-back" (click)="goBack()">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+      Back
+    </button>
+    <span class="disc-header-title">Discussion</span>
+  </header>
+
+  @if (loading()) {
+    <div class="disc-loading">
+      <div class="disc-skel-block"></div>
+      <div class="disc-skel-block disc-skel-sm"></div>
+      <div class="disc-skel-block disc-skel-md"></div>
+    </div>
+  } @else if (error()) {
+    <div class="disc-error-card">
+      <span>Could not load discussion.</span>
+      <button class="disc-retry-btn" (click)="goBack()">Go back</button>
+    </div>
+  } @else {
+    <!-- Original comment context -->
+    @if (discussion()?.commentId) {
+      <div class="disc-context">
+        <div class="disc-context-label">Original comment</div>
+        <div class="disc-context-body">
+          <div class="disc-context-author">
+            @if (discussion()!.commentId.author.avatar) {
+              <img class="disc-avatar disc-avatar-sm" [src]="discussion()!.commentId.author.avatar | mediaUrl" alt="" />
+            } @else {
+              <div class="disc-avatar disc-avatar-sm disc-avatar-fallback"
+                   [style.background-color]="initialColor(discussion()!.commentId.author.username || '')">
+                {{ initial(discussion()!.commentId.author.username || '') }}
+              </div>
+            }
+            <span class="disc-context-name">&#64;{{ discussion()!.commentId.author.username }}</span>
+          </div>
+          <p class="disc-context-text">{{ discussion()!.commentId.text }}</p>
+        </div>
+      </div>
+    }
+
+    @if (isNewMode()) {
+      <div class="disc-context">
+        <div class="disc-context-label">New discussion</div>
+        <p class="disc-empty-text">Start the discussion by sending a message</p>
+      </div>
+    }
+
+    <!-- Messages area -->
+    @if (!isNewMode()) {
+      <div class="disc-messages" #messagesContainer (scroll)="onMessagesScroll()">
+        @if (messages().length === 0) {
+          <div class="disc-empty">
+            <p class="disc-empty-text">Start the discussion by sending a message</p>
+          </div>
+        } @else {
+          @for (msg of messages(); track msg._id) {
+            <div class="disc-msg">
+              <div class="disc-msg-left">
+                @if (msg.author.avatar) {
+                  <img class="disc-avatar" [src]="msg.author.avatar | mediaUrl" alt="" />
+                } @else {
+                  <div class="disc-avatar disc-avatar-fallback"
+                       [style.background-color]="initialColor(msg.author.username || '')">
+                    {{ initial(msg.author.username || '') }}
+                  </div>
+                }
+              </div>
+              <div class="disc-msg-body">
+                <div class="disc-msg-head">
+                  <a [routerLink]="'/profile/' + msg.author.username" class="disc-msg-author">&#64;{{ msg.author.username }}</a>
+                  <span class="disc-msg-time">{{ formatTime(msg.createdAt) }}</span>
+                </div>
+                @if (msg.replyTo) {
+                  <div class="disc-reply-quote">
+                    <span class="disc-reply-author">&#64;{{ msg.replyTo.author.username }}</span>
+                    <span class="disc-reply-text">{{ truncateReply(msg.replyTo.text) }}</span>
+                  </div>
+                }
+                <p class="disc-msg-text">{{ msg.text }}</p>
+              </div>
+              <button class="disc-reply-btn" (click)="setReply(msg)" title="Reply">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="9 17 4 12 9 7"/>
+                  <path d="M20 18v-2a4 4 0 0 0-4-4H4"/>
+                </svg>
+              </button>
+            </div>
+          }
+
+          @if (hasMore()) {
+            <div class="disc-load-more-wrap">
+              <button class="disc-load-more-btn" (click)="loadMore()" [disabled]="loadingMore()">
+                {{ loadingMore() ? 'Loading…' : 'Load more' }}
+              </button>
+            </div>
+          }
+        }
+      </div>
+
+      <!-- Scroll down button -->
+      @if (showScrollDown()) {
+        <button class="disc-scroll-down" (click)="jumpToBottom()">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 5v14M19 12l-7 7-7-7"/>
+          </svg>
+        </button>
+      }
+    }
+
+    <!-- Input area -->
+    <div class="disc-input-area">
+      @if (replyTo()) {
+        <div class="disc-input-reply">
+          <div class="disc-input-reply-content">
+            <span class="disc-reply-author">&#64;{{ replyTo()!.author.username }}</span>
+            <span class="disc-reply-text">{{ truncateReply(replyTo()!.text) }}</span>
+          </div>
+          <button class="disc-input-reply-cancel" (click)="cancelReply()">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+      }
+      <div class="disc-input-row">
+        <textarea
+          #messageArea
+          class="disc-textarea"
+          placeholder="Type a message..."
+          rows="1"
+          maxlength="2000"
+          [value]="newText()"
+          (input)="onInput($event)"
+          (keydown)="onKeydown($event)"></textarea>
+        <button class="disc-send-btn" (click)="send()" [disabled]="!newText().trim() || sending()">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  }
+</div>

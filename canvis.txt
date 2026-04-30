@@ -1,0 +1,5 @@
+CANVIS PER A LES DISCUSSIONS.
+-Agefir una mica més de separació entre missatge i missatge.
+-La imatge ./missatge.png és com queda un missatge al que s'està responent quan s'arriba al límit de caracters. S'haurien d'afegir 3 punts al final d'aquest per mostrar que hi ha més contingut en el missatge original.
+-Quan entrem en una discussió que hi han molts missatges i ja apareix la barra de scroll, hauriem de situar-nos al principi de la discussió, es a dir a la part de dalt.
+-El botó de load more, ha d'apareixer al final del tot, on s'acaben els missatges carregats.

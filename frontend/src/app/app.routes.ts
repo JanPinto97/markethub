@@ -40,6 +40,18 @@ export const routes: Routes = [
       .then(m => m.PostRedditDetailComponent)
   },
   {
+    path: 'community/discussion/new/:commentId',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/community/pages/discussion-page/discussion-page.component')
+      .then(m => m.DiscussionPageComponent)
+  },
+  {
+    path: 'community/discussion/:discussionId',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/community/pages/discussion-page/discussion-page.component')
+      .then(m => m.DiscussionPageComponent)
+  },
+  {
     path: 'login',
     loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent)
   },

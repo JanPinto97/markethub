@@ -347,8 +347,34 @@
 
 .rcs-load-more-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* ── Open Discussion ── */
+.rcs-discussion-wrap {
+  padding-left: 40px;
+}
+
+.rcs-discussion-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: var(--spacing-1) var(--spacing-2);
+  background: none;
+  border: none;
+  border-radius: var(--radius-default);
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-medium);
+  color: var(--on-surface-variant);
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.rcs-discussion-btn:hover {
+  background-color: var(--surface-container-low);
+  color: var(--secondary);
+}
+
 @media (max-width: 640px) {
   .rcs-menu-btn { opacity: 1; }
   .rcs { padding: var(--spacing-4); }
   .rcs-text { padding-left: 0; }
+  .rcs-discussion-wrap { padding-left: 0; }
 }
