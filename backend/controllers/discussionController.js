@@ -79,7 +79,7 @@ exports.getMessages = async (req, res, next) => {
     const formatted = messages.map(m => {
       const obj = m.toObject();
       if (obj.replyTo && obj.replyTo.text && obj.replyTo.text.length > 80) {
-        obj.replyTo.text = obj.replyTo.text.slice(0, 80);
+        obj.replyTo.text = obj.replyTo.text.slice(0, 80) + '...';
       }
       return obj;
     });

@@ -57,14 +57,6 @@
             <p class="disc-empty-text">Start the discussion by sending a message</p>
           </div>
         } @else {
-          @if (hasMore()) {
-            <div class="disc-load-more-wrap">
-              <button class="disc-load-more-btn" (click)="loadMore()" [disabled]="loadingMore()">
-                {{ loadingMore() ? 'Loading…' : 'Load more' }}
-              </button>
-            </div>
-          }
-
           @for (msg of messages(); track msg._id) {
             <div class="disc-msg">
               <div class="disc-msg-left">
@@ -95,6 +87,14 @@
                   <polyline points="9 17 4 12 9 7"/>
                   <path d="M20 18v-2a4 4 0 0 0-4-4H4"/>
                 </svg>
+              </button>
+            </div>
+          }
+
+          @if (hasMore()) {
+            <div class="disc-load-more-wrap">
+              <button class="disc-load-more-btn" (click)="loadMore()" [disabled]="loadingMore()">
+                {{ loadingMore() ? 'Loading…' : 'Load more' }}
               </button>
             </div>
           }

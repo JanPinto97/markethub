@@ -81,7 +81,7 @@ export class DiscussionPageComponent implements OnInit, OnDestroy {
         this.messages.set(res.messages);
         this.hasMore.set(res.hasMore);
         this.loading.set(false);
-        this.scrollToBottom();
+        this.scrollToTop();
         this.startPolling();
       },
       error: () => {
@@ -194,6 +194,13 @@ export class DiscussionPageComponent implements OnInit, OnDestroy {
 
   cancelReply() {
     this.replyTo.set(null);
+  }
+
+  scrollToTop() {
+    setTimeout(() => {
+      const el = this.messagesContainer?.nativeElement;
+      if (el) el.scrollTop = 0;
+    }, 50);
   }
 
   scrollToBottom() {
