@@ -25,7 +25,6 @@ export class PostCardComponent {
   private toast = inject(ToastService);
 
   readonly TEXT_LIMIT = 280;
-  readonly REPLY_LIMIT = 400;
 
   expanded = signal(false);
   menuOpen = signal(false);
@@ -39,18 +38,6 @@ export class PostCardComponent {
   visibleCount = signal(5);
   newComment = signal('');
   sendingComment = signal(false);
-
-  // Reply state — single open reply box per post
-  activeReplyCommentId = signal<string | null>(null);
-  replyText = signal('');
-  replyingToUsername = signal<string>('');
-  replyingToUserId = signal<string | undefined>(undefined);
-  sendingReply = signal(false);
-  replyError = signal<string | null>(null);
-
-  // Per-comment open menu (id of comment or reply)
-  openCommentMenuId = signal<string | null>(null);
-  removingIds = signal<Set<string>>(new Set());
 
   @HostBinding('class.removing') get isRemoving() { return this.removing(); }
 
@@ -154,7 +141,6 @@ export class PostCardComponent {
   @HostListener('document:click')
   onDocClick() {
     if (this.menuOpen()) this.menuOpen.set(false);
-    if (this.openCommentMenuId()) this.openCommentMenuId.set(null);
   }
 
   requireAuth(): boolean {
@@ -240,12 +226,6 @@ export class PostCardComponent {
     if (!a) return 'User';
     if (typeof a === 'string') return 'User';
     return a.username || 'User';
-  }
-
-  commentAuthorUsername(c: PostComment): string {
-    const a = c.author;
-    if (!a || typeof a === 'string') return '';
-    return a.username || '';
   }
 
   commentAuthorAvatar(c: PostComment): string | undefined {
