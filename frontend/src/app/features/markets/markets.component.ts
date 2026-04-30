@@ -3,6 +3,8 @@ import { CommonModule, DecimalPipe, CurrencyPipe, DatePipe } from '@angular/comm
 import { MarketService } from '../../core/services/market.service';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { forkJoin, of, Subject } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 declare const TradingView: any;
 
@@ -18,9 +20,9 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('searchContainer') searchContainer!: ElementRef;
 
   // CONFIGURACIÓN (API Keys)
-  private apiKey = 'd7jo9s9r01qu1n4fg3pgd7jo9s9r01qu1n4fg3q0';
-  private twelveDataApiKey = 'b21b5589fbce4aada1a45a82a7bbbbf0';
-  private nasdaqApiKey = '_wXBK_-xW7nRm9cAGGEV';
+  private apiKey = 'd7jo9s9r01qu1n4fg3pgd7jo9s9r01qu1n4fg3q0';       // Finnhub — US Stocks & Synthetic WTI
+  private twelveDataApiKey = 'b21b5589fbce4aada1a45a82a7bbbbf0';      // Twelve Data — Forex, Crypto, Gold
+  private coinGeckoApiKey = 'CG-T7BjzNAbWJhwFMvvbj4sM8Mp';           // CoinGecko — Global Crypto Discovery
   private socket: WebSocket | null = null;
   
   widget: any;
@@ -28,11 +30,14 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
   displaySymbol: string = 'BTC / USD';
   currentApiSymbol: string = 'BTC/USD';
   currentSource: string = 'twelvedata';
+  currentCoingeckoId: string = '';
   currentPriceData: any = { c: 0, dp: 0 };
   assetNotSupported: boolean = false;
   currentYear = new Date().getFullYear();
   selectedDate: Date = new Date();
   lastSentimentUpdate: string = '';
+  private clockInterval: any;
+  private searchSubject = new Subject<string>();
   
   // 1. SÍMBOLOS Y ETIQUETAS (Arquitectura Inteligente: Finnhub, TwelveData, Synthetic)
   coins: any[] = [
@@ -70,12 +75,37 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnInit() {
     this.initDashboard();
     this.setupWebSocket();
+    this.startLiveClock();
+
+    // Optimización: Debounce para evitar que el buscador ralentice la UI
+    this.searchSubject.pipe(
+      debounceTime(300),
+      distinctUntilChanged()
+    ).subscribe(query => {
+      this.performSearch(query);
+    });
   }
 
   ngOnDestroy() {
     if (this.socket) {
       this.socket.close();
     }
+    if (this.clockInterval) {
+      clearInterval(this.clockInterval);
+    }
+  }
+
+  startLiveClock() {
+    const tick = () => {
+      const now = new Date();
+      this.lastSentimentUpdate = now.toLocaleString('es-ES', {
+        day: '2-digit', month: 'short', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+      });
+      this.cdr.detectChanges();
+    };
+    tick(); // ejecutar inmediatamente
+    this.clockInterval = setInterval(tick, 1000);
   }
 
   setupWebSocket() {
@@ -160,7 +190,11 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
       this.showPopularAssets();
       return;
     }
+    // Solo enviamos al subject para procesar con debounce
+    this.searchSubject.next(query);
+  }
 
+  private performSearch(query: string) {
     // CAPA 1: Mapa de atajos locales — resuelve INSTANTÁNEAMENTE sin API.
     // Garantiza que BTC→BTCUSD, XAU→XAUUSD, EUR→EURUSD, OIL→TVC:USOIL, etc.
     const SHORTHAND_MAP: { [key: string]: any } = {
@@ -172,22 +206,32 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
       'XAGUSD':  { symbol: 'OANDA:XAGUSD',  apiSymbol: 'XAG/USD',  description: 'Silver Spot / US Dollar',     type: 'METAL',     source: 'twelvedata' },
       'BTC':     { symbol: 'CRYPTO:BTCUSD', apiSymbol: 'BTC/USD',  description: 'Bitcoin / US Dollar',         type: 'CRYPTO',    source: 'twelvedata' },
       'BITCOIN': { symbol: 'CRYPTO:BTCUSD', apiSymbol: 'BTC/USD',  description: 'Bitcoin / US Dollar',         type: 'CRYPTO',    source: 'twelvedata' },
-      'BTCUSD':  { symbol: 'CRYPTO:BTCUSD', apiSymbol: 'BTC/USD',  description: 'Bitcoin / US Dollar',         type: 'CRYPTO',    source: 'twelvedata' },
       'ETH':     { symbol: 'CRYPTO:ETHUSD', apiSymbol: 'ETH/USD',  description: 'Ethereum / US Dollar',        type: 'CRYPTO',    source: 'twelvedata' },
       'ETHEREUM':{ symbol: 'CRYPTO:ETHUSD', apiSymbol: 'ETH/USD',  description: 'Ethereum / US Dollar',        type: 'CRYPTO',    source: 'twelvedata' },
-      'ETHUSD':  { symbol: 'CRYPTO:ETHUSD', apiSymbol: 'ETH/USD',  description: 'Ethereum / US Dollar',        type: 'CRYPTO',    source: 'twelvedata' },
       'SOL':     { symbol: 'CRYPTO:SOLUSD', apiSymbol: 'SOL/USD',  description: 'Solana / US Dollar',          type: 'CRYPTO',    source: 'twelvedata' },
+      'SOLANA':  { symbol: 'CRYPTO:SOLUSD', apiSymbol: 'SOL/USD',  description: 'Solana / US Dollar',          type: 'CRYPTO',    source: 'twelvedata' },
+      'ADA':     { symbol: 'CRYPTO:ADAUSD', apiSymbol: 'ADA/USD',  description: 'Cardano / US Dollar',         type: 'CRYPTO',    source: 'twelvedata' },
+      'CARDANO': { symbol: 'CRYPTO:ADAUSD', apiSymbol: 'ADA/USD',  description: 'Cardano / US Dollar',         type: 'CRYPTO',    source: 'twelvedata' },
+      'DOT':     { symbol: 'CRYPTO:DOTUSD', apiSymbol: 'DOT/USD',  description: 'Polkadot / US Dollar',        type: 'CRYPTO',    source: 'twelvedata' },
+      'POLKADOT':{ symbol: 'CRYPTO:DOTUSD', apiSymbol: 'DOT/USD',  description: 'Polkadot / US Dollar',        type: 'CRYPTO',    source: 'twelvedata' },
+      'AVAX':    { symbol: 'CRYPTO:AVAXUSD', apiSymbol: 'AVAX/USD',  description: 'Avalanche / US Dollar',       type: 'CRYPTO',    source: 'twelvedata' },
+      'AVALANCHE':{ symbol: 'CRYPTO:AVAXUSD',apiSymbol: 'AVAX/USD',  description: 'Avalanche / US Dollar',       type: 'CRYPTO',    source: 'twelvedata' },
       'XRP':     { symbol: 'CRYPTO:XRPUSD', apiSymbol: 'XRP/USD',  description: 'XRP / US Dollar',             type: 'CRYPTO',    source: 'twelvedata' },
+      'RIPPLE':  { symbol: 'CRYPTO:XRPUSD', apiSymbol: 'XRP/USD',  description: 'XRP / US Dollar',             type: 'CRYPTO',    source: 'twelvedata' },
+      'LINK':    { symbol: 'CRYPTO:LINKUSD', apiSymbol: 'LINK/USD', description: 'Chainlink / US Dollar',      type: 'CRYPTO',    source: 'twelvedata' },
+      'CHAINLINK':{ symbol: 'CRYPTO:LINKUSD',apiSymbol: 'LINK/USD', description: 'Chainlink / US Dollar',      type: 'CRYPTO',    source: 'twelvedata' },
+      'MATIC':   { symbol: 'CRYPTO:MATICUSD',apiSymbol: 'MATIC/USD',description: 'Polygon / US Dollar',        type: 'CRYPTO',    source: 'twelvedata' },
+      'POLYGON': { symbol: 'CRYPTO:MATICUSD',apiSymbol: 'MATIC/USD',description: 'Polygon / US Dollar',        type: 'CRYPTO',    source: 'twelvedata' },
       'DOGE':    { symbol: 'CRYPTO:DOGEUSD',apiSymbol: 'DOGE/USD', description: 'Dogecoin / US Dollar',        type: 'CRYPTO',    source: 'twelvedata' },
+      'DOGECOIN':{ symbol: 'CRYPTO:DOGEUSD',apiSymbol: 'DOGE/USD', description: 'Dogecoin / US Dollar',        type: 'CRYPTO',    source: 'twelvedata' },
+      'SHIB':    { symbol: 'CRYPTO:SHIBUSD',apiSymbol: 'SHIB/USD', description: 'Shiba Inu / US Dollar',       type: 'CRYPTO',    source: 'twelvedata' },
+      'LTC':     { symbol: 'CRYPTO:LTCUSD', apiSymbol: 'LTC/USD',  description: 'Litecoin / US Dollar',        type: 'CRYPTO',    source: 'twelvedata' },
+      'LITECOIN':{ symbol: 'CRYPTO:LTCUSD', apiSymbol: 'LTC/USD',  description: 'Litecoin / US Dollar',        type: 'CRYPTO',    source: 'twelvedata' },
       'EUR':     { symbol: 'FX:EURUSD',     apiSymbol: 'EUR/USD',  description: 'Euro / US Dollar',            type: 'FOREX',     source: 'twelvedata' },
       'EURUSD':  { symbol: 'FX:EURUSD',     apiSymbol: 'EUR/USD',  description: 'Euro / US Dollar',            type: 'FOREX',     source: 'twelvedata' },
       'GBP':     { symbol: 'FX:GBPUSD',     apiSymbol: 'GBP/USD',  description: 'British Pound / US Dollar',  type: 'FOREX',     source: 'twelvedata' },
-      'GBPUSD':  { symbol: 'FX:GBPUSD',     apiSymbol: 'GBP/USD',  description: 'British Pound / US Dollar',  type: 'FOREX',     source: 'twelvedata' },
-      'JPY':     { symbol: 'FX:USDJPY',     apiSymbol: 'USD/JPY',  description: 'US Dollar / Japanese Yen',   type: 'FOREX',     source: 'twelvedata' },
-      'USDJPY':  { symbol: 'FX:USDJPY',     apiSymbol: 'USD/JPY',  description: 'US Dollar / Japanese Yen',   type: 'FOREX',     source: 'twelvedata' },
       'OIL':     { symbol: 'TVC:USOIL',     apiSymbol: 'USO',      description: 'Crude Oil WTI',              type: 'COMMODITY', source: 'finnhub_synthetic_wti' },
       'WTI':     { symbol: 'TVC:USOIL',     apiSymbol: 'USO',      description: 'Crude Oil WTI',              type: 'COMMODITY', source: 'finnhub_synthetic_wti' },
-      'CRUDE':   { symbol: 'TVC:USOIL',     apiSymbol: 'USO',      description: 'Crude Oil WTI',              type: 'COMMODITY', source: 'finnhub_synthetic_wti' },
       'SPY':     { symbol: 'SPY',           apiSymbol: 'SPY',      description: 'S&P 500 ETF',                type: 'INDEX ETF', source: 'finnhub' },
       'SP500':   { symbol: 'SPY',           apiSymbol: 'SPY',      description: 'S&P 500 ETF',                type: 'INDEX ETF', source: 'finnhub' },
       'QQQ':     { symbol: 'QQQ',           apiSymbol: 'QQQ',      description: 'NASDAQ 100 ETF',             type: 'INDEX ETF', source: 'finnhub' },
@@ -197,10 +241,16 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
     const shorthandMatch = SHORTHAND_MAP[query.trim().toUpperCase()];
     const pinnedResult = shorthandMatch ? [shorthandMatch] : [];
 
-    // CAPA 2: Búsqueda en la API de Twelve Data (corre en paralelo)
-    this.http.get(`https://api.twelvedata.com/symbol_search?symbol=${query}&outputsize=10`)
-      .subscribe((res: any) => {
-        const rawResults = res.data || [];
+    // CAPA 2 & 3: Búsqueda Multi-API (Twelve Data para Stocks/Forex + CoinGecko para Cripto)
+    const twelveDataObs = this.http.get(`https://api.twelvedata.com/symbol_search?symbol=${query}&outputsize=10`)
+      .pipe(catchError(() => of({ data: [] })));
+    
+    const coinGeckoObs = this.http.get(`https://api.coingecko.com/api/v3/search?query=${query}&x_cg_demo_api_key=${this.coinGeckoApiKey}`)
+      .pipe(catchError(() => of({ coins: [] })));
+
+    forkJoin([twelveDataObs, coinGeckoObs]).subscribe(([tdRes, cgRes]: [any, any]) => {
+        const tdResults = tdRes.data || [];
+        const cgResults = cgRes.coins || [];
         
         // Mapa de activos populares: sobreescribe el símbolo TV y la API para activos conocidos
         const POPULAR_ASSET_MAP: { [key: string]: { tvSymbol: string; apiSymbol: string; source: string } } = {
@@ -218,10 +268,24 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
           'SOL/USD':  { tvSymbol: 'CRYPTO:SOLUSD',   apiSymbol: 'SOL/USD', source: 'twelvedata' },
           'BNB/USD':  { tvSymbol: 'CRYPTO:BNBUSD',   apiSymbol: 'BNB/USD', source: 'twelvedata' },
           'XRP/USD':  { tvSymbol: 'CRYPTO:XRPUSD',   apiSymbol: 'XRP/USD', source: 'twelvedata' },
+          'ADA/USD':  { tvSymbol: 'CRYPTO:ADAUSD',   apiSymbol: 'ADA/USD', source: 'twelvedata' },
           'DOGE/USD': { tvSymbol: 'CRYPTO:DOGEUSD',  apiSymbol: 'DOGE/USD', source: 'twelvedata' },
+          'DOT/USD':  { tvSymbol: 'CRYPTO:DOTUSD',   apiSymbol: 'DOT/USD', source: 'twelvedata' },
+          'AVAX/USD': { tvSymbol: 'CRYPTO:AVAXUSD',  apiSymbol: 'AVAX/USD', source: 'twelvedata' },
+          'LINK/USD': { tvSymbol: 'CRYPTO:LINKUSD',  apiSymbol: 'LINK/USD', source: 'twelvedata' },
+          'MATIC/USD':{ tvSymbol: 'CRYPTO:MATICUSD', apiSymbol: 'MATIC/USD',source: 'twelvedata' },
+          'SHIB/USD': { tvSymbol: 'CRYPTO:SHIBUSD',  apiSymbol: 'SHIB/USD', source: 'twelvedata' },
+          'LTC/USD':  { tvSymbol: 'CRYPTO:LTCUSD',   apiSymbol: 'LTC/USD', source: 'twelvedata' },
+          'TRX/USD':  { tvSymbol: 'CRYPTO:TRXUSD',   apiSymbol: 'TRX/USD', source: 'twelvedata' },
+          'UNI/USD':  { tvSymbol: 'CRYPTO:UNIUSD',   apiSymbol: 'UNI/USD', source: 'twelvedata' },
+          'ATOM/USD': { tvSymbol: 'CRYPTO:ATOMUSD',  apiSymbol: 'ATOM/USD', source: 'twelvedata' },
+          'NEAR/USD': { tvSymbol: 'CRYPTO:NEARUSD',  apiSymbol: 'NEAR/USD', source: 'twelvedata' },
+          'XLM/USD':  { tvSymbol: 'CRYPTO:XLMUSD',   apiSymbol: 'XLM/USD', source: 'twelvedata' },
+          'ICP/USD':  { tvSymbol: 'CRYPTO:ICPUSD',   apiSymbol: 'ICP/USD', source: 'twelvedata' },
         };
 
-        const apiMapped = rawResults.filter((item: any) => {
+        // Procesar resultados de Twelve Data
+        const apiMapped = tdResults.filter((item: any) => {
           return item.instrument_type !== 'Index' || item.symbol === 'SPX' || item.symbol === 'NDX' || item.symbol === 'IXIC';
         }).map((item: any) => {
           let tvSymbol = item.symbol;
@@ -230,20 +294,19 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
           let source = 'twelvedata';
 
           if (type === 'Physical Currency') {
-            const pairSymbol = item.symbol; // e.g. "XAU/USD"
+            const pairSymbol = item.symbol;
             const override = POPULAR_ASSET_MAP[pairSymbol];
             if (override) {
               tvSymbol = override.tvSymbol;
               apiSymbol = override.apiSymbol;
               source = override.source;
             } else {
-              // Fallback genérico para pares de Forex no mapeados
               tvSymbol = `FX:${item.symbol.replace('/', '')}`;
               apiSymbol = item.symbol;
             }
             type = pairSymbol.includes('XAU') || pairSymbol.includes('XAG') ? 'METAL' : 'FOREX';
           } else if (type === 'Digital Currency' || type === 'Cryptocurrency') {
-            const cryptoSymbol = item.symbol; // e.g. "BTC/USD"
+            const cryptoSymbol = item.symbol;
             const override = POPULAR_ASSET_MAP[cryptoSymbol];
             if (override) {
               tvSymbol = override.tvSymbol;
@@ -272,10 +335,29 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
           };
         });
 
+        // Procesar resultados de CoinGecko (Solo si no están ya en Twelve Data)
+        const cgMapped = cgResults.slice(0, 5).map((item: any) => {
+          const sym = item.symbol.toUpperCase();
+          const apiSym = `${sym}/USD`;
+          const tvSym = `CRYPTO:${sym}USD`;
+          
+          return {
+            symbol: tvSym,
+            apiSymbol: apiSym,
+            description: item.name,
+            type: 'CRYPTO',
+            source: 'coingecko',
+            coingeckoId: item.id
+          };
+        });
+
+        // Combinar todos los resultados
+        const combined = [...apiMapped, ...cgMapped];
+
         // El resultado curado (pinnedResult) va PRIMERO para que Enter lo seleccione correctamente
         this.searchResults = [
           ...pinnedResult,
-          ...apiMapped.filter((r: any) => !pinnedResult.some((p: any) => p.symbol === r.symbol))
+          ...combined.filter((r: any) => !pinnedResult.some((p: any) => p.symbol === r.symbol))
         ];
 
         this.showSearchModal = true;
@@ -284,7 +366,10 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onEnterSearch(value: string) {
-    // Primero consultar el mapa local instantáneo sin esperar a la API
+    const trimmed = value.trim();
+    if (!trimmed) return;
+
+    // Capa 1: Mapa instantáneo local — respuesta 0ms
     const QUICK_MAP: { [key: string]: any } = {
       'XAU': { symbol: 'OANDA:XAUUSD',  apiSymbol: 'XAU/USD',  source: 'twelvedata' },
       'GOLD': { symbol: 'OANDA:XAUUSD', apiSymbol: 'XAU/USD',  source: 'twelvedata' },
@@ -294,6 +379,10 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
       'BITCOIN': { symbol: 'CRYPTO:BTCUSD', apiSymbol: 'BTC/USD', source: 'twelvedata' },
       'ETH': { symbol: 'CRYPTO:ETHUSD', apiSymbol: 'ETH/USD',  source: 'twelvedata' },
       'SOL': { symbol: 'CRYPTO:SOLUSD', apiSymbol: 'SOL/USD',  source: 'twelvedata' },
+      'ADA': { symbol: 'CRYPTO:ADAUSD', apiSymbol: 'ADA/USD',  source: 'twelvedata' },
+      'CARDANO': { symbol: 'CRYPTO:ADAUSD', apiSymbol: 'ADA/USD', source: 'twelvedata' },
+      'DOT': { symbol: 'CRYPTO:DOTUSD', apiSymbol: 'DOT/USD',  source: 'twelvedata' },
+      'AVAX': { symbol: 'CRYPTO:AVAXUSD', apiSymbol: 'AVAX/USD', source: 'twelvedata' },
       'XRP': { symbol: 'CRYPTO:XRPUSD', apiSymbol: 'XRP/USD',  source: 'twelvedata' },
       'EUR': { symbol: 'FX:EURUSD',     apiSymbol: 'EUR/USD',  source: 'twelvedata' },
       'EURUSD': { symbol: 'FX:EURUSD',  apiSymbol: 'EUR/USD',  source: 'twelvedata' },
@@ -305,17 +394,29 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
       'QQQ': { symbol: 'QQQ',           apiSymbol: 'QQQ',      source: 'finnhub' },
       'NASDAQ': { symbol: 'QQQ',        apiSymbol: 'QQQ',      source: 'finnhub' },
     };
-    const quickMatch = QUICK_MAP[value.trim().toUpperCase()];
+    const quickMatch = QUICK_MAP[trimmed.toUpperCase()];
     if (quickMatch) {
       this.selectResult(quickMatch);
       return;
     }
-    if (this.searchResults.length > 0) {
-       this.selectResult(this.searchResults[0]);
+
+    // Capa 2: Validar que el primer resultado de la API coincide con lo que escribió el usuario.
+    // Si los resultados son de una búsqueda anterior (stale), NO los usamos — activamos el overlay.
+    const queryUpper = trimmed.toUpperCase();
+    const freshResult = this.searchResults.find((r: any) =>
+      r.symbol?.toUpperCase().includes(queryUpper) ||
+      r.description?.toUpperCase().includes(queryUpper)
+    );
+
+    if (freshResult) {
+      this.selectResult(freshResult);
     } else {
-       this.assetNotSupported = true;
-       this.showSearchModal = false;
-       this.cdr.detectChanges();
+      // No existe el activo — mostramos el overlay premium en vez del error interno de TradingView
+      this.assetNotSupported = true;
+      this.showSearchModal = false;
+      this.searchResults = [];
+      this.searchQuery = '';
+      this.cdr.detectChanges();
     }
   }
 
@@ -325,6 +426,7 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.currentSymbol = result.symbol;
     this.currentApiSymbol = result.apiSymbol;
     this.currentSource = result.source;
+    this.currentCoingeckoId = result.coingeckoId || '';
     
     this.displaySymbol = this.formatDisplaySymbol(this.currentSymbol);
     // Limpiamos los datos anteriores inmediatamente para evitar precios residuales confusos
@@ -377,6 +479,18 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
             this.currentPriceData = {
               c: parseFloat(data.close),
               dp: parseFloat(data.percent_change)
+            };
+            this.cdr.detectChanges();
+          }
+        });
+    } else if (source === 'coingecko') {
+      const id = this.currentCoingeckoId;
+      this.http.get(`https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd&include_24hr_change=true&x_cg_demo_api_key=${this.coinGeckoApiKey}`)
+        .subscribe((data: any) => {
+          if (data && data[id]) {
+            this.currentPriceData = {
+              c: data[id].usd,
+              dp: data[id].usd_24h_change || 0
             };
             this.cdr.detectChanges();
           }
@@ -451,10 +565,6 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
   loadGlobalSentiment() {
     this.http.get('https://api.alternative.me/fng/').subscribe((res: any) => {
       this.sentimentData = res.data[0];
-      const date = new Date();
-      this.lastSentimentUpdate = date.toLocaleString('es-ES', { 
-        month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false 
-      });
       this.cdr.detectChanges();
     });
   }

@@ -39,13 +39,13 @@
 .ticker-move {
   display: flex;
   width: max-content;
-  /* El truco es que la animación sea lineal y el loop sea perfecto */
   animation: scroll-left 60s linear infinite;
+  will-change: transform;
 }
 
 @keyframes scroll-left {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); } 
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-50%, 0, 0); } 
 }
 
 .ticker-item {
