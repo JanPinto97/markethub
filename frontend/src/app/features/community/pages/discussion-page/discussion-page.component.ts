@@ -245,6 +245,14 @@ export class DiscussionPageComponent implements OnInit, OnDestroy {
     return text.length > 80 ? text.slice(0, 80) + '...' : text;
   }
 
+  scrollToMessage(messageId: string) {
+    const el = document.getElementById('msg-' + messageId);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.classList.add('disc-msg-highlight');
+    setTimeout(() => el.classList.remove('disc-msg-highlight'), 1500);
+  }
+
   goBack() {
     window.history.back();
   }

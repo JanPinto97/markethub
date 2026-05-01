@@ -58,7 +58,7 @@
           </div>
         } @else {
           @for (msg of messages(); track msg._id) {
-            <div class="disc-msg">
+            <div class="disc-msg" [id]="'msg-' + msg._id">
               <div class="disc-msg-left">
                 @if (msg.author.avatar) {
                   <img class="disc-avatar" [src]="msg.author.avatar | mediaUrl" alt="" />
@@ -75,7 +75,7 @@
                   <span class="disc-msg-time">{{ formatTime(msg.createdAt) }}</span>
                 </div>
                 @if (msg.replyTo) {
-                  <div class="disc-reply-quote">
+                  <div class="disc-reply-quote disc-reply-quote-link" (click)="scrollToMessage(msg.replyTo._id)">
                     <span class="disc-reply-author">&#64;{{ msg.replyTo.author.username }}</span>
                     <span class="disc-reply-text">{{ truncateReply(msg.replyTo.text) }}</span>
                   </div>

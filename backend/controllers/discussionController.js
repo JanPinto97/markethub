@@ -124,7 +124,7 @@ exports.addMessage = async (req, res, next) => {
 
     const obj = populated.toObject();
     if (obj.replyTo && obj.replyTo.text && obj.replyTo.text.length > 80) {
-      obj.replyTo.text = obj.replyTo.text.slice(0, 80);
+      obj.replyTo.text = obj.replyTo.text.slice(0, 80) + '...';
     }
 
     res.status(201).json({ success: true, message: obj });

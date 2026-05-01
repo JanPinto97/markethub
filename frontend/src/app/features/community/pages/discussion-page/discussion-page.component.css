@@ -262,6 +262,21 @@
   color: var(--on-surface-variant);
 }
 
+.disc-reply-quote-link {
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.disc-reply-quote-link:hover {
+  background-color: var(--surface-container);
+}
+
+.disc-msg-highlight {
+  background-color: var(--surface-container-high);
+  border-radius: var(--radius-default);
+  transition: background-color 0.3s;
+}
+
 /* ── Reply button on message ── */
 .disc-reply-btn {
   position: absolute;
