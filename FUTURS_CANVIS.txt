@@ -7,3 +7,4 @@
 -Opció de login amb nom d'usuari i contrasenya.
 -Opció de fer votacions dins les discussions per decidir qui te raó.
 -Votació fixa en les discussions que fiqui "Agree / Disagree with original point".
+-Treure lo de que hagis de ficar dos lletres per buscar
