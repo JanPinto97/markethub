@@ -386,6 +386,62 @@ exports.pinPost = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+exports.updateCommunity = async (req, res, next) => {
+  try {
+    const community = await CommunityPrivate.findById(req.params.id);
+    if (!community) return fail(res, 404, 'Community not found');
+
+    const role = getUserRole(community, req.user.id);
+    if (role !== 'leader') return fail(res, 403, 'Only the leader can edit the community');
+
+    const { name, description } = req.body || {};
+
+    if (name !== undefined) {
+      if (!name || name.length < 3 || name.length > 50) return fail(res, 400, 'Name must be 3-50 characters');
+      if (name !== community.name) {
+        const [pubExists, privExists] = await Promise.all([
+          CommunityPublic.findOne({ name }),
+          CommunityPrivate.findOne({ name, _id: { $ne: community._id } }),
+        ]);
+        if (pubExists || privExists) return fail(res, 409, 'Community name already taken');
+        community.name = name;
+      }
+    }
+
+    if (description !== undefined) {
+      if (description && description.length > 300) return fail(res, 400, 'Description max 300 characters');
+      community.description = description || '';
+    }
+
+    await community.save();
+    res.json({ success: true, community: community.toPublicJSON() });
+  } catch (err) { next(err); }
+};
+
+exports.updateAvatar = async (req, res, next) => {
+  try {
+    const community = await CommunityPrivate.findById(req.params.id);
+    if (!community) return fail(res, 404, 'Community not found');
+
+    const role = getUserRole(community, req.user.id);
+    if (role !== 'leader') return fail(res, 403, 'Only the leader can change the avatar');
+
+    if (!req.mediaUrl || req.mediaType !== 'image') {
+      return fail(res, 400, 'Image file required');
+    }
+
+    if (community.avatar) {
+      const oldPath = path.join(__dirname, '..', community.avatar);
+      fs.unlink(oldPath, () => {});
+    }
+
+    community.avatar = req.mediaUrl;
+    await community.save();
+
+    res.json({ success: true, avatar: community.avatar });
+  } catch (err) { next(err); }
+};
+
 exports.listCommunities = async (req, res, next) => {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);

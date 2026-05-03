@@ -87,7 +87,7 @@
         </div>
       </div>
 
-      @if (p.publicCommunities.length > 0) {
+      @if (p.publicCommunities.length > 0 || p.privateCommunities.length > 0) {
         <div class="pr-communities">
           @for (c of p.publicCommunities; track c.id) {
             <a [routerLink]="'/community/c/' + c.id" class="pr-chip">
@@ -95,6 +95,19 @@
                 class="pr-chip-initial"
                 [style.background-color]="initialColor(c.name)">{{ initial(c.name) }}</span>
               <span class="pr-chip-name">{{ c.name }}</span>
+            </a>
+          }
+          @for (c of p.privateCommunities; track c.id) {
+            <a [routerLink]="'/community/p/' + c.id" class="pr-chip pr-chip-private" title="Private community">
+              @if (c.avatar) {
+                <img [src]="c.avatar | mediaUrl" alt="" class="pr-chip-avatar" />
+              } @else {
+                <span
+                  class="pr-chip-initial"
+                  [style.background-color]="initialColor(c.name)">{{ initial(c.name) }}</span>
+              }
+              <span class="pr-chip-name">{{ c.name }}</span>
+              <span class="pr-chip-lock" aria-label="Private">🔒</span>
             </a>
           }
         </div>

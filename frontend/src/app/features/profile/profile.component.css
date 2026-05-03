@@ -204,6 +204,27 @@
   background-color: var(--surface-container);
 }
 
+.pr-chip-private {
+  background-color: var(--surface-container);
+}
+
+.pr-chip-private:hover {
+  background-color: var(--surface-container-high);
+}
+
+.pr-chip-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+}
+
+.pr-chip-lock {
+  font-size: 11px;
+  margin-left: 2px;
+  opacity: 0.8;
+}
+
 .pr-chip-initial {
   width: 24px;
   height: 24px;

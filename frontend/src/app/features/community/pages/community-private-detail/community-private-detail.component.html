@@ -23,27 +23,22 @@
 </header>
 
 <div class="detail-layout">
-  <!-- Loading -->
-  @if (loading()) {
-    <div class="detail-content single-col">
+  <div class="detail-content">
+    @if (loading()) {
       <div class="community-banner skeleton-banner"></div>
       @for (_ of [1,2,3]; track $index) {
         <app-post-skeleton></app-post-skeleton>
       }
-    </div>
-  } @else if (error()) {
-    <div class="detail-content single-col">
+    } @else if (error()) {
       <div class="error-card">
         <span class="error-icon">⚠️</span>
         <span class="error-text">Could not load community.</span>
         <button class="retry-btn" (click)="retryAll()">Try again</button>
       </div>
-    </div>
-  } @else if (community(); as c) {
+    } @else if (community(); as c) {
 
-    <!-- ═══ NON-MEMBER VIEW ═══ -->
-    @if (!c.isMember) {
-      <div class="detail-content single-col">
+      <!-- ═══ NON-MEMBER VIEW ═══ -->
+      @if (!c.isMember) {
         <div class="community-banner">
           <div class="banner-left">
             @if (c.avatar) {
@@ -78,12 +73,11 @@
           }
         </div>
 
-        <!-- Join request modal -->
         @if (showJoinModal()) {
           <div class="modal-overlay" (click)="closeJoinModal()">
-            <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="join-request-modal-title" (click)="$event.stopPropagation()">
+            <div class="modal-dialog" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
               <div class="modal-header">
-                <h4 id="join-request-modal-title" class="modal-title">Request to join {{ c.name }}</h4>
+                <h4 class="modal-title">Request to join {{ c.name }}</h4>
                 <button class="modal-close" (click)="closeJoinModal()" aria-label="Close">×</button>
               </div>
               <div class="modal-body">
@@ -110,12 +104,9 @@
             </div>
           </div>
         }
-      </div>
 
-    <!-- ═══ MEMBER VIEW ═══ -->
-    } @else {
-      <!-- Feed column -->
-      <div class="detail-content feed-col">
+      <!-- ═══ MEMBER VIEW ═══ -->
+      } @else {
         <!-- Community banner -->
         <div class="community-banner">
           <div class="banner-left">
@@ -138,45 +129,9 @@
             </div>
           </div>
           <div class="banner-actions">
-            @if (c.myRole === 'leader') {
-              <button class="delete-btn" (click)="onDeleteClick()">Delete Community</button>
-            } @else {
-              <button class="leave-btn" (click)="onLeaveClick()" [disabled]="leaving()">
-                {{ leaving() ? 'Leaving...' : 'Leave' }}
-              </button>
-            }
+            <button class="details-btn" (click)="goToDetails()">Details</button>
           </div>
         </div>
-
-        <!-- Leave confirmation -->
-        @if (showLeaveConfirm()) {
-          <div class="modal-overlay" (click)="cancelLeave()">
-            <div class="confirm-dialog" (click)="$event.stopPropagation()">
-              @if (isLastMember) {
-                <p class="confirm-text confirm-warning">You are the only member. Leaving will permanently delete this community.</p>
-              } @else {
-                <p class="confirm-text">Are you sure you want to leave this community?</p>
-              }
-              <div class="confirm-actions">
-                <button class="confirm-cancel" (click)="cancelLeave()">Cancel</button>
-                <button class="confirm-leave" (click)="confirmLeave()">{{ isLastMember ? 'Leave anyway' : 'Leave' }}</button>
-              </div>
-            </div>
-          </div>
-        }
-
-        <!-- Delete confirmation -->
-        @if (showDeleteConfirm()) {
-          <div class="modal-overlay" (click)="cancelDelete()">
-            <div class="confirm-dialog" (click)="$event.stopPropagation()">
-              <p class="confirm-text confirm-warning">This will permanently delete the community and all its posts.</p>
-              <div class="confirm-actions">
-                <button class="confirm-cancel" (click)="cancelDelete()">Cancel</button>
-                <button class="confirm-leave" (click)="confirmDelete()">Delete</button>
-              </div>
-            </div>
-          </div>
-        }
 
         <!-- Create post box -->
         <div class="create-post-card">
@@ -259,7 +214,6 @@
             <button class="retry-btn" (click)="retryFeed()">Try again</button>
           </div>
         } @else {
-          <!-- Pinned posts -->
           @for (post of pinnedPosts(); track post.id) {
             <app-post-card
               [post]="post"
@@ -269,7 +223,6 @@
             </app-post-card>
           }
 
-          <!-- Regular posts -->
           @if (posts().length === 0 && pinnedPosts().length === 0) {
             <div class="feed-empty">No posts yet. Be the first to post!</div>
           }
@@ -283,7 +236,6 @@
           }
         }
 
-        <!-- Infinite scroll sentinel -->
         <div #feedSentinel class="feed-sentinel">
           @if (loadingMore()) {
             <app-post-skeleton></app-post-skeleton>
@@ -296,38 +248,7 @@
             <div class="feed-end">You're all caught up</div>
           }
         </div>
-      </div>
-
-      <!-- Panel toggle (tablet/mobile) -->
-      <button class="panel-toggle-btn" (click)="sidePanelOpen.set(true)" aria-label="Show members">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-        </svg>
-        Members
-      </button>
-
-      @if (sidePanelOpen()) {
-        <div class="panel-overlay" (click)="sidePanelOpen.set(false)"></div>
       }
-
-      <!-- Right panel -->
-      <aside class="side-panel" [class.panel-open]="sidePanelOpen()">
-        <app-community-members-panel
-          [members]="c.members || []"
-          [myRole]="c.myRole"
-          [currentUserId]="currentUserId"
-          (expel)="onExpelMember($event)"
-          (promote)="onPromoteMember($event)">
-        </app-community-members-panel>
-
-        @if (showPendingRequests) {
-          <app-pending-requests-panel
-            [requests]="c.pendingRequests || []"
-            (accept)="onAcceptRequest($event)"
-            (reject)="onRejectRequest($event)">
-          </app-pending-requests-panel>
-        }
-      </aside>
     }
-  }
+  </div>
 </div>

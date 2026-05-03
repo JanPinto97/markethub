@@ -8,6 +8,12 @@ export interface PublicCommunitySummary {
   name: string;
 }
 
+export interface PrivateCommunitySummary {
+  id: string;
+  name: string;
+  avatar?: string;
+}
+
 export interface UserProfile {
   username: string;
   avatar?: string;
@@ -17,6 +23,7 @@ export interface UserProfile {
   followingCount: number;
   isFollowing: boolean;
   publicCommunities: PublicCommunitySummary[];
+  privateCommunities: PrivateCommunitySummary[];
 }
 
 export interface UserSummary {
@@ -43,6 +50,7 @@ interface ProfileApiResponse {
     createdAt: string;
   };
   communities: { id: string; name: string }[];
+  privateCommunities?: { id: string; name: string; avatar?: string }[];
   isFollowing?: boolean;
 }
 
@@ -97,6 +105,7 @@ export class ProfileService {
         followingCount: res.user.followingCount ?? 0,
         isFollowing: res.isFollowing ?? false,
         publicCommunities: (res.communities || []).map(c => ({ id: c.id, name: c.name })),
+        privateCommunities: (res.privateCommunities || []).map(c => ({ id: c.id, name: c.name, avatar: c.avatar })),
       }))
     );
   }
