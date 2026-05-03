@@ -3,15 +3,16 @@ import { CommonModule, DecimalPipe, CurrencyPipe, DatePipe } from '@angular/comm
 import { MarketService } from '../../core/services/market.service';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
-import { forkJoin, of, Subject } from 'rxjs';
+import { forkJoin, of, Subject, Subscription } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { EconomicCalendarComponent } from './economic-calendar/economic-calendar.component';
 
 declare const TradingView: any;
 
 @Component({
   selector: 'app-markets',
   standalone: true,
-  imports: [CommonModule, FormsModule, DecimalPipe, CurrencyPipe, DatePipe],
+  imports: [CommonModule, FormsModule, DecimalPipe, CurrencyPipe, DatePipe, EconomicCalendarComponent],
   templateUrl: './markets.component.html',
   styleUrls: ['./markets.component.css']
 })
@@ -62,6 +63,7 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
   filteredEvents: any[] = [];
   marketNews: any[] = [];
   sentimentData: any = { value: 0, value_classification: '...' };
+  activeTab: 'overview' | 'calendar' = 'overview';
 
   constructor(private http: HttpClient, private cdr: ChangeDetectorRef, private el: ElementRef) {}
 

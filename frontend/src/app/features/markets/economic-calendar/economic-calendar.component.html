@@ -1,0 +1,347 @@
+<div class="w-full max-w-[1920px] mx-auto animate-fade-in">
+  <div class="grid grid-cols-12 gap-8">
+    
+    <!-- LEFT SIDEBAR -->
+    <aside class="col-span-12 lg:col-span-3 flex flex-col gap-8">
+      
+      <!-- 1. Navigation -->
+      <div class="card-premium p-6 flex flex-col gap-4">
+        <h3 class="text-xs font-black tracking-[0.2em] text-slate-400 uppercase border-b border-slate-100 pb-2 mb-2">Navigation</h3>
+        
+        <div class="flex flex-col gap-1">
+          <button (click)="setDateRange('today')" class="text-left text-sm font-bold text-slate-600 hover:text-[#006c49] py-1.5 transition-colors flex items-center gap-2">
+            <span class="material-symbols-outlined text-[16px]">today</span> Today
+          </button>
+          <button (click)="setDateRange('tomorrow')" class="text-left text-sm font-bold text-slate-600 hover:text-[#006c49] py-1.5 transition-colors flex items-center gap-2">
+            <span class="material-symbols-outlined text-[16px]">event_upcoming</span> Tomorrow
+          </button>
+          <button (click)="setDateRange('thisWeek')" class="text-left text-sm font-bold text-slate-600 hover:text-[#006c49] py-1.5 transition-colors flex items-center gap-2">
+            <span class="material-symbols-outlined text-[16px]">view_week</span> This Week
+          </button>
+          <button (click)="setDateRange('nextWeek')" class="text-left text-sm font-bold text-slate-600 hover:text-[#006c49] py-1.5 transition-colors flex items-center gap-2">
+            <span class="material-symbols-outlined text-[16px]">next_week</span> Next Week
+          </button>
+          <button (click)="setDateRange('thisMonth')" class="text-left text-sm font-bold text-slate-600 hover:text-[#006c49] py-1.5 transition-colors flex items-center gap-2">
+            <span class="material-symbols-outlined text-[16px]">calendar_month</span> This Month
+          </button>
+        </div>
+        
+        <button (click)="scrollToNextEvent()" class="mt-4 w-full bg-[#f7f9fb] hover:bg-[#006c49] text-slate-700 hover:text-white font-black text-[11px] tracking-widest uppercase py-3 rounded-lg transition-all flex justify-center items-center gap-2 border border-slate-100 group">
+          <span class="material-symbols-outlined text-[18px] text-[#006c49] group-hover:text-white transition-colors">play_circle</span> Up Next
+        </button>
+      </div>
+
+      <!-- 2. Central Bank Rates -->
+      <div class="card-premium p-6 flex flex-col">
+        <h3 class="text-xs font-black tracking-[0.2em] text-slate-400 uppercase border-b border-slate-100 pb-2 mb-4">Central Bank Rates</h3>
+        <div class="flex flex-col gap-4">
+          <div *ngFor="let bank of (showMoreRates ? centralBankRates : centralBankRates.slice(0, 5))" class="flex justify-between items-center group">
+            <div class="flex items-center gap-3">
+              <img [src]="'https://flagcdn.com/w20/' + bank.code + '.png'" alt="flag" class="w-5 h-3.5 rounded-sm shadow-[0_2px_4px_rgba(0,0,0,0.1)] opacity-90 group-hover:opacity-100 transition-opacity">
+              <div class="flex flex-col">
+                <span class="text-[11px] font-black tracking-tight text-slate-800 leading-none mb-0.5">{{ bank.bankName }}</span>
+                <span class="text-[9px] font-bold uppercase tracking-widest text-slate-400 leading-none">{{ bank.cur }}</span>
+              </div>
+            </div>
+            <span class="font-mono text-[13px] font-black text-slate-700 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">{{ bank.rate_pct | number:'1.2-2' }}%</span>
+          </div>
+        </div>
+        
+        <button (click)="toggleShowMoreRates()" class="mt-5 pt-3 border-t border-slate-50 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-[#006c49] transition-colors self-stretch flex items-center justify-center gap-1">
+          {{ showMoreRates ? 'Show Less' : 'Show More' }} <span class="material-symbols-outlined text-[14px]">{{ showMoreRates ? 'expand_less' : 'expand_more' }}</span>
+        </button>
+      </div>
+
+      <!-- 3. Legend -->
+      <div class="card-premium p-6 flex flex-col gap-4">
+        <h3 class="text-xs font-black tracking-[0.2em] text-slate-400 uppercase border-b border-slate-100 pb-2 mb-2">Legend</h3>
+        <div class="flex flex-col gap-3">
+          <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-rose-500 text-[18px]">folder</span>
+            <span class="text-xs font-bold text-slate-600">High Impact Expected</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-amber-500 text-[18px]">folder</span>
+            <span class="text-xs font-bold text-slate-600">Medium Impact Expected</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-yellow-400 text-[18px]">folder</span>
+            <span class="text-xs font-bold text-slate-600">Low Impact Expected</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-slate-300 text-[18px]">folder</span>
+            <span class="text-xs font-bold text-slate-600">Non-Economic</span>
+          </div>
+          <div class="mt-4 border-t border-slate-100 pt-4 flex flex-col gap-2">
+            <div class="text-xs font-medium text-slate-500"><span class="text-[#006c49] font-bold">Green</span>: Better than expected</div>
+            <div class="text-xs font-medium text-slate-500"><span class="text-rose-500 font-bold">Red</span>: Worse than expected</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Weekly Export -->
+      <div class="card-premium p-6 flex flex-col gap-4">
+        <h3 class="text-xs font-black tracking-[0.2em] text-slate-400 uppercase border-b border-slate-100 pb-2 mb-2">Weekly Export</h3>
+        <div class="flex flex-wrap gap-2">
+          <button (click)="exportData('ics')" class="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 rounded text-[10px] font-black text-slate-600 transition-colors">ICS</button>
+          <button (click)="exportData('csv')" class="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 rounded text-[10px] font-black text-slate-600 transition-colors">CSV</button>
+          <button (click)="exportData('json')" class="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 rounded text-[10px] font-black text-slate-600 transition-colors">JSON</button>
+          <button (click)="exportData('xml')" class="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 rounded text-[10px] font-black text-slate-600 transition-colors">XML</button>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- MAIN CALENDAR -->
+    <section class="col-span-12 lg:col-span-9 flex flex-col gap-6">
+      
+      <!-- Toolbar -->
+      <div class="card-premium p-4 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="flex items-center gap-4">
+          <button (click)="scrollToNextEvent()" class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 hover:bg-emerald-100 flex items-center justify-center transition-colors shadow-sm" title="Up Next">
+            <span class="material-symbols-outlined">arrow_downward</span>
+          </button>
+          <h2 class="text-xl font-black text-slate-900 tracking-tighter">
+            {{ dateRangeLabel }} 
+            <span class="text-slate-300 font-medium text-sm ml-2">
+              <ng-container *ngIf="(currentDateRange.from | date:'yyyy-MM-dd') === (currentDateRange.to | date:'yyyy-MM-dd')">
+                {{ currentDateRange.from | date:'MMM d' }}
+              </ng-container>
+              <ng-container *ngIf="(currentDateRange.from | date:'yyyy-MM-dd') !== (currentDateRange.to | date:'yyyy-MM-dd')">
+                {{ currentDateRange.from | date:'MMM d' }} - {{ currentDateRange.to | date:'MMM d' }}
+              </ng-container>
+            </span>
+          </h2>
+        </div>
+        
+        <div class="flex items-center gap-3 w-full md:w-auto">
+          <div class="relative w-full md:w-64">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
+            <input type="text" [(ngModel)]="searchQuery" (input)="applyFilters()" placeholder="Search events..." class="w-full pl-10 pr-4 py-2.5 bg-[#f7f9fb] border-transparent focus:border-[#006c49] border-2 rounded-xl text-sm font-bold text-slate-700 outline-none transition-all placeholder:text-slate-400">
+          </div>
+          <button (click)="toggleFilterPanel()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-sm font-bold flex items-center gap-2 transition-colors shadow-sm">
+            <span class="material-symbols-outlined text-[18px]">filter_list</span> Filter
+          </button>
+        </div>
+      </div>
+
+      <!-- Filter Panel -->
+      <div *ngIf="showFilters" class="card-premium p-6 grid grid-cols-1 md:grid-cols-2 gap-8 animate-fade-in border border-slate-100">
+        <!-- Expected Impact -->
+        <div class="flex flex-col gap-4">
+          <h4 class="text-xs font-black tracking-[0.1em] text-slate-500 uppercase">Expected Impact</h4>
+          <div class="flex flex-col gap-2">
+            <label class="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" [checked]="filters.impact['high']" (change)="setImpactFilter('high', $event)" class="accent-rose-500 w-4 h-4">
+              <span class="material-symbols-outlined text-rose-500 text-[18px]">folder</span>
+              <span class="text-sm font-bold text-slate-700 group-hover:text-rose-600 transition-colors">High Impact</span>
+            </label>
+            <label class="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" [checked]="filters.impact['medium']" (change)="setImpactFilter('medium', $event)" class="accent-amber-500 w-4 h-4">
+              <span class="material-symbols-outlined text-amber-500 text-[18px]">folder</span>
+              <span class="text-sm font-bold text-slate-700 group-hover:text-amber-600 transition-colors">Medium Impact</span>
+            </label>
+            <label class="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" [checked]="filters.impact['low']" (change)="setImpactFilter('low', $event)" class="accent-yellow-400 w-4 h-4">
+              <span class="material-symbols-outlined text-yellow-400 text-[18px]">folder</span>
+              <span class="text-sm font-bold text-slate-700 group-hover:text-yellow-500 transition-colors">Low Impact</span>
+            </label>
+            <label class="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" [checked]="filters.impact['none']" (change)="setImpactFilter('none', $event)" class="accent-slate-400 w-4 h-4">
+              <span class="material-symbols-outlined text-slate-300 text-[18px]">folder</span>
+              <span class="text-sm font-bold text-slate-700 group-hover:text-slate-900 transition-colors">Non-Economic</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Currencies -->
+        <div class="flex flex-col gap-4">
+          <h4 class="text-xs font-black tracking-[0.1em] text-slate-500 uppercase">Currencies</h4>
+          <div class="grid grid-cols-3 gap-y-3 gap-x-2">
+            <label *ngFor="let cur of currencyList" class="flex items-center gap-2 cursor-pointer group">
+              <input type="checkbox" [checked]="filters.currencies[cur]" (change)="setCurrencyFilter(cur, $event)" class="accent-[#006c49] w-4 h-4">
+              <span class="text-xs font-black text-slate-600 group-hover:text-[#006c49] transition-colors">{{ cur }}</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Table -->
+      <div class="card-premium p-0 overflow-hidden relative min-h-[400px]">
+        
+        <div *ngIf="loading" class="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center">
+          <span class="material-symbols-outlined animate-spin text-[#006c49] text-4xl mb-4">autorenew</span>
+          <span class="font-bold text-slate-500 tracking-widest text-xs uppercase">Loading Data...</span>
+        </div>
+
+        <div *ngIf="!loading && filteredEvents.length === 0" class="absolute inset-0 flex flex-col items-center justify-center p-8 text-center">
+          <span class="material-symbols-outlined text-6xl text-slate-200 mb-4">event_busy</span>
+          <h3 class="text-xl font-black text-slate-800 mb-2">No Events Found</h3>
+          <p class="text-slate-500 text-sm">Adjust your filters or select a different date range.</p>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse" *ngIf="!loading && filteredEvents.length > 0">
+            <thead>
+              <tr class="bg-[#f7f9fb] border-b border-slate-100">
+                <th class="py-4 px-2 w-10"></th>
+                <th class="py-4 px-4 text-[10px] font-black uppercase tracking-widest text-slate-400 w-32">Date & Time</th>
+                <th class="py-4 px-4 text-[10px] font-black uppercase tracking-widest text-slate-400 w-24">Currency</th>
+                <th class="py-4 px-4 text-[10px] font-black uppercase tracking-widest text-slate-400 w-20 text-center">Impact</th>
+                <th class="py-4 px-6 text-[10px] font-black uppercase tracking-widest text-slate-400 min-w-[250px]">Event Name</th>
+                <th class="py-4 px-4 text-[10px] font-black uppercase tracking-widest text-slate-400 w-16 text-center">Detail</th>
+                <th class="py-4 px-4 text-[10px] font-black uppercase tracking-widest text-slate-400 w-24 text-right">Actual</th>
+                <th class="py-4 px-4 text-[10px] font-black uppercase tracking-widest text-slate-400 w-24 text-right">Forecast</th>
+                <th class="py-4 px-4 text-[10px] font-black uppercase tracking-widest text-slate-400 w-24 text-right">Previous</th>
+              </tr>
+            </thead>
+            <tbody>
+              <ng-container *ngFor="let event of filteredEvents">
+                <tr [id]="'event-' + event.id" 
+                    class="border-b border-slate-50 hover:bg-[#f7f9fb] transition-colors group relative"
+                    [class.bg-emerald-50]="event.id === nextEventId">
+                  <!-- Pointer column -->
+                  <td class="py-3 px-2 text-center w-10">
+                    <div class="flex items-center justify-center">
+                      <span *ngIf="event.id === nextEventId" 
+                            class="material-symbols-outlined text-[#006c49] text-[20px] animate-pulse drop-shadow-sm" 
+                            style="font-variation-settings: 'FILL' 1, 'wght' 700, 'GRAD' 0, 'opsz' 24">
+                        play_circle
+                      </span>
+                    </div>
+                  </td>
+                  
+                  <!-- Date & Time -->
+                  <td class="py-3 px-4 whitespace-nowrap">
+                    <div class="flex flex-col">
+                      <span class="text-[10px] font-bold text-slate-400 uppercase">{{ event.time | date:'MMM d' }}</span>
+                      <span class="text-xs font-mono font-bold text-slate-800">{{ event.time | date:'shortTime' }}</span>
+                    </div>
+                  </td>
+                  
+                  <!-- Currency -->
+                  <td class="py-3 px-4">
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs font-black text-slate-600 bg-white px-2 py-1 rounded shadow-sm border border-slate-100">{{ getCurrencyFromCountry(event.country) }}</span>
+                    </div>
+                  </td>
+
+                  <!-- Impact -->
+                  <td class="py-3 px-4 text-center">
+                    <span class="material-symbols-outlined text-[20px]"
+                      [ngClass]="{
+                        'text-rose-500': event.impactLevel === 3,
+                        'text-amber-500': event.impactLevel === 2,
+                        'text-yellow-400': event.impactLevel === 1,
+                        'text-slate-300': event.impactLevel === 0
+                      }">
+                      folder
+                    </span>
+                  </td>
+
+                  <!-- Event Name -->
+                  <td class="py-3 px-6">
+                    <span class="text-sm font-bold text-slate-800 group-hover:text-[#006c49] transition-colors line-clamp-1">{{ event.event }}</span>
+                  </td>
+
+                  <!-- Detail -->
+                  <td class="py-3 px-4 text-center">
+                    <button (click)="toggleEventDetail(event.id)" 
+                      class="w-7 h-7 rounded-lg flex items-center justify-center mx-auto transition-all duration-200"
+                      [ngClass]="expandedEventId === event.id ? 'bg-[#006c49] text-white shadow-lg rotate-90' : 'bg-yellow-50 hover:bg-yellow-100 text-yellow-600'">
+                      <span class="material-symbols-outlined text-[16px]">{{ expandedEventId === event.id ? 'close' : 'snippet_folder' }}</span>
+                    </button>
+                  </td>
+
+                  <!-- Actual -->
+                  <td class="py-3 px-4 text-right">
+                    <span class="text-sm font-mono font-black"
+                          [ngClass]="{
+                            'text-slate-800': !event.actual,
+                            'text-[#006c49]': event.actual && event.estimate && event.actual > event.estimate,
+                            'text-rose-600': event.actual && event.estimate && event.actual < event.estimate,
+                            'text-slate-700': event.actual && event.estimate && event.actual === event.estimate
+                          }">
+                      {{ event.actual || '' }}
+                    </span>
+                  </td>
+
+                  <!-- Forecast -->
+                  <td class="py-3 px-4 text-right">
+                    <span class="text-xs font-mono font-medium text-slate-500">{{ event.estimate || '' }}</span>
+                  </td>
+
+                  <!-- Previous -->
+                  <td class="py-3 px-4 text-right">
+                    <span class="text-xs font-mono font-medium text-slate-400">{{ event.prev || '' }}</span>
+                  </td>
+                </tr>
+
+                <!-- Expanded Detail Row (ForexFactory Style) -->
+                <tr *ngIf="expandedEventId === event.id" class="bg-slate-50/80 border-b border-slate-100">
+                  <td colspan="9" class="p-0 overflow-hidden">
+                    <div class="p-8 flex flex-col md:flex-row gap-10 animate-in fade-in slide-in-from-top-2 duration-300">
+                      
+                      <!-- Specs Column -->
+                      <div class="flex-1 flex flex-col gap-6" *ngIf="getEventSpecs(event.event) as specs">
+                        <div class="flex items-center gap-2 border-b border-slate-200 pb-3">
+                          <span class="material-symbols-outlined text-slate-400 text-[18px]">info</span>
+                          <h4 class="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">Economic Specs</h4>
+                        </div>
+
+                        <div class="grid grid-cols-1 gap-5">
+                          <div class="flex flex-col gap-1.5">
+                            <span class="text-[9px] font-black uppercase tracking-widest text-slate-400">Measures</span>
+                            <p class="text-[13px] font-medium text-slate-700 leading-relaxed">{{ specs.measures }}</p>
+                          </div>
+                          
+                          <div class="flex flex-col gap-1.5">
+                            <span class="text-[9px] font-black uppercase tracking-widest text-slate-400">Usual Effect</span>
+                            <p class="text-[13px] font-bold text-[#006c49] leading-relaxed italic">{{ specs.effect }}</p>
+                          </div>
+
+                          <div class="flex flex-col gap-1.5">
+                            <span class="text-[9px] font-black uppercase tracking-widest text-slate-400">Frequency</span>
+                            <p class="text-[13px] font-medium text-slate-700 leading-relaxed">{{ specs.frequency }}</p>
+                          </div>
+
+                          <div class="flex flex-col gap-1.5">
+                            <span class="text-[9px] font-black uppercase tracking-widest text-slate-400">Why Traders Care</span>
+                            <p class="text-[13px] font-medium text-slate-700 leading-relaxed">{{ specs.why }}</p>
+                          </div>
+
+                          <div class="flex flex-col gap-1.5">
+                            <span class="text-[9px] font-black uppercase tracking-widest text-slate-400">Also Called</span>
+                            <p class="text-[13px] font-medium text-slate-700 leading-relaxed">{{ specs.also }}</p>
+                          </div>
+
+                          <div class="flex flex-col gap-1.5">
+                            <span class="text-[9px] font-black uppercase tracking-widest text-slate-400">Acro Expand</span>
+                            <p class="text-[13px] font-black text-slate-800">{{ specs.acro }}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                    <!-- Alert Column -->
+                    <div class="w-full md:w-96 flex flex-col gap-4">
+                      <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 group hover:border-[#006c49]/30 transition-all duration-300">
+                        <div class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-emerald-50 group-hover:text-[#006c49] transition-colors">
+                          <span class="material-symbols-outlined text-[20px]">notifications_active</span>
+                        </div>
+                        <span class="text-[10px] font-black uppercase tracking-widest text-slate-500">Set alert for this event</span>
+                      </div>
+                    </div>
+
+                    </div>
+                  </td>
+                </tr>
+              </ng-container>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+    </section>
+
+  </div>
+</div>

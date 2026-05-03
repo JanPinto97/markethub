@@ -21,10 +21,14 @@
     <div class="flex items-center gap-8">
       <span class="text-xl font-black text-slate-900 tracking-tighter italic">MarketHub</span>
       <section class="hidden md:flex gap-6">
-        <a class="text-[#006c49] font-bold border-b-2 border-[#006c49] pb-1" href="#">Overview</a>
-        <a class="text-slate-500 hover:text-slate-900 transition-colors" href="#">Economic Calendar</a>
-        <a class="text-slate-500 hover:text-slate-900 transition-colors" href="#">News</a>
-        <a class="text-slate-500 hover:text-slate-900 transition-colors" href="#">Charts</a>
+        <a class="font-bold pb-1 cursor-pointer"
+          [ngClass]="activeTab === 'overview' ? 'text-[#006c49] border-b-2 border-[#006c49]' : 'text-slate-500 hover:text-slate-900 transition-colors'"
+          (click)="activeTab = 'overview'">Overview</a>
+        <a class="font-bold pb-1 cursor-pointer"
+          [ngClass]="activeTab === 'calendar' ? 'text-[#006c49] border-b-2 border-[#006c49]' : 'text-slate-500 hover:text-slate-900 transition-colors'"
+          (click)="activeTab = 'calendar'">Economic Calendar</a>
+        <a class="text-slate-500 hover:text-slate-900 transition-colors cursor-pointer">News</a>
+        <a class="text-slate-500 hover:text-slate-900 transition-colors cursor-pointer">Charts</a>
       </section>
     </div>
     <div class="flex items-center gap-4">
@@ -38,7 +42,7 @@
     </div>
   </nav>
 
-  <main class="max-w-[1440px] mx-auto px-6 py-10 grid grid-cols-12 gap-8">
+  <main class="max-w-[1440px] mx-auto p-10 grid-cols-12 gap-8" [ngClass]="activeTab === 'overview' ? 'grid' : 'hidden'">
 
     <!-- LEFT SECTION (8 Columns): Search, Chart & News Impact -->
     <section class="col-span-12 lg:col-span-8 flex flex-col gap-8">
@@ -195,8 +199,7 @@
           <div class="flex items-center gap-3">
             <button (click)="changeDate(-1)"
               class="w-7 h-7 rounded-full flex items-center justify-center hover:bg-white transition-all shadow-sm">◀</button>
-            <span class="text-[10px] font-black uppercase tracking-widest text-[#191c1e]">{{ selectedDate | date:'dd
-              MMM' }}</span>
+            <span class="text-[10px] font-black uppercase tracking-widest text-[#191c1e]">{{ selectedDate | date:'dd MMM' }}</span>
             <button (click)="changeDate(1)"
               class="w-7 h-7 rounded-full flex items-center justify-center hover:bg-white transition-all shadow-sm">▶</button>
           </div>
@@ -209,27 +212,19 @@
             class="px-6 py-4 flex flex-col gap-2 hover:bg-[#f7f9fb] transition-colors group">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-3">
-                <span class="text-[9px] font-mono text-slate-400">{{ event.time ? (event.time.split(' ')[1] ||
-                  event.time) : '--:--' }}</span>
-                <span class="text-[9px] font-black text-slate-900 uppercase px-1.5 py-0.5 bg-slate-100 rounded">{{
-                  event.country }}</span>
+                <span class="text-[9px] font-mono text-slate-400">{{ event.time ? (event.time.split(' ')[1] || event.time) : '--:--' }}</span>
+                <span class="text-[9px] font-black text-slate-900 uppercase px-1.5 py-0.5 bg-slate-100 rounded">{{ event.country }}</span>
               </div>
               <div class="flex gap-1">
                 <!-- 3 dots always present: filling 1/3, 2/3 or 3/3 with #cf352e -->
-                <div class="w-1.5 h-1.5 rounded-full" [style.background]="event.impact >= 1 ? '#cf352e' : '#e2e8f0'">
-                </div>
-                <div class="w-1.5 h-1.5 rounded-full" [style.background]="event.impact >= 2 ? '#cf352e' : '#e2e8f0'">
-                </div>
-                <div class="w-1.5 h-1.5 rounded-full" [style.background]="event.impact >= 3 ? '#cf352e' : '#e2e8f0'">
-                </div>
+                <div class="w-1.5 h-1.5 rounded-full" [style.background]="event.impact >= 1 ? '#cf352e' : '#e2e8f0'"></div>
+                <div class="w-1.5 h-1.5 rounded-full" [style.background]="event.impact >= 2 ? '#cf352e' : '#e2e8f0'"></div>
+                <div class="w-1.5 h-1.5 rounded-full" [style.background]="event.impact >= 3 ? '#cf352e' : '#e2e8f0'"></div>
               </div>
             </div>
-            <span
-              class="text-[11px] font-bold text-[#44474d] group-hover:text-[#191c1e] transition-colors leading-tight">{{
-              event.event }}</span>
+            <span class="text-[11px] font-bold text-[#44474d] group-hover:text-[#191c1e] transition-colors leading-tight">{{ event.event }}</span>
             <div class="flex justify-between items-center mt-1">
-              <span class="text-[9px] font-mono text-slate-400 uppercase">Actual: <b class="text-slate-900">{{
-                  event.actual || '--' }}</b></span>
+              <span class="text-[9px] font-mono text-slate-400 uppercase">Actual: <b class="text-slate-900">{{ event.actual || '--' }}</b></span>
               <span class="text-[9px] font-mono text-slate-400 uppercase">Prev: {{ event.prev || '--' }}</span>
             </div>
           </div>
@@ -238,8 +233,13 @@
           </div>
         </div>
       </div>
+
     </section>
   </main>
+
+  <!-- Economic Calendar Tab -->
+  <app-economic-calendar [style.display]="activeTab === 'calendar' ? 'block' : 'none'"></app-economic-calendar>
+
 
   <footer class="w-full py-16 px-12 bg-white mt-12 border-t border-slate-50">
     <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-12">
