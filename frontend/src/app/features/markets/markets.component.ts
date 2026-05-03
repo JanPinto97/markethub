@@ -37,12 +37,13 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
   selectedDate: Date = new Date();
   lastSentimentUpdate: string = '';
   private clockInterval: any;
+  private refreshInterval: any;
   private searchSubject = new Subject<string>();
   
   // 1. SÍMBOLOS Y ETIQUETAS (Arquitectura Inteligente: Finnhub, TwelveData, Synthetic)
   coins: any[] = [
-    { symbol: 'BTC/USD', tech: 'CRYPTO:BTCUSD', apiSymbol: 'BTC/USD', source: 'twelvedata', price: 0, change: 0 },
-    { symbol: 'ETH/USD', tech: 'CRYPTO:ETHUSD', apiSymbol: 'ETH/USD', source: 'twelvedata', price: 0, change: 0 },
+    { symbol: 'BTC/USD', tech: 'BINANCE:BTCUSD', apiSymbol: 'BTC/USD', source: 'twelvedata', price: 0, change: 0 },
+    { symbol: 'ETH/USD', tech: 'BINANCE:ETHUSD', apiSymbol: 'ETH/USD', source: 'twelvedata', price: 0, change: 0 },
     { symbol: 'EUR/USD', tech: 'FX:EURUSD', apiSymbol: 'EUR/USD', source: 'twelvedata', price: 0, change: 0 }, 
     { symbol: 'S&P 500 (SPY)', tech: 'SPY', apiSymbol: 'SPY', source: 'finnhub', price: 0, change: 0 },       
     { symbol: 'GOLD (XAU)', tech: 'OANDA:XAUUSD', apiSymbol: 'XAU/USD', source: 'twelvedata', price: 0, change: 0 }, 
@@ -84,6 +85,17 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
     ).subscribe(query => {
       this.performSearch(query);
     });
+
+    // Polling automático para activos que NO son WebSocket (Twelve Data, CoinGecko, Synthetic)
+    // Se actualiza cada 10 segundos para respetar los límites de la API gratuita.
+    this.refreshInterval = setInterval(() => {
+      this.updatePrice(this.currentApiSymbol, this.currentSource);
+      // Ticker refrescado cada 30 segundos para no saturar la API
+      const now = new Date().getSeconds();
+      if (now % 30 < 10) { 
+         this.loadTickerPrices();
+      }
+    }, 10000);
   }
 
   ngOnDestroy() {
@@ -92,6 +104,9 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     if (this.clockInterval) {
       clearInterval(this.clockInterval);
+    }
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
     }
   }
 
@@ -204,29 +219,29 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
       'XAG':     { symbol: 'OANDA:XAGUSD',  apiSymbol: 'XAG/USD',  description: 'Silver Spot / US Dollar',     type: 'METAL',     source: 'twelvedata' },
       'SILVER':  { symbol: 'OANDA:XAGUSD',  apiSymbol: 'XAG/USD',  description: 'Silver Spot / US Dollar',     type: 'METAL',     source: 'twelvedata' },
       'XAGUSD':  { symbol: 'OANDA:XAGUSD',  apiSymbol: 'XAG/USD',  description: 'Silver Spot / US Dollar',     type: 'METAL',     source: 'twelvedata' },
-      'BTC':     { symbol: 'CRYPTO:BTCUSD', apiSymbol: 'BTC/USD',  description: 'Bitcoin / US Dollar',         type: 'CRYPTO',    source: 'twelvedata' },
-      'BITCOIN': { symbol: 'CRYPTO:BTCUSD', apiSymbol: 'BTC/USD',  description: 'Bitcoin / US Dollar',         type: 'CRYPTO',    source: 'twelvedata' },
-      'ETH':     { symbol: 'CRYPTO:ETHUSD', apiSymbol: 'ETH/USD',  description: 'Ethereum / US Dollar',        type: 'CRYPTO',    source: 'twelvedata' },
-      'ETHEREUM':{ symbol: 'CRYPTO:ETHUSD', apiSymbol: 'ETH/USD',  description: 'Ethereum / US Dollar',        type: 'CRYPTO',    source: 'twelvedata' },
-      'SOL':     { symbol: 'CRYPTO:SOLUSD', apiSymbol: 'SOL/USD',  description: 'Solana / US Dollar',          type: 'CRYPTO',    source: 'twelvedata' },
-      'SOLANA':  { symbol: 'CRYPTO:SOLUSD', apiSymbol: 'SOL/USD',  description: 'Solana / US Dollar',          type: 'CRYPTO',    source: 'twelvedata' },
-      'ADA':     { symbol: 'CRYPTO:ADAUSD', apiSymbol: 'ADA/USD',  description: 'Cardano / US Dollar',         type: 'CRYPTO',    source: 'twelvedata' },
-      'CARDANO': { symbol: 'CRYPTO:ADAUSD', apiSymbol: 'ADA/USD',  description: 'Cardano / US Dollar',         type: 'CRYPTO',    source: 'twelvedata' },
-      'DOT':     { symbol: 'CRYPTO:DOTUSD', apiSymbol: 'DOT/USD',  description: 'Polkadot / US Dollar',        type: 'CRYPTO',    source: 'twelvedata' },
-      'POLKADOT':{ symbol: 'CRYPTO:DOTUSD', apiSymbol: 'DOT/USD',  description: 'Polkadot / US Dollar',        type: 'CRYPTO',    source: 'twelvedata' },
-      'AVAX':    { symbol: 'CRYPTO:AVAXUSD', apiSymbol: 'AVAX/USD',  description: 'Avalanche / US Dollar',       type: 'CRYPTO',    source: 'twelvedata' },
-      'AVALANCHE':{ symbol: 'CRYPTO:AVAXUSD',apiSymbol: 'AVAX/USD',  description: 'Avalanche / US Dollar',       type: 'CRYPTO',    source: 'twelvedata' },
-      'XRP':     { symbol: 'CRYPTO:XRPUSD', apiSymbol: 'XRP/USD',  description: 'XRP / US Dollar',             type: 'CRYPTO',    source: 'twelvedata' },
-      'RIPPLE':  { symbol: 'CRYPTO:XRPUSD', apiSymbol: 'XRP/USD',  description: 'XRP / US Dollar',             type: 'CRYPTO',    source: 'twelvedata' },
-      'LINK':    { symbol: 'CRYPTO:LINKUSD', apiSymbol: 'LINK/USD', description: 'Chainlink / US Dollar',      type: 'CRYPTO',    source: 'twelvedata' },
-      'CHAINLINK':{ symbol: 'CRYPTO:LINKUSD',apiSymbol: 'LINK/USD', description: 'Chainlink / US Dollar',      type: 'CRYPTO',    source: 'twelvedata' },
-      'MATIC':   { symbol: 'CRYPTO:MATICUSD',apiSymbol: 'MATIC/USD',description: 'Polygon / US Dollar',        type: 'CRYPTO',    source: 'twelvedata' },
-      'POLYGON': { symbol: 'CRYPTO:MATICUSD',apiSymbol: 'MATIC/USD',description: 'Polygon / US Dollar',        type: 'CRYPTO',    source: 'twelvedata' },
-      'DOGE':    { symbol: 'CRYPTO:DOGEUSD',apiSymbol: 'DOGE/USD', description: 'Dogecoin / US Dollar',        type: 'CRYPTO',    source: 'twelvedata' },
-      'DOGECOIN':{ symbol: 'CRYPTO:DOGEUSD',apiSymbol: 'DOGE/USD', description: 'Dogecoin / US Dollar',        type: 'CRYPTO',    source: 'twelvedata' },
-      'SHIB':    { symbol: 'CRYPTO:SHIBUSD',apiSymbol: 'SHIB/USD', description: 'Shiba Inu / US Dollar',       type: 'CRYPTO',    source: 'twelvedata' },
-      'LTC':     { symbol: 'CRYPTO:LTCUSD', apiSymbol: 'LTC/USD',  description: 'Litecoin / US Dollar',        type: 'CRYPTO',    source: 'twelvedata' },
-      'LITECOIN':{ symbol: 'CRYPTO:LTCUSD', apiSymbol: 'LTC/USD',  description: 'Litecoin / US Dollar',        type: 'CRYPTO',    source: 'twelvedata' },
+      'BTC':     { symbol: 'BINANCE:BTCUSD', apiSymbol: 'BTC/USD',  description: 'Bitcoin / US Dollar',         type: 'CRYPTO',    source: 'twelvedata' },
+      'BITCOIN': { symbol: 'BINANCE:BTCUSD', apiSymbol: 'BTC/USD',  description: 'Bitcoin / US Dollar',         type: 'CRYPTO',    source: 'twelvedata' },
+      'ETH':     { symbol: 'BINANCE:ETHUSD', apiSymbol: 'ETH/USD',  description: 'Ethereum / US Dollar',        type: 'CRYPTO',    source: 'twelvedata' },
+      'ETHEREUM':{ symbol: 'BINANCE:ETHUSD', apiSymbol: 'ETH/USD',  description: 'Ethereum / US Dollar',        type: 'CRYPTO',    source: 'twelvedata' },
+      'SOL':     { symbol: 'BINANCE:SOLUSD', apiSymbol: 'SOL/USD',  description: 'Solana / US Dollar',          type: 'CRYPTO',    source: 'twelvedata' },
+      'SOLANA':  { symbol: 'BINANCE:SOLUSD', apiSymbol: 'SOL/USD',  description: 'Solana / US Dollar',          type: 'CRYPTO',    source: 'twelvedata' },
+      'ADA':     { symbol: 'BINANCE:ADAUSD', apiSymbol: 'ADA/USD',  description: 'Cardano / US Dollar',         type: 'CRYPTO',    source: 'twelvedata' },
+      'CARDANO': { symbol: 'BINANCE:ADAUSD', apiSymbol: 'ADA/USD',  description: 'Cardano / US Dollar',         type: 'CRYPTO',    source: 'twelvedata' },
+      'DOT':     { symbol: 'BINANCE:DOTUSD', apiSymbol: 'DOT/USD',  description: 'Polkadot / US Dollar',        type: 'CRYPTO',    source: 'twelvedata' },
+      'POLKADOT':{ symbol: 'BINANCE:DOTUSD', apiSymbol: 'DOT/USD',  description: 'Polkadot / US Dollar',        type: 'CRYPTO',    source: 'twelvedata' },
+      'AVAX':    { symbol: 'BINANCE:AVAXUSD', apiSymbol: 'AVAX/USD',  description: 'Avalanche / US Dollar',       type: 'CRYPTO',    source: 'twelvedata' },
+      'AVALANCHE':{ symbol: 'BINANCE:AVAXUSD',apiSymbol: 'AVAX/USD',  description: 'Avalanche / US Dollar',       type: 'CRYPTO',    source: 'twelvedata' },
+      'XRP':     { symbol: 'BINANCE:XRPUSD', apiSymbol: 'XRP/USD',  description: 'XRP / US Dollar',             type: 'CRYPTO',    source: 'twelvedata' },
+      'RIPPLE':  { symbol: 'BINANCE:XRPUSD', apiSymbol: 'XRP/USD',  description: 'XRP / US Dollar',             type: 'CRYPTO',    source: 'twelvedata' },
+      'LINK':    { symbol: 'BINANCE:LINKUSD', apiSymbol: 'LINK/USD', description: 'Chainlink / US Dollar',      type: 'CRYPTO',    source: 'twelvedata' },
+      'CHAINLINK':{ symbol: 'BINANCE:LINKUSD',apiSymbol: 'LINK/USD', description: 'Chainlink / US Dollar',      type: 'CRYPTO',    source: 'twelvedata' },
+      'MATIC':   { symbol: 'BINANCE:MATICUSD',apiSymbol: 'MATIC/USD',description: 'Polygon / US Dollar',        type: 'CRYPTO',    source: 'twelvedata' },
+      'POLYGON': { symbol: 'BINANCE:MATICUSD',apiSymbol: 'MATIC/USD',description: 'Polygon / US Dollar',        type: 'CRYPTO',    source: 'twelvedata' },
+      'DOGE':    { symbol: 'BINANCE:DOGEUSD',apiSymbol: 'DOGE/USD', description: 'Dogecoin / US Dollar',        type: 'CRYPTO',    source: 'twelvedata' },
+      'DOGECOIN':{ symbol: 'BINANCE:DOGEUSD',apiSymbol: 'DOGE/USD', description: 'Dogecoin / US Dollar',        type: 'CRYPTO',    source: 'twelvedata' },
+      'SHIB':    { symbol: 'BINANCE:SHIBUSD',apiSymbol: 'SHIB/USD', description: 'Shiba Inu / US Dollar',       type: 'CRYPTO',    source: 'twelvedata' },
+      'LTC':     { symbol: 'BINANCE:LTCUSD', apiSymbol: 'LTC/USD',  description: 'Litecoin / US Dollar',        type: 'CRYPTO',    source: 'twelvedata' },
+      'LITECOIN':{ symbol: 'BINANCE:LTCUSD', apiSymbol: 'LTC/USD',  description: 'Litecoin / US Dollar',        type: 'CRYPTO',    source: 'twelvedata' },
       'EUR':     { symbol: 'FX:EURUSD',     apiSymbol: 'EUR/USD',  description: 'Euro / US Dollar',            type: 'FOREX',     source: 'twelvedata' },
       'EURUSD':  { symbol: 'FX:EURUSD',     apiSymbol: 'EUR/USD',  description: 'Euro / US Dollar',            type: 'FOREX',     source: 'twelvedata' },
       'GBP':     { symbol: 'FX:GBPUSD',     apiSymbol: 'GBP/USD',  description: 'British Pound / US Dollar',  type: 'FOREX',     source: 'twelvedata' },
@@ -339,7 +354,7 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
         const cgMapped = cgResults.slice(0, 5).map((item: any) => {
           const sym = item.symbol.toUpperCase();
           const apiSym = `${sym}/USD`;
-          const tvSym = `CRYPTO:${sym}USD`;
+          const tvSym = `BINANCE:${sym}USD`;
           
           return {
             symbol: tvSym,
@@ -375,15 +390,15 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
       'GOLD': { symbol: 'OANDA:XAUUSD', apiSymbol: 'XAU/USD',  source: 'twelvedata' },
       'XAG': { symbol: 'OANDA:XAGUSD',  apiSymbol: 'XAG/USD',  source: 'twelvedata' },
       'SILVER': { symbol: 'OANDA:XAGUSD', apiSymbol: 'XAG/USD', source: 'twelvedata' },
-      'BTC': { symbol: 'CRYPTO:BTCUSD', apiSymbol: 'BTC/USD',  source: 'twelvedata' },
-      'BITCOIN': { symbol: 'CRYPTO:BTCUSD', apiSymbol: 'BTC/USD', source: 'twelvedata' },
-      'ETH': { symbol: 'CRYPTO:ETHUSD', apiSymbol: 'ETH/USD',  source: 'twelvedata' },
-      'SOL': { symbol: 'CRYPTO:SOLUSD', apiSymbol: 'SOL/USD',  source: 'twelvedata' },
-      'ADA': { symbol: 'CRYPTO:ADAUSD', apiSymbol: 'ADA/USD',  source: 'twelvedata' },
-      'CARDANO': { symbol: 'CRYPTO:ADAUSD', apiSymbol: 'ADA/USD', source: 'twelvedata' },
-      'DOT': { symbol: 'CRYPTO:DOTUSD', apiSymbol: 'DOT/USD',  source: 'twelvedata' },
-      'AVAX': { symbol: 'CRYPTO:AVAXUSD', apiSymbol: 'AVAX/USD', source: 'twelvedata' },
-      'XRP': { symbol: 'CRYPTO:XRPUSD', apiSymbol: 'XRP/USD',  source: 'twelvedata' },
+      'BTC': { symbol: 'BINANCE:BTCUSD', apiSymbol: 'BTC/USD',  source: 'twelvedata' },
+      'BITCOIN': { symbol: 'BINANCE:BTCUSD', apiSymbol: 'BTC/USD', source: 'twelvedata' },
+      'ETH': { symbol: 'BINANCE:ETHUSD', apiSymbol: 'ETH/USD',  source: 'twelvedata' },
+      'SOL': { symbol: 'BINANCE:SOLUSD', apiSymbol: 'SOL/USD',  source: 'twelvedata' },
+      'ADA': { symbol: 'BINANCE:ADAUSD', apiSymbol: 'ADA/USD',  source: 'twelvedata' },
+      'CARDANO': { symbol: 'BINANCE:ADAUSD', apiSymbol: 'ADA/USD', source: 'twelvedata' },
+      'DOT': { symbol: 'BINANCE:DOTUSD', apiSymbol: 'DOT/USD',  source: 'twelvedata' },
+      'AVAX': { symbol: 'BINANCE:AVAXUSD', apiSymbol: 'AVAX/USD', source: 'twelvedata' },
+      'XRP': { symbol: 'BINANCE:XRPUSD', apiSymbol: 'XRP/USD',  source: 'twelvedata' },
       'EUR': { symbol: 'FX:EURUSD',     apiSymbol: 'EUR/USD',  source: 'twelvedata' },
       'EURUSD': { symbol: 'FX:EURUSD',  apiSymbol: 'EUR/USD',  source: 'twelvedata' },
       'GBP': { symbol: 'FX:GBPUSD',     apiSymbol: 'GBP/USD',  source: 'twelvedata' },
@@ -429,12 +444,17 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.currentCoingeckoId = result.coingeckoId || '';
     
     this.displaySymbol = this.formatDisplaySymbol(this.currentSymbol);
-    // Limpiamos los datos anteriores inmediatamente para evitar precios residuales confusos
-    this.currentPriceData = { c: 0, dp: 0 };
     
     this.subscribeSymbol(this.currentSymbol);
 
-    this.updatePrice(this.currentApiSymbol, this.currentSource);
+    // Optimización: Si el activo ya está en el ticker, usamos ese precio inmediatamente para evitar el $0.00
+    const cachedCoin = this.coins.find(c => c.tech === this.currentSymbol || c.apiSymbol === this.currentApiSymbol);
+    if (cachedCoin && cachedCoin.price > 0) {
+      this.currentPriceData = { c: cachedCoin.price, dp: cachedCoin.change };
+    } else {
+      this.updatePrice(this.currentApiSymbol, this.currentSource);
+    }
+
     this.loadTradingViewWidget(this.currentSymbol);
     
     this.showSearchModal = false;
@@ -472,19 +492,22 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   updatePrice(apiSymbol: string, source: string) {
+    if (!apiSymbol) return;
+
     if (source === 'twelvedata') {
       this.http.get(`https://api.twelvedata.com/quote?symbol=${apiSymbol}&apikey=${this.twelveDataApiKey}`)
         .subscribe((data: any) => {
-          if (data && data.close) {
+          if (data && data.close && data.status !== 'error' && parseFloat(data.close) !== 0) {
             this.currentPriceData = {
               c: parseFloat(data.close),
-              dp: parseFloat(data.percent_change)
+              dp: parseFloat(data.percent_change || 0)
             };
             this.cdr.detectChanges();
           }
         });
     } else if (source === 'coingecko') {
       const id = this.currentCoingeckoId;
+      if (!id) return;
       this.http.get(`https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd&include_24hr_change=true&x_cg_demo_api_key=${this.coinGeckoApiKey}`)
         .subscribe((data: any) => {
           if (data && data[id]) {
@@ -496,16 +519,13 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
           }
         });
     } else if (source === 'finnhub_synthetic_wti') {
-      // Como no se puede leer el iframe de TradingView por políticas de seguridad del navegador (CORS), 
-      // usamos el ETF del crudo (USO) de Finnhub y le aplicamos un multiplicador matemático 
-      // para que el precio visual sea EXACTAMENTE el mismo que el gráfico de TradingView (~$107.64).
       this.http.get(`https://finnhub.io/api/v1/quote?symbol=${apiSymbol}&token=${this.apiKey}`)
         .subscribe((data: any) => {
-          if (data && data.c) {
-            const multiplier = 0.7146; // Ratio preciso entre USO ETF y TVC:USOIL
+          if (data && data.c && data.c !== 0) {
+            const multiplier = 0.7146; 
             this.currentPriceData = {
               c: data.c * multiplier,
-              dp: data.dp // El porcentaje es 100% auténtico
+              dp: data.dp || 0
             };
             this.cdr.detectChanges();
           }
@@ -513,50 +533,61 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
     } else {
       this.http.get(`https://finnhub.io/api/v1/quote?symbol=${apiSymbol}&token=${this.apiKey}`)
         .subscribe((data: any) => {
-          if (data && data.c !== 0) {
+          if (data && data.c && data.c !== 0) {
             let dp = data.dp;
             if (dp === 0 && data.pc !== 0) dp = ((data.c - data.pc) / data.pc) * 100;
             this.currentPriceData = {
               c: data.c,
-              dp: dp
+              dp: dp || 0
             };
+            this.cdr.detectChanges();
           }
-          this.cdr.detectChanges();
         });
     }
   }
 
   loadTickerPrices() {
+    // 1. Batch para Twelve Data (ahorramos muchísimas peticiones)
+    const tdSymbols = this.coins.filter(c => c.source === 'twelvedata').map(c => c.apiSymbol).join(',');
+    if (tdSymbols) {
+      this.http.get(`https://api.twelvedata.com/quote?symbol=${tdSymbols}&apikey=${this.twelveDataApiKey}`)
+        .subscribe((data: any) => {
+          if (!data || data.status === 'error') return;
+          this.coins.forEach(coin => {
+            if (coin.source === 'twelvedata') {
+              const quote = tdSymbols.includes(',') ? data[coin.apiSymbol] : data;
+              if (quote && quote.close) {
+                coin.price = parseFloat(quote.close);
+                coin.change = parseFloat(quote.percent_change || 0);
+              }
+            }
+          });
+          this.cdr.detectChanges();
+        });
+    }
+
+    // 2. Otros activos (Finnhub)
     this.coins.forEach((coin) => {
-      if (coin.source === 'twelvedata') {
-        this.http.get(`https://api.twelvedata.com/quote?symbol=${coin.apiSymbol}&apikey=${this.twelveDataApiKey}`)
-          .subscribe((data: any) => {
-            if (data && data.close) {
-              coin.price = parseFloat(data.close);
-              coin.change = parseFloat(data.percent_change);
-              this.cdr.detectChanges();
-            }
-          });
-      } else if (coin.source === 'finnhub_synthetic_wti') {
+      if (coin.source === 'finnhub_synthetic_wti') {
         this.http.get(`https://finnhub.io/api/v1/quote?symbol=${coin.apiSymbol}&token=${this.apiKey}`)
           .subscribe((data: any) => {
-            if (data && data.c) {
-              const multiplier = 0.7146; // Ratio preciso entre USO ETF y TVC:USOIL
+            if (data && data.c && data.c !== 0) {
+              const multiplier = 0.7146;
               coin.price = data.c * multiplier;
-              coin.change = data.dp; // El porcentaje es auténtico
+              coin.change = data.dp || 0;
               this.cdr.detectChanges();
             }
           });
-      } else {
+      } else if (coin.source === 'finnhub') {
         this.http.get(`https://finnhub.io/api/v1/quote?symbol=${coin.apiSymbol}&token=${this.apiKey}`)
           .subscribe((data: any) => {
-            if (data && data.c !== 0) {
+            if (data && data.c && data.c !== 0) {
               coin.price = data.c;
               let dp = data.dp;
               if (dp === 0 && data.pc !== 0) dp = ((data.c - data.pc) / data.pc) * 100;
-              coin.change = dp;
+              coin.change = dp || 0;
+              this.cdr.detectChanges();
             }
-            this.cdr.detectChanges();
           });
       }
     });
@@ -613,7 +644,7 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
       "timezone": "Etc/UTC",
       "theme": "light",
       "style": "1",
-      "locale": "es",
+      "locale": "en",
       "enable_publishing": false,
       "allow_symbol_change": false, 
       "header_widget_buttons": false,

@@ -16,7 +16,8 @@
   </div>
 
   <!-- Top Navigation -->
-  <nav class="w-full h-16 bg-white flex justify-between items-center px-6 md:px-12 max-w-[1920px] mx-auto font-manrope shadow-sm border-b border-slate-50">
+  <nav
+    class="w-full h-16 bg-white flex justify-between items-center px-6 md:px-12 max-w-[1920px] mx-auto font-manrope shadow-sm border-b border-slate-50">
     <div class="flex items-center gap-8">
       <span class="text-xl font-black text-slate-900 tracking-tighter italic">MarketHub</span>
       <section class="hidden md:flex gap-6">
@@ -31,45 +32,45 @@
         <span class="material-symbols-outlined text-[#191c1e]">notifications</span>
       </button>
       <div class="h-8 w-8 rounded-full bg-slate-200 overflow-hidden border-2 border-white shadow-sm">
-        <img alt="User Profile" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Jason" class="w-full h-full object-cover">
+        <img alt="User Profile" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Jason"
+          class="w-full h-full object-cover">
       </div>
     </div>
   </nav>
 
   <main class="max-w-[1440px] mx-auto px-6 py-10 grid grid-cols-12 gap-8">
-    
+
     <!-- LEFT SECTION (8 Columns): Search, Chart & News Impact -->
     <section class="col-span-12 lg:col-span-8 flex flex-col gap-8">
-      
+
       <!-- Principal Search Engine (Symbol Search Modal Integration) -->
       <div class="w-full relative" #searchContainer>
         <div class="relative w-full">
           <span class="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-slate-300">search</span>
-          <input #symbolInput [value]="searchQuery" 
-            (input)="onSearchInput(symbolInput.value)"
-            (focus)="onSearchFocus()"
+          <input #symbolInput [value]="searchQuery" (input)="onSearchInput(symbolInput.value)" (focus)="onSearchFocus()"
             (keyup.enter)="onEnterSearch(symbolInput.value); symbolInput.value=''"
             class="w-full bg-white shadow-sm border-none rounded-2xl pl-14 pr-6 py-5 focus:ring-2 focus:ring-[#006c49]/10 transition-all text-xs font-bold uppercase tracking-widest"
             placeholder="Search Assets (BTC, AAPL, EURUSD)...">
-          
+
           <!-- TradingView-Style Results Modal (Glassmorphism) -->
-          <div *ngIf="showSearchModal && searchResults.length > 0" 
-               class="absolute top-full left-0 w-full mt-3 bg-white/95 backdrop-blur-xl rounded-2xl shadow-[0_30px_60px_rgba(0,0,0,0.12)] border border-white/20 z-[100] overflow-hidden">
-            
+          <div *ngIf="showSearchModal && searchResults.length > 0"
+            class="absolute top-full left-0 w-full mt-3 bg-white/95 backdrop-blur-xl rounded-2xl shadow-[0_30px_60px_rgba(0,0,0,0.12)] border border-white/20 z-[100] overflow-hidden">
+
             <header class="px-6 py-4 bg-slate-50/50 border-b border-slate-100 flex justify-between items-center">
               <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                {{ searchQuery.length < 1 ? 'Curated Popular Assets' : 'Market Search Results' }}
-              </span>
-              <button (click)="showSearchModal = false" class="text-slate-300 hover:text-slate-900 transition-colors">
-                <span class="material-symbols-outlined text-sm">close</span>
-              </button>
+                {{ searchQuery.length < 1 ? 'Curated Popular Assets' : 'Market Search Results' }} </span>
+                  <button (click)="showSearchModal = false"
+                    class="text-slate-300 hover:text-slate-900 transition-colors">
+                    <span class="material-symbols-outlined text-sm">close</span>
+                  </button>
             </header>
 
             <div class="max-h-[400px] overflow-y-auto no-scrollbar">
               <div *ngFor="let result of searchResults" (click)="selectResult(result)"
-                   class="px-6 py-4 flex items-center justify-between hover:bg-[#006c49]/5 cursor-pointer transition-all border-b border-slate-50 last:border-none group">
+                class="px-6 py-4 flex items-center justify-between hover:bg-[#006c49]/5 cursor-pointer transition-all border-b border-slate-50 last:border-none group">
                 <div class="flex items-center gap-4">
-                  <div class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-400 group-hover:bg-[#006c49] group-hover:text-white transition-all">
+                  <div
+                    class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-400 group-hover:bg-[#006c49] group-hover:text-white transition-all">
                     {{ result.symbol.slice(0, 2) }}
                   </div>
                   <div class="flex flex-col">
@@ -80,10 +81,12 @@
                   </div>
                 </div>
                 <div class="flex items-center gap-3">
-                  <span class="text-[8px] font-black uppercase px-2 py-1 bg-slate-100 text-slate-500 rounded group-hover:bg-white transition-all">
+                  <span
+                    class="text-[8px] font-black uppercase px-2 py-1 bg-slate-100 text-slate-500 rounded group-hover:bg-white transition-all">
                     {{ result.type || 'STOCK' }}
                   </span>
-                  <span class="material-symbols-outlined text-slate-200 group-hover:text-[#006c49] transition-all">arrow_forward_ios</span>
+                  <span
+                    class="material-symbols-outlined text-slate-200 group-hover:text-[#006c49] transition-all">arrow_forward_ios</span>
                 </div>
               </div>
             </div>
@@ -96,25 +99,46 @@
         <header class="flex justify-between items-center mb-8">
           <div class="flex items-center gap-3">
             <div class="flex flex-col">
-              <h2 class="text-lg font-black tracking-tighter text-[#191c1e] uppercase leading-none">{{ displaySymbol }}</h2>
-              <span class="text-[9px] font-black uppercase text-slate-300 tracking-[0.2em] mt-1">{{ currentSymbol }}</span>
+              <h2 class="text-lg font-black tracking-tighter text-[#191c1e] uppercase leading-none">{{ displaySymbol }}
+              </h2>
+              <span class="text-[9px] font-black uppercase text-slate-300 tracking-[0.2em] mt-1">{{ currentSymbol
+                }}</span>
             </div>
             <span [ngClass]="currentPriceData.dp >= 0 ? 'bg-emerald-50 text-secondary' : 'bg-rose-50 text-error'"
               class="px-2 py-1 rounded text-[10px] font-black animate-pulse">
               {{ currentPriceData.dp >= 0 ? '+' : '' }}{{ currentPriceData.dp | number:'1.2-2' }}%
             </span>
           </div>
-          <div class="text-2xl font-mono font-bold text-[#191c1e] tracking-tighter leading-none">
-            {{ currentPriceData.c | currency:'USD':'symbol':getPriceFormat(currentSymbol) }}
+          <div class="flex items-center gap-2">
+            <div class="group relative flex items-center justify-center">
+              <img src="assets/images/info-light.png" alt="Info"
+                class="w-4 h-4 opacity-50 hover:opacity-100 cursor-pointer transition-opacity">
+              <div
+                class="absolute right-0 top-full mt-2 w-max max-w-[200px] p-2 bg-slate-800 text-white text-[10px] rounded shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+                {{ currentSource === 'finnhub' ? 'Real-time Data' : 'Data Delayed 10 seconds' }}
+              </div>
+            </div>
+            <div class="text-2xl font-mono font-bold text-[#191c1e] tracking-tighter leading-none">
+              <ng-container *ngIf="currentPriceData.c > 0; else loadingPrice">
+                {{ currentPriceData.c | currency:'USD':'symbol':getPriceFormat(currentSymbol) }}
+              </ng-container>
+              <ng-template #loadingPrice>
+                <span class="animate-pulse text-slate-200">...</span>
+              </ng-template>
+            </div>
           </div>
         </header>
         <div class="relative w-full h-[600px] bg-[#f7f9fb] rounded-2xl overflow-hidden border border-slate-50">
           <!-- Asset Not Supported Overlay -->
-          <div *ngIf="assetNotSupported" class="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
+          <div *ngIf="assetNotSupported"
+            class="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
             <span class="material-symbols-outlined text-4xl text-slate-300 mb-2">warning</span>
             <h3 class="text-lg font-black text-[#191c1e] uppercase tracking-tighter">Asset Not Available</h3>
-            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">This symbol is restricted or not found in our database.</p>
-            <button (click)="goToday(); assetNotSupported = false" class="mt-4 px-4 py-2 bg-[#006c49] text-white text-[10px] font-black uppercase rounded-lg">Return to Dashboard</button>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">This symbol is restricted or
+              not found in our database.</p>
+            <button (click)="goToday(); assetNotSupported = false"
+              class="mt-4 px-4 py-2 bg-[#006c49] text-white text-[10px] font-black uppercase rounded-lg">Return to
+              Dashboard</button>
           </div>
           <div id="tv_chart_container" class="w-full h-full"></div>
         </div>
@@ -124,10 +148,12 @@
       <div class="bg-white p-8 rounded-xl shadow-sm">
         <div class="flex items-center justify-between mb-8">
           <h2 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Market News Impact</h2>
-          <span class="text-[8px] bg-emerald-50 text-[#006c49] px-2.5 py-1 rounded-full font-black tracking-widest uppercase">Realtime</span>
+          <span
+            class="text-[8px] bg-emerald-50 text-[#006c49] px-2.5 py-1 rounded-full font-black tracking-widest uppercase">Realtime</span>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div *ngFor="let news of marketNews | slice:0:4" class="group cursor-pointer p-4 hover:bg-[#f7f9fb] rounded-xl transition-all">
+          <div *ngFor="let news of marketNews | slice:0:4"
+            class="group cursor-pointer p-4 hover:bg-[#f7f9fb] rounded-xl transition-all">
             <div class="flex justify-between items-start mb-1">
               <span class="text-[10px] font-black text-secondary uppercase">{{ news.source }}</span>
               <span class="text-[9px] text-slate-400 font-mono">{{ news.datetime * 1000 | date:'HH:mm' }}</span>
@@ -142,7 +168,7 @@
 
     <!-- RIGHT SECTION (4 Columns): Sentiment & Calendar -->
     <section class="col-span-12 lg:col-span-4 flex flex-col gap-8">
-      
+
       <!-- Global Sentiment (Relocated here) -->
       <div class="bg-white p-8 rounded-xl shadow-sm">
         <div class="flex justify-between items-start mb-6">
@@ -150,8 +176,10 @@
           <span class="text-[9px] font-mono text-slate-400 italic">{{ lastSentimentUpdate }}</span>
         </div>
         <article class="flex flex-col items-center">
-          <div class="text-6xl font-black text-[#191c1e] mb-1 tracking-tighter leading-none">{{ sentimentData?.value }}</div>
-          <div class="text-xs font-bold uppercase tracking-[0.1em]" [style.color]="sentimentData?.value > 50 ? '#006c49' : '#cf352e'">
+          <div class="text-6xl font-black text-[#191c1e] mb-1 tracking-tighter leading-none">{{ sentimentData?.value }}
+          </div>
+          <div class="text-xs font-bold uppercase tracking-[0.1em]"
+            [style.color]="sentimentData?.value > 50 ? '#006c49' : '#cf352e'">
             {{ sentimentData?.value_classification }}
           </div>
           <div class="w-full h-2 bg-[#f2f4f6] rounded-full mt-8 overflow-hidden">
@@ -165,31 +193,44 @@
       <div class="bg-white rounded-xl shadow-sm overflow-hidden">
         <header class="p-6 bg-[#f2f4f6] flex justify-between items-center">
           <div class="flex items-center gap-3">
-            <button (click)="changeDate(-1)" class="w-7 h-7 rounded-full flex items-center justify-center hover:bg-white transition-all shadow-sm">◀</button>
-            <span class="text-[10px] font-black uppercase tracking-widest text-[#191c1e]">{{ selectedDate | date:'dd MMM' }}</span>
-            <button (click)="changeDate(1)" class="w-7 h-7 rounded-full flex items-center justify-center hover:bg-white transition-all shadow-sm">▶</button>
+            <button (click)="changeDate(-1)"
+              class="w-7 h-7 rounded-full flex items-center justify-center hover:bg-white transition-all shadow-sm">◀</button>
+            <span class="text-[10px] font-black uppercase tracking-widest text-[#191c1e]">{{ selectedDate | date:'dd
+              MMM' }}</span>
+            <button (click)="changeDate(1)"
+              class="w-7 h-7 rounded-full flex items-center justify-center hover:bg-white transition-all shadow-sm">▶</button>
           </div>
-          <button (click)="goToday()" class="text-[9px] font-black px-3 py-1.5 bg-[#191c1e] text-white rounded-lg hover:bg-slate-700 transition-colors uppercase">Today</button>
+          <button (click)="goToday()"
+            class="text-[9px] font-black px-3 py-1.5 bg-[#191c1e] text-white rounded-lg hover:bg-slate-700 transition-colors uppercase">Today</button>
         </header>
 
         <div class="divide-y divide-[#f2f4f6] max-h-[600px] overflow-y-auto no-scrollbar">
-          <div *ngFor="let event of filteredEvents" class="px-6 py-4 flex flex-col gap-2 hover:bg-[#f7f9fb] transition-colors group">
+          <div *ngFor="let event of filteredEvents"
+            class="px-6 py-4 flex flex-col gap-2 hover:bg-[#f7f9fb] transition-colors group">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-3">
-                <span class="text-[9px] font-mono text-slate-400">{{ event.time ? (event.time.split(' ')[1] || event.time) : '--:--' }}</span>
-                <span class="text-[9px] font-black text-slate-900 uppercase px-1.5 py-0.5 bg-slate-100 rounded">{{ event.country }}</span>
+                <span class="text-[9px] font-mono text-slate-400">{{ event.time ? (event.time.split(' ')[1] ||
+                  event.time) : '--:--' }}</span>
+                <span class="text-[9px] font-black text-slate-900 uppercase px-1.5 py-0.5 bg-slate-100 rounded">{{
+                  event.country }}</span>
               </div>
               <div class="flex gap-1">
                 <!-- 3 dots always present: filling 1/3, 2/3 or 3/3 with #cf352e -->
-                <div class="w-1.5 h-1.5 rounded-full" [style.background]="event.impact >= 1 ? '#cf352e' : '#e2e8f0'"></div>
-                <div class="w-1.5 h-1.5 rounded-full" [style.background]="event.impact >= 2 ? '#cf352e' : '#e2e8f0'"></div>
-                <div class="w-1.5 h-1.5 rounded-full" [style.background]="event.impact >= 3 ? '#cf352e' : '#e2e8f0'"></div>
+                <div class="w-1.5 h-1.5 rounded-full" [style.background]="event.impact >= 1 ? '#cf352e' : '#e2e8f0'">
+                </div>
+                <div class="w-1.5 h-1.5 rounded-full" [style.background]="event.impact >= 2 ? '#cf352e' : '#e2e8f0'">
+                </div>
+                <div class="w-1.5 h-1.5 rounded-full" [style.background]="event.impact >= 3 ? '#cf352e' : '#e2e8f0'">
+                </div>
               </div>
             </div>
-            <span class="text-[11px] font-bold text-[#44474d] group-hover:text-[#191c1e] transition-colors leading-tight">{{ event.event }}</span>
+            <span
+              class="text-[11px] font-bold text-[#44474d] group-hover:text-[#191c1e] transition-colors leading-tight">{{
+              event.event }}</span>
             <div class="flex justify-between items-center mt-1">
-               <span class="text-[9px] font-mono text-slate-400 uppercase">Actual: <b class="text-slate-900">{{ event.actual || '--' }}</b></span>
-               <span class="text-[9px] font-mono text-slate-400 uppercase">Prev: {{ event.prev || '--' }}</span>
+              <span class="text-[9px] font-mono text-slate-400 uppercase">Actual: <b class="text-slate-900">{{
+                  event.actual || '--' }}</b></span>
+              <span class="text-[9px] font-mono text-slate-400 uppercase">Prev: {{ event.prev || '--' }}</span>
             </div>
           </div>
           <div *ngIf="filteredEvents.length === 0" class="p-10 text-center italic text-slate-400 text-[10px]">
@@ -204,11 +245,16 @@
     <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-12">
       <div class="flex flex-col gap-2">
         <span class="font-manrope font-black text-slate-900 text-xl tracking-tighter italic">MarketHub</span>
-        <p class="font-inter text-[10px] font-bold uppercase tracking-widest text-slate-300 max-w-xs">© {{ currentYear }} THE INFORMED CURATOR. ALL RIGHTS RESERVED.</p>
+        <p class="font-inter text-[10px] font-bold uppercase tracking-widest text-slate-300 max-w-xs">© {{ currentYear
+          }} THE INFORMED CURATOR. ALL RIGHTS RESERVED.</p>
       </div>
       <nav class="flex gap-8">
-        <span class="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-[#006c49] cursor-pointer transition-colors">Risk Disclosure</span>
-        <span class="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-[#006c49] cursor-pointer transition-colors">Privacy Policy</span>
+        <span
+          class="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-[#006c49] cursor-pointer transition-colors">Risk
+          Disclosure</span>
+        <span
+          class="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-[#006c49] cursor-pointer transition-colors">Privacy
+          Policy</span>
       </nav>
     </div>
   </footer>
