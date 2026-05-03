@@ -3,25 +3,17 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AuthService } from '../../../../core/services/auth.service';
 import { ToastService } from '../../../../core/services/toast.service';
-import {
-  CommunityService, CommunityPrivateDetail, PostX,
-  CommunityMember, JoinRequest, CommunityRole
-} from '../../services/community.service';
+import { CommunityService, CommunityPrivateDetail, PostX } from '../../services/community.service';
 import { PostCardComponent } from '../../components/post-card/post-card.component';
 import { PostSkeletonComponent } from '../../components/post-skeleton/post-skeleton.component';
 import { EmojiPickerComponent } from '../../../../shared/components/emoji-picker/emoji-picker.component';
-import { CommunityMembersPanelComponent } from '../../components/community-members-panel/community-members-panel.component';
-import { PendingRequestsPanelComponent } from '../../components/pending-requests-panel/pending-requests-panel.component';
 import { getUsernameColor, getInitial } from '../../../../shared/utils/color.utils';
 import { MediaUrlPipe } from '../../../../shared/pipes/media-url.pipe';
 
 @Component({
   selector: 'app-community-private-detail',
   standalone: true,
-  imports: [
-    RouterLink, PostCardComponent, PostSkeletonComponent, EmojiPickerComponent,
-    CommunityMembersPanelComponent, PendingRequestsPanelComponent, MediaUrlPipe
-  ],
+  imports: [RouterLink, PostCardComponent, PostSkeletonComponent, EmojiPickerComponent, MediaUrlPipe],
   templateUrl: './community-private-detail.component.html',
   styleUrl: './community-private-detail.component.css'
 })
@@ -58,18 +50,12 @@ export class CommunityPrivateDetailComponent implements OnInit, AfterViewInit, O
   creating = signal(false);
   createError = signal<string | null>(null);
   emojiPickerOpen = signal(false);
-  sidePanelOpen = signal(false);
 
   // Join request
   showJoinModal = signal(false);
   joinMessage = signal('');
   joinSending = signal(false);
   joinError = signal<string | null>(null);
-
-  // Leave / Delete
-  showLeaveConfirm = signal(false);
-  showDeleteConfirm = signal(false);
-  leaving = signal(false);
 
   private observer?: IntersectionObserver;
   private subs: Subscription[] = [];
@@ -167,16 +153,12 @@ export class CommunityPrivateDetailComponent implements OnInit, AfterViewInit, O
     });
   }
 
-  retryAll() {
-    this.loadCommunity();
-  }
+  retryAll() { this.loadCommunity(); }
+  retryFeed() { this.loadPosts(true); }
+  retryLoadMore() { this.loadMore(); }
 
-  retryFeed() {
-    this.loadPosts(true);
-  }
-
-  retryLoadMore() {
-    this.loadMore();
+  goToDetails() {
+    this.router.navigate(['/community/p', this.communityId, 'details']);
   }
 
   // ── Join Request ──
@@ -187,9 +169,7 @@ export class CommunityPrivateDetailComponent implements OnInit, AfterViewInit, O
     this.joinError.set(null);
   }
 
-  closeJoinModal() {
-    this.showJoinModal.set(false);
-  }
+  closeJoinModal() { this.showJoinModal.set(false); }
 
   onJoinMessageInput(event: Event) {
     const val = (event.target as HTMLTextAreaElement).value;
@@ -213,142 +193,6 @@ export class CommunityPrivateDetailComponent implements OnInit, AfterViewInit, O
     });
   }
 
-  // ── Leave ──
-
-  onLeaveClick() {
-    this.showLeaveConfirm.set(true);
-  }
-
-  cancelLeave() {
-    this.showLeaveConfirm.set(false);
-  }
-
-  confirmLeave() {
-    this.showLeaveConfirm.set(false);
-    if (this.leaving()) return;
-    this.leaving.set(true);
-    this.svc.leaveCommunityPrivate(this.communityId).subscribe({
-      next: () => {
-        this.leaving.set(false);
-        this.svc.communityMembershipChanged$.next({ id: this.communityId, action: 'left' });
-        this.toast.show('Left community.', 'success');
-        this.router.navigate(['/community']);
-      },
-      error: () => {
-        this.leaving.set(false);
-        this.toast.show('Could not leave community.', 'error');
-      }
-    });
-  }
-
-  get isLastMember(): boolean {
-    const c = this.community();
-    return !!c && c.memberCount <= 1 && c.isMember;
-  }
-
-  // ── Delete ──
-
-  onDeleteClick() {
-    this.showDeleteConfirm.set(true);
-  }
-
-  cancelDelete() {
-    this.showDeleteConfirm.set(false);
-  }
-
-  confirmDelete() {
-    this.showDeleteConfirm.set(false);
-    this.svc.deleteCommunityPrivate(this.communityId).subscribe({
-      next: () => {
-        this.svc.communityMembershipChanged$.next({ id: this.communityId, action: 'left' });
-        this.toast.show('Community deleted.', 'success');
-        this.router.navigate(['/community']);
-      },
-      error: () => {
-        this.toast.show('Could not delete community.', 'error');
-      }
-    });
-  }
-
-  // ── Members panel actions ──
-
-  onExpelMember(userId: string) {
-    this.svc.expelMember(this.communityId, userId).subscribe({
-      next: () => {
-        this.community.update(c => {
-          if (!c || !c.members) return c;
-          return {
-            ...c,
-            members: c.members.filter(m => m.user.id !== userId),
-            memberCount: c.memberCount - 1
-          };
-        });
-        this.toast.show('Member removed.', 'success');
-      },
-      error: () => this.toast.show('Could not remove member.', 'error')
-    });
-  }
-
-  onPromoteMember(event: { userId: string; role: CommunityRole }) {
-    this.svc.changeMemberRole(this.communityId, event.userId, event.role).subscribe({
-      next: () => {
-        this.community.update(c => {
-          if (!c || !c.members) return c;
-          return {
-            ...c,
-            members: c.members.map(m =>
-              m.user.id === event.userId ? { ...m, role: event.role } : m
-            )
-          };
-        });
-        this.toast.show('Role updated.', 'success');
-      },
-      error: () => this.toast.show('Could not update role.', 'error')
-    });
-  }
-
-  // ── Requests panel actions ──
-
-  onAcceptRequest(requestId: string) {
-    this.svc.acceptRequest(this.communityId, requestId).subscribe({
-      next: () => {
-        const c = this.community();
-        if (!c) return;
-        const req = c.pendingRequests?.find(r => r._id === requestId);
-        this.community.update(v => {
-          if (!v) return v;
-          const updated = {
-            ...v,
-            pendingRequests: (v.pendingRequests || []).filter(r => r._id !== requestId),
-            memberCount: v.memberCount + 1,
-          };
-          if (req && updated.members) {
-            updated.members = [...updated.members, {
-              user: { id: req.user.id, username: req.user.username, avatar: req.user.avatar },
-              role: 'member' as CommunityRole
-            }];
-          }
-          return updated;
-        });
-        this.toast.show('Request accepted.', 'success');
-      },
-      error: () => this.toast.show('Could not accept request.', 'error')
-    });
-  }
-
-  onRejectRequest(requestId: string) {
-    this.svc.rejectRequest(this.communityId, requestId).subscribe({
-      next: () => {
-        this.community.update(v => v ? {
-          ...v,
-          pendingRequests: (v.pendingRequests || []).filter(r => r._id !== requestId)
-        } : v);
-        this.toast.show('Request rejected.', 'success');
-      },
-      error: () => this.toast.show('Could not reject request.', 'error')
-    });
-  }
-
   // ── Create post ──
 
   onTextInput(event: Event) {
@@ -360,9 +204,7 @@ export class CommunityPrivateDetailComponent implements OnInit, AfterViewInit, O
     ta.style.height = Math.min(ta.scrollHeight, 200) + 'px';
   }
 
-  triggerFilePicker(fileInput: HTMLInputElement) {
-    fileInput.click();
-  }
+  triggerFilePicker(fileInput: HTMLInputElement) { fileInput.click(); }
 
   onFileSelected(event: Event) {
     const input = event.target as HTMLInputElement;
@@ -434,9 +276,7 @@ export class CommunityPrivateDetailComponent implements OnInit, AfterViewInit, O
     this.emojiPickerOpen.set(false);
   }
 
-  onEmojiClosed() {
-    this.emojiPickerOpen.set(false);
-  }
+  onEmojiClosed() { this.emojiPickerOpen.set(false); }
 
   submitPost() {
     const text = this.postText().trim();
@@ -489,22 +329,8 @@ export class CommunityPrivateDetailComponent implements OnInit, AfterViewInit, O
     return { communityId: this.communityId, myRole: c.myRole };
   }
 
-  get currentUserId(): string {
-    return this.auth.currentUser()?.id || '';
-  }
-
-  get showPendingRequests(): boolean {
-    const c = this.community();
-    return !!c && (c.myRole === 'leader' || c.myRole === 'moderator');
-  }
-
   // ── Helpers ──
 
-  getInitialColor(name: string): string {
-    return getUsernameColor(name);
-  }
-
-  getInitial(name: string): string {
-    return getInitial(name);
-  }
+  getInitialColor(name: string): string { return getUsernameColor(name); }
+  getInitial(name: string): string { return getInitial(name); }
 }

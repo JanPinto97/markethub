@@ -6,6 +6,8 @@ const ctrl = require('../controllers/communityPrivateController');
 router.get('/', ctrl.listCommunities);
 router.post('/', auth, uploadHandler, ctrl.createCommunity);
 router.get('/:id', auth, ctrl.getCommunity);
+router.patch('/:id', auth, ctrl.updateCommunity);
+router.patch('/:id/avatar', auth, uploadHandler, ctrl.updateAvatar);
 router.post('/:id/request', auth, ctrl.requestToJoin);
 router.post('/:id/requests/:requestId', auth, ctrl.handleJoinRequest);
 router.delete('/:id/members/:userId', auth, ctrl.expelMember);

@@ -30,6 +30,12 @@ export const routes: Routes = [
       .then(m => m.CommunityPrivateDetailComponent)
   },
   {
+    path: 'community/p/:id/details',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/community/pages/community-private-details/community-private-details.component')
+      .then(m => m.CommunityPrivateDetailsComponent)
+  },
+  {
     path: 'community/t/:slug',
     loadComponent: () => import('./features/community/pages/topic-detail/topic-detail.component')
       .then(m => m.TopicDetailComponent)

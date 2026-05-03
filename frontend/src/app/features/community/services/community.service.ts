@@ -498,6 +498,18 @@ export class CommunityService {
       .pipe(map(res => res.post));
   }
 
+  updateCommunityPrivate(id: string, data: { name?: string; description?: string }): Observable<CommunityPrivate> {
+    return this.http.patch<{ success: boolean; community: CommunityPrivate }>(`${this.baseUrl}/communities/private/${id}`, data)
+      .pipe(map(res => res.community));
+  }
+
+  updateCommunityPrivateAvatar(id: string, file: File): Observable<{ avatar: string }> {
+    const formData = new FormData();
+    formData.append('media', file);
+    return this.http.patch<{ success: boolean; avatar: string }>(`${this.baseUrl}/communities/private/${id}/avatar`, formData)
+      .pipe(map(res => ({ avatar: res.avatar })));
+  }
+
   pinPost(communityId: string, postId: string): Observable<{ pinned: boolean }> {
     return this.api.post<{ success: boolean; pinned: boolean }>(`/communities/private/${communityId}/posts/${postId}/pin`, {})
       .pipe(map(res => ({ pinned: res.pinned })));

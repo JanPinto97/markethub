@@ -1,67 +1,72 @@
-# Claude Code Prompt — Discussion System
+# Claude Code Prompt — Private Community Details Page
 
 ### Context
 
-Angular 17+ standalone components, Node.js/Express MVC, MongoDB/Mongoose. Auth via JWT (AuthGuard existent). CSS custom pur amb variables globals del projecte. Models existents: `Comment` (té `postId`, `author`), `Post`. Cap WebSocket.
+Angular 17+ standalone components, Node.js/Express MVC, MongoDB/Mongoose. Pure custom CSS with existing project variables, no frameworks. Community roles: `leader`, `moderator`, `whale` (≡ member for this page), `member`. All images use file upload (no text URLs). Current private community route `/community/p/:id` has: center feed, right sidebar with members table + pending requests, Leave and Delete Community buttons in the header.
 
 ---
 
 ### Task
 
-Implementar sistema de discussions per comentaris de PostReddit. Cada comentari pot tenir una discussió (1:1). La discussió és un xat estil WhatsApp: missatges ordenats cronològicament, reply a missatge, sense likes ni eliminació. Requereix login.
+1. Create new page `/community/p/:id/details` with members table and pending requests, role-based controls.
+2. Refactor `/community/p/:id` to match public community layout (feed only, no right sidebar), replacing Leave/Delete buttons with a single "Details" button visible to all members.
+3. Remove Leave and Delete Community from `/community/p/:id`.
 
 ---
 
 ### Constraints
 
-**Backend — nous models:**
+**`/community/p/:id` changes:**
+- Remove right sidebar (members table + pending requests)
+- Remove Leave and Delete Community buttons from header
+- Add "Details" button in header → navigates to `/community/p/:id/details`; visible to all members
+- Resulting layout identical to `/community/c/:id`
 
-`Discussion`: `{ commentId: ObjectId ref Comment unique, postId: ObjectId ref Post, createdBy: ObjectId ref User, createdAt: Date }`
+**`/community/p/:id/details` — layout (desktop):**
+- Header: community avatar + name + description + Private badge + role-based action buttons
+- Main block (full width, left): members table with columns username, role, actions
+- Sidebar (right): pending requests panel
 
-`DiscussionMessage`: `{ discussionId: ObjectId ref Discussion, author: ObjectId ref User, text: String maxlength:2000, replyTo: ObjectId ref DiscussionMessage default null, createdAt: Date }`
+**`/community/p/:id/details` — layout (mobile):**
+- Single-column stacked layout; no sidebar
+- Order: header → members table → pending requests (if visible by role)
+- Action buttons in header stack vertically or collapse into a menu if more than 2
+- Members table rows: avatar + username stacked, role badge below, actions as icon buttons only (no text labels)
+- Pending requests: full width card list
 
-**Backend — rutes:**
+**Role permissions matrix:**
 
-- `GET /api/discussions/comment/:commentId` → retorna `{ exists: bool, discussionId? }`
-- `POST /api/discussions/comment/:commentId` → crea Discussion + primer DiscussionMessage, retorna tots dos; si ja existeix la Discussion retorna 409
-- `GET /api/discussions/:discussionId/messages?cursor=<createdAt>&limit=30` → cursor-based, ordenat per `createdAt ASC`, popula `author` (username, avatar) i `replyTo` (author.username, text primeres 80 chars)
-- `POST /api/discussions/:discussionId/messages` → crea missatge, retorna missatge populat; `replyTo` opcional
+| Feature | leader | moderator | member/whale |
+|---|---|---|---|
+| Access page | ✅ | ✅ | ✅ |
+| Leave community | ❌ | ✅ | ✅ |
+| Delete community | ✅ | ❌ | ❌ |
+| Inline edit name/description | ✅ | ❌ | ❌ |
+| Change avatar (file picker) | ✅ | ❌ | ❌ |
+| View pending requests | ✅ | ✅ | ❌ |
+| Accept/reject requests | ✅ | ✅ | ❌ |
+| Assign roles to members | ✅ | ❌ | ❌ |
+| Kick members | ✅ | ✅ | ❌ |
 
-**Frontend — canvis a `PostRedditCommentSectionComponent`:**
+**Inline editing (leader only):**
+- Pencil icon next to name and description; click converts to `<input>` / `<textarea>` inline with confirm/cancel buttons
+- Avatar: hover shows upload overlay icon (upward arrow); click triggers hidden `<input type="file">`; upload via existing API
 
-- Substituir botó "Reply" per "Open Discussion" a cada comentari arrel
-- Click: crida `GET .../comment/:commentId`; si `exists` navega a `/community/discussion/:discussionId`; si no, navega a `/community/discussion/new/:commentId`
+**Backend — add if missing:**
+- `PATCH /api/communities/:id` → update `name`, `description` (leader only)
+- `PATCH /api/communities/:id/avatar` → multipart file upload (leader only)
 
-**Frontend — nova pàgina `DiscussionPageComponent` a `/community/discussion/:discussionId` i `/community/discussion/new/:commentId`:**
-
-- Capçalera: mostra el comentari original (author, text) com a context no interactiu
-- Càrrega inicial: primers 30 missatges (més antics); botó "Load more" al final de la llista per carregar els següents 30 (cursor = `createdAt` de l'últim missatge carregat)
-- Botó flotant "↓" (bottom-right): carrega l'última pàgina i fa scroll al final; s'amaga si ja ets al final
-- Polling cada 15s: `GET` amb cursor = `createdAt` del missatge més nou; afegeix nous missatges al final sense reset
-- Si no hi ha missatges: text centrat "Start the discussion by sending a message"
-- Missatge render: avatar + username + timestamp (HH:mm) + text; si té `replyTo`: bloc citat sobre el text amb `@username` en negreta i text truncat a 80 chars amb `...`
-- Reply: clicar icona de reply a qualsevol missatge mostra un bloc citat a l'input area (igual que WhatsApp) amb botó per cancel·lar; l'input és un textarea simple amb botó d'enviar
-- Ruta `/community/discussion/new/:commentId`: en enviar el primer missatge crida `POST /api/discussions/comment/:commentId` amb el text; un cop creat, navega a `/community/discussion/:discussionId` (sense reload visible)
-- AuthGuard a les dues rutes
-
-**Estil:**
-
-- Missatges alineats a l'esquerra (no estil bombolla dreta/esquerra, tots iguals)
-- Bloc de reply citat: fons lleugerament diferent, border-left 3px, text truncat amb `overflow: hidden; white-space: nowrap; text-overflow: ellipsis`
-- CSS custom pur, variables del projecte, cap framework
-
-**Out of scope:** eliminació de missatges, likes, estats de llegit/enviat, edició, WebSocket.
+**Out of scope:** join request logic, post feed, pin system, any other page.
 
 ---
 
 ### Output format
 
-Retorna només fitxers nous o modificats amb el path complet com a títol de cada bloc. No repeteixis fitxers sense canvis.
+Return only new or modified files with their full path as the title of each block. Do not repeat unchanged files.
 
 ---
 
 **IMPORTANT:**
-
 - Do not explain anything
 - Do not describe steps or progress
 - Do not validate requirements

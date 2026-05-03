@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const PostX = require('../models/PostX');
 const CommunityPublic = require('../models/CommunityPublic');
+const CommunityPrivate = require('../models/CommunityPrivate');
 
 function fail(res, code, message) {
   return res.status(code).json({ success: false, message, code });
@@ -13,10 +14,22 @@ exports.getPublicProfile = async (req, res, next) => {
 
     const communities = await CommunityPublic.find({ members: user._id });
 
+    const isOwner = req.user && req.user.id === user._id.toString();
+    const privateCommunitiesAll = await CommunityPrivate.find({ 'members.user': user._id });
+    let privateCommunities = [];
+    if (isOwner) {
+      privateCommunities = privateCommunitiesAll;
+    } else if (req.user) {
+      privateCommunities = privateCommunitiesAll.filter(c =>
+        c.members.some(m => m.user.toString() === req.user.id)
+      );
+    }
+
     const result = {
       success: true,
       user: user.toPublicJSON(),
       communities: communities.map(c => c.toPublicJSON()),
+      privateCommunities: privateCommunities.map(c => c.toPublicJSON()),
     };
 
     if (req.user) {
