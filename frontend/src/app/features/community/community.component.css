@@ -233,8 +233,28 @@
 }
 
 .sidebar-bottom {
+  position: sticky;
+  bottom: 0;
+  background-color: #F7F9FB;
+  padding: var(--spacing-4) 0 var(--spacing-6);
+  padding-bottom: calc(var(--spacing-6) + env(safe-area-inset-bottom, 0px));
   margin-top: auto;
-  padding-top: var(--spacing-4);
+  margin-left: calc(-1 * var(--spacing-3));
+  margin-right: calc(-1 * var(--spacing-4));
+  padding-left: var(--spacing-3);
+  padding-right: var(--spacing-4);
+  z-index: 1;
+}
+
+.sidebar-bottom::before {
+  content: '';
+  position: absolute;
+  top: -24px;
+  left: 0;
+  right: 0;
+  height: 24px;
+  background: linear-gradient(to top, #F7F9FB, transparent);
+  pointer-events: none;
 }
 
 .create-community-btn {

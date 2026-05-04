@@ -48,36 +48,38 @@
   </div>
 
   <div class="dcp-list">
-    @if (loading()) {
+    @if (initialLoad() && loading()) {
       <div class="dcp-loading">
         <div class="dcp-skeleton-item"></div>
         <div class="dcp-skeleton-item"></div>
         <div class="dcp-skeleton-item"></div>
       </div>
-    } @else if (communities().length === 0) {
+    } @else if (communities().length === 0 && !loading()) {
       <div class="dcp-empty">No communities found</div>
     } @else {
-      @for (comm of communities(); track comm.id) {
-        <button type="button" class="dcp-item" (click)="goToCommunity(comm)">
-          <span class="dcp-avatar">
-            @if (comm.avatar) {
-              <img [src]="comm.avatar | mediaUrl" [alt]="comm.name" />
-            } @else {
-              <span class="dcp-initial" [style.background-color]="getInitialColor(comm.name)">{{ comm.name[0].toUpperCase() }}</span>
-            }
-          </span>
-          <span class="dcp-info">
-            <span class="dcp-name">{{ comm.name }}</span>
-            <span class="dcp-meta">{{ comm.memberCount }} {{ comm.memberCount === 1 ? 'member' : 'members' }}</span>
-          </span>
-          <span class="dcp-badges">
-            <span class="dcp-type-badge" [class.private]="comm.type === 'private'">{{ comm.type === 'public' ? 'Public' : 'Private' }}</span>
-            @if (comm.isJoined) {
-              <span class="dcp-joined-badge">Joined</span>
-            }
-          </span>
-        </button>
-      }
+      <div class="dcp-results" [class.dcp-refreshing]="loading()">
+        @for (comm of communities(); track comm.id) {
+          <button type="button" class="dcp-item" (click)="goToCommunity(comm)">
+            <span class="dcp-avatar">
+              @if (comm.avatar) {
+                <img [src]="comm.avatar | mediaUrl" [alt]="comm.name" />
+              } @else {
+                <span class="dcp-initial" [style.background-color]="getInitialColor(comm.name)">{{ comm.name[0].toUpperCase() }}</span>
+              }
+            </span>
+            <span class="dcp-info">
+              <span class="dcp-name">{{ comm.name }}</span>
+              <span class="dcp-meta">{{ comm.memberCount }} {{ comm.memberCount === 1 ? 'member' : 'members' }}</span>
+            </span>
+            <span class="dcp-badges">
+              <span class="dcp-type-badge" [class.private]="comm.type === 'private'">{{ comm.type === 'public' ? 'Public' : 'Private' }}</span>
+              @if (comm.isJoined) {
+                <span class="dcp-joined-badge">Joined</span>
+              }
+            </span>
+          </button>
+        }
+      </div>
     }
   </div>
 </div>

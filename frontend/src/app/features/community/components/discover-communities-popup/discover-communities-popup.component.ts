@@ -34,6 +34,7 @@ export class DiscoverCommunitiesPopupComponent implements OnInit, OnDestroy {
   activeTypes = signal<Set<string>>(new Set(['public', 'private']));
   communities = signal<DiscoverCommunity[]>([]);
   loading = signal(false);
+  initialLoad = signal(true);
 
   private search$ = new Subject<string>();
   private destroy$ = new Subject<void>();
@@ -111,10 +112,12 @@ export class DiscoverCommunitiesPopupComponent implements OnInit, OnDestroy {
       next: (communities) => {
         this.communities.set(communities);
         this.loading.set(false);
+        this.initialLoad.set(false);
       },
       error: () => {
         this.communities.set([]);
         this.loading.set(false);
+        this.initialLoad.set(false);
       }
     });
   }
