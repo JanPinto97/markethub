@@ -1,0 +1,85 @@
+<div class="dcp-backdrop" (click)="closed.emit()"></div>
+<div class="dcp-popup" role="dialog" (click)="$event.stopPropagation()">
+  <div class="dcp-header">
+    <div class="dcp-search-wrap">
+      <svg class="dcp-search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      <input
+        type="text"
+        class="dcp-search-input"
+        placeholder="Search communities..."
+        [value]="search()"
+        (input)="onSearch($event)"
+      />
+    </div>
+    <button class="dcp-close" (click)="closed.emit()" title="Close" aria-label="Close">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="dcp-filters">
+    <div class="dcp-filter-group">
+      @for (opt of sortOptions; track opt.key) {
+        <button
+          class="dcp-filter"
+          [class.active]="activeSort() === opt.key"
+          (click)="setSort(opt.key)">
+          {{ opt.label }}
+        </button>
+      }
+    </div>
+    <div class="dcp-filter-group">
+      <button
+        class="dcp-filter"
+        [class.active]="isTypeActive('public')"
+        (click)="toggleType('public')">
+        Public
+      </button>
+      <button
+        class="dcp-filter"
+        [class.active]="isTypeActive('private')"
+        (click)="toggleType('private')">
+        Private
+      </button>
+    </div>
+  </div>
+
+  <div class="dcp-list">
+    @if (initialLoad() && loading()) {
+      <div class="dcp-loading">
+        <div class="dcp-skeleton-item"></div>
+        <div class="dcp-skeleton-item"></div>
+        <div class="dcp-skeleton-item"></div>
+      </div>
+    } @else if (communities().length === 0 && !loading()) {
+      <div class="dcp-empty">No communities found</div>
+    } @else {
+      <div class="dcp-results" [class.dcp-refreshing]="loading()">
+        @for (comm of communities(); track comm.id) {
+          <button type="button" class="dcp-item" (click)="goToCommunity(comm)">
+            <span class="dcp-avatar">
+              @if (comm.avatar) {
+                <img [src]="comm.avatar | mediaUrl" [alt]="comm.name" />
+              } @else {
+                <span class="dcp-initial" [style.background-color]="getInitialColor(comm.name)">{{ comm.name[0].toUpperCase() }}</span>
+              }
+            </span>
+            <span class="dcp-info">
+              <span class="dcp-name">{{ comm.name }}</span>
+              <span class="dcp-meta">{{ comm.memberCount }} {{ comm.memberCount === 1 ? 'member' : 'members' }}</span>
+            </span>
+            <span class="dcp-badges">
+              <span class="dcp-type-badge" [class.private]="comm.type === 'private'">{{ comm.type === 'public' ? 'Public' : 'Private' }}</span>
+              @if (comm.isJoined) {
+                <span class="dcp-joined-badge">Joined</span>
+              }
+            </span>
+          </button>
+        }
+      </div>
+    }
+  </div>
+</div>

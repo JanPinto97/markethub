@@ -85,6 +85,7 @@ server.js            → Entry point: loads env, connects DB, starts Express
 - POST   /api/v1/communities/private/:id/posts/:postId/pin (protected, leader only)
 
 - GET    /api/v1/communities/my (protected, returns user's public+private communities)
+- GET    /api/v1/communities/discover (optionalAuth, supports ?search&sort=popularity|members|new&type=public,private&page&limit)
 
 - GET    /api/v1/topics (public, supports ?category&search&ids filter)
 - GET    /api/v1/topics/:slug (public)

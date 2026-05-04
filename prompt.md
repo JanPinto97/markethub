@@ -1,62 +1,47 @@
-# Claude Code Prompt — Private Community Details Page
+# Claude Code Prompt — Discover Communities
 
 ### Context
 
-Angular 17+ standalone components, Node.js/Express MVC, MongoDB/Mongoose. Pure custom CSS with existing project variables, no frameworks. Community roles: `leader`, `moderator`, `whale` (≡ member for this page), `member`. All images use file upload (no text URLs). Current private community route `/community/p/:id` has: center feed, right sidebar with members table + pending requests, Leave and Delete Community buttons in the header.
+Angular 17+ standalone components, Node.js/Express MVC, MongoDB/Mongoose. Pure custom CSS with existing project variables, no frameworks. Left sidebar has a communities list ending with a "Discover Communities" button, modelled after the existing "Add Topics" button + topics search popup. Community model has: `name`, `description`, `avatar`, `type` (`public`|`private`), `members[]`, `createdAt`.
 
 ---
 
 ### Task
 
-1. Create new page `/community/p/:id/details` with members table and pending requests, role-based controls.
-2. Refactor `/community/p/:id` to match public community layout (feed only, no right sidebar), replacing Leave/Delete buttons with a single "Details" button visible to all members.
-3. Remove Leave and Delete Community from `/community/p/:id`.
+Add a "Discover Communities" button at the bottom of the sidebar communities list that opens a search popup. The popup lets users search, filter, and sort communities, then navigate to them.
 
 ---
 
 ### Constraints
 
-**`/community/p/:id` changes:**
-- Remove right sidebar (members table + pending requests)
-- Remove Leave and Delete Community buttons from header
-- Add "Details" button in header → navigates to `/community/p/:id/details`; visible to all members
-- Resulting layout identical to `/community/c/:id`
+**Backend — new endpoint:**
+- `GET /api/communities/discover?search=&sort=popularity|members|new&type=public,private&page=1&limit=20`
+- `sort=popularity`: order by number of members who joined in the last 7 days (descending)
+- `sort=members`: order by total `members` array length (descending)
+- `sort=new`: order by `createdAt` (descending)
+- `type`: comma-separated filter; accepts `public`, `private`, or both (default both)
+- Response per item: `{ id, name, avatar, type, memberCount, isJoined: bool }`; `isJoined` computed from authenticated user's memberships (unauthenticated → always false)
 
-**`/community/p/:id/details` — layout (desktop):**
-- Header: community avatar + name + description + Private badge + role-based action buttons
-- Main block (full width, left): members table with columns username, role, actions
-- Sidebar (right): pending requests panel
+**Frontend — sidebar:**
+- "Discover Communities" button below the communities list, styled identically to the existing "Add Topics" button
+- Click opens `DiscoverCommunitiesPopupComponent` (overlay/modal, same visual pattern as topics search popup)
 
-**`/community/p/:id/details` — layout (mobile):**
-- Single-column stacked layout; no sidebar
-- Order: header → members table → pending requests (if visible by role)
-- Action buttons in header stack vertically or collapse into a menu if more than 2
-- Members table rows: avatar + username stacked, role badge below, actions as icon buttons only (no text labels)
-- Pending requests: full width card list
+**Frontend — popup (`DiscoverCommunitiesPopupComponent`):**
+- Search bar with debounce 350ms + switchMap (cancels previous requests)
+- Two filter groups, rendered as toggle button sets:
+  - Left group — Sort by (single-select, default `Popularity`): `Popularity`, `Members`, `New`
+  - Right group — Type (multi-select toggle, both active by default): `Public`, `Private`; at least one must remain active
+- Results list: each item shows avatar, name, type badge (`Public`|`Private`), member count, and `Joined` badge if `isJoined === true`; clicking navigates to `/community/c/:id` (public) or `/community/p/:id` (private) and closes popup
+- Re-fetch on any filter or sort change (combine with current search query)
+- Empty state: "No communities found"
+- Close on backdrop click or Escape key; focus trap inside popup
 
-**Role permissions matrix:**
+**Mobile:**
+- Popup is full-screen on mobile (`position: fixed; inset: 0`)
+- Filter groups stack vertically
+- Results list scrollable
 
-| Feature | leader | moderator | member/whale |
-|---|---|---|---|
-| Access page | ✅ | ✅ | ✅ |
-| Leave community | ❌ | ✅ | ✅ |
-| Delete community | ✅ | ❌ | ❌ |
-| Inline edit name/description | ✅ | ❌ | ❌ |
-| Change avatar (file picker) | ✅ | ❌ | ❌ |
-| View pending requests | ✅ | ✅ | ❌ |
-| Accept/reject requests | ✅ | ✅ | ❌ |
-| Assign roles to members | ✅ | ❌ | ❌ |
-| Kick members | ✅ | ✅ | ❌ |
-
-**Inline editing (leader only):**
-- Pencil icon next to name and description; click converts to `<input>` / `<textarea>` inline with confirm/cancel buttons
-- Avatar: hover shows upload overlay icon (upward arrow); click triggers hidden `<input type="file">`; upload via existing API
-
-**Backend — add if missing:**
-- `PATCH /api/communities/:id` → update `name`, `description` (leader only)
-- `PATCH /api/communities/:id/avatar` → multipart file upload (leader only)
-
-**Out of scope:** join request logic, post feed, pin system, any other page.
+**Out of scope:** joining communities from the popup, pagination (load all up to limit=20), any changes to community detail pages.
 
 ---
 
