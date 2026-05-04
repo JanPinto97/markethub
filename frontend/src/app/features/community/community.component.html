@@ -102,6 +102,7 @@
           }
         }
       }
+      <button class="add-topics-btn" (click)="openDiscoverCommunities()">+ Discover Communities</button>
     </div>
 
     <div class="sidebar-section">
@@ -289,4 +290,10 @@
     (closed)="onTopicSearchClose()"
     (pinChanged)="onTopicPinChanged($event)">
   </app-topic-search-popup>
+}
+
+@if (showDiscoverPopup()) {
+  <app-discover-communities-popup
+    (closed)="onDiscoverClose()">
+  </app-discover-communities-popup>
 }

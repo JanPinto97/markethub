@@ -95,7 +95,7 @@ CommunityPrivate, DiscussionTopic + User model updated
 ✅ API: discussion topics
 ✅ API: user profiles and following
 ✅ API: general search
-🔄 Frontend: Community page (feed polish: video, emoji, skeletons, retry, toast, hover done)
+🔄 Frontend: Community page (feed polish: video, emoji, skeletons, retry, toast, hover done, discover communities popup done)
 ✅ Frontend: Public user profile (`/profile/:username`)
 
 ⬜ Phase 4: Markets

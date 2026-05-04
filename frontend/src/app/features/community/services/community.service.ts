@@ -118,6 +118,15 @@ export interface CreateCommunityDto {
   avatar?: string;
 }
 
+export interface DiscoverCommunityItem {
+  id: string;
+  name: string;
+  avatar: string;
+  type: 'public' | 'private';
+  memberCount: number;
+  isJoined: boolean;
+}
+
 export interface DiscussionTopicFull {
   id: string;
   name: string;
@@ -219,6 +228,17 @@ export class CommunityService {
   // ── Communities ──
   getMyCommunities(): Observable<Community[]> {
     return this.api.get<{ success: boolean; communities: Community[] }>('/communities/my')
+      .pipe(map(res => res.communities));
+  }
+
+  discoverCommunities(search: string, sort: string, type: string): Observable<DiscoverCommunityItem[]> {
+    const params = new URLSearchParams();
+    if (search) params.set('search', search);
+    params.set('sort', sort);
+    params.set('type', type);
+    params.set('limit', '20');
+    const qs = params.toString();
+    return this.api.get<{ success: boolean; communities: DiscoverCommunityItem[] }>(`/communities/discover?${qs}`)
       .pipe(map(res => res.communities));
   }
 
