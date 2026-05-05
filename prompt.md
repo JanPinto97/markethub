@@ -1,29 +1,56 @@
-# Fix: Sticky Navbar Bottom Container
+# Claude Code Prompt — Emoji Picker Overhaul
 
 ### Context
 
-Sidebar navbar with scroll and a sticky container at the bottom holding a button ("Create Community"). The container does not extend to the bottom of the viewport, leaving navbar content visible behind it.
+Angular 17+ standalone components. Pure custom CSS, no external libraries. Existing `EmojiPickerComponent` has hardcoded emojis and renders above the trigger button, covering the post composer. Used inside post creation components (PostX and PostReddit composers).
+
+---
 
 ### Task
 
-Fix the sticky button container so that:
+Replace the existing `EmojiPickerComponent` with a full standard emoji set loaded from CDN, fix popup position to always open downward, and add category tabs and search.
 
-1. It is pushed further down, anchored to the bottom of the navbar
-2. Its background extends all the way to the bottom of the viewport/parent container, covering the content behind it
+---
 
 ### Constraints
 
-- Container must have `position: sticky` and `bottom: 0`
-- Add enough `padding-bottom` to fill the bottom gap (include safe area inset if applicable)
-- Container `background` must match the navbar background to fully cover content behind it
-- Do not modify scroll logic or navbar behavior
-- Only change CSS/styles of the button container and its wrapper
+**Data source:**
+
+- Fetch emoji data from `https://cdn.jsdelivr.net/npm/unicode-emoji-json@0.6.0/data-by-group.json` once on first open, then cache in memory (do not re-fetch)
+- This JSON provides emojis grouped by category with `emoji`, `name`, and `group` fields
+
+**Popup position:**
+
+- Always renders below the trigger button: `position: absolute; top: 100%; left: 0`
+- Parent container must have `position: relative`
+- `z-index` high enough to overlap composer content
+
+**Popup layout:**
+
+- Fixed size: `width: 320px; height: 400px`
+- Top: search input (debounce 200ms, filters by emoji `name`)
+- Below search: horizontal scrollable category tab bar; one tab per group from the JSON (use the group name as label, no icons required)
+- Main area: scrollable grid of emoji buttons (`font-size: 1.4rem`, 8 columns); clicking an emoji appends it to the post textarea and closes the picker
+- Loading state: show "Loading emojis..." text while fetching
+- Empty search state: "No emojis found"
+
+**Behaviour:**
+
+- Close on outside click or Escape key
+- Search overrides category tab (shows results across all categories)
+- Clearing search restores the active category tab view
+
+**Out of scope:** skin tone variants, recently used, keyboard navigation within grid.
+
+---
 
 ### Output format
 
-Only changed files (only the diff/modified lines, no full file reprint unless <50 lines)
+Return only new or modified files with their full path as the title of each block. Do not repeat unchanged files.
 
-### IMPORTANT
+---
+
+**IMPORTANT:**
 
 - Do not explain anything
 - Do not describe steps or progress
