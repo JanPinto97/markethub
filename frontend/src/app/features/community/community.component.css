@@ -234,13 +234,14 @@
 
 .sidebar-bottom {
   position: sticky;
-  bottom: 0;
+  bottom: calc(-1 * var(--spacing-4));
   background-color: #F7F9FB;
-  padding: var(--spacing-4) 0 var(--spacing-6);
-  padding-bottom: calc(var(--spacing-6) + env(safe-area-inset-bottom, 0px));
+  padding: var(--spacing-2);
+  padding-bottom: calc(var(--spacing-3) + var(--spacing-3) + env(safe-area-inset-bottom, 0px));
   margin-top: auto;
   margin-left: calc(-1 * var(--spacing-3));
   margin-right: calc(-1 * var(--spacing-4));
+  margin-bottom: calc(-1 * var(--spacing-4));
   padding-left: var(--spacing-3);
   padding-right: var(--spacing-4);
   z-index: 1;
