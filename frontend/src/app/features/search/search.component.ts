@@ -1,6 +1,7 @@
 import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subject, Subscription } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { SearchService, UserResult, PostResult, CommunityResult, SearchResults } from './search.service';
 import { getUsernameColor, getInitial } from '../../shared/utils/color.utils';
 import { MediaUrlPipe } from '../../shared/pipes/media-url.pipe';
@@ -33,8 +34,20 @@ export class SearchComponent implements OnInit, OnDestroy {
   totalPages = signal(1);
 
   private sub?: Subscription;
+  private inputSub?: Subscription;
+  private input$ = new Subject<string>();
 
   ngOnInit() {
+    this.inputSub = this.input$
+      .pipe(debounceTime(350), distinctUntilChanged())
+      .subscribe(q => {
+        this.router.navigate(['/search'], {
+          queryParams: { q: q || null, page: null },
+          queryParamsHandling: 'merge',
+          replaceUrl: true
+        });
+      });
+
     this.sub = this.route.queryParams.subscribe(params => {
       const q = (params['q'] || '').trim();
       const type = (['all', 'users', 'posts', 'communities'].includes(params['type']) ? params['type'] : 'all') as FilterType;
@@ -59,6 +72,18 @@ export class SearchComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.sub?.unsubscribe();
+    this.inputSub?.unsubscribe();
+  }
+
+  onSearchInput(event: Event) {
+    const value = (event.target as HTMLInputElement).value;
+    this.query.set(value);
+    this.input$.next(value.trim());
+  }
+
+  clearSearch() {
+    this.query.set('');
+    this.input$.next('');
   }
 
   private doSearch(q: string, type: FilterType, page: number) {

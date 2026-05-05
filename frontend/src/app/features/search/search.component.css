@@ -13,6 +13,60 @@
   margin: 0 0 var(--spacing-4);
 }
 
+.search-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--spacing-6);
+}
+
+.search-input-icon {
+  position: absolute;
+  left: var(--spacing-4);
+  color: var(--on-surface-variant);
+  pointer-events: none;
+}
+
+.search-input {
+  width: 100%;
+  padding: var(--spacing-3) var(--spacing-10) var(--spacing-3) calc(var(--spacing-4) + 28px);
+  background-color: var(--surface-container-low);
+  color: var(--on-surface);
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
+  font-size: var(--text-body-md);
+  outline: none;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.search-input::placeholder {
+  color: var(--on-surface-variant);
+}
+
+.search-input:focus {
+  background-color: var(--surface);
+  border-color: var(--primary);
+}
+
+.search-input-clear {
+  position: absolute;
+  right: var(--spacing-3);
+  background: none;
+  border: none;
+  color: var(--on-surface-variant);
+  cursor: pointer;
+  padding: var(--spacing-1);
+  display: flex;
+  align-items: center;
+  border-radius: var(--radius-full);
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.search-input-clear:hover {
+  background-color: var(--surface-container-high);
+  color: var(--on-surface);
+}
+
 .search-message {
   text-align: center;
   padding: var(--spacing-16) 0;

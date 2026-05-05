@@ -1,14 +1,33 @@
 <div class="search-page">
-  <!-- Title -->
-  @if (query().length >= 2) {
-    <h1 class="search-title">Search results for "{{ query() }}"</h1>
-  } @else if (query().length > 0) {
-    <div class="search-message">Search term must be at least 2 characters.</div>
-  } @else {
-    <div class="search-message">Enter a search term to get started.</div>
-  }
+  <h1 class="search-title">Search</h1>
 
-  @if (query().length >= 2) {
+  <!-- Search input -->
+  <div class="search-input-wrap">
+    <svg class="search-input-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+    </svg>
+    <input
+      type="text"
+      class="search-input"
+      placeholder="Search users, posts, communities…"
+      [value]="query()"
+      (input)="onSearchInput($event)"
+      autofocus
+    />
+    @if (query().length > 0) {
+      <button class="search-input-clear" (click)="clearSearch()" aria-label="Clear">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    }
+  </div>
+
+  @if (query().length === 0) {
+    <div class="search-message">Start typing to search across users, posts, and communities.</div>
+  } @else if (query().length < 2) {
+    <div class="search-message">Keep typing — at least 2 characters.</div>
+  } @else {
     <!-- Filters -->
     <div class="filter-tabs" role="tablist">
       <button role="tab" class="filter-tab" [class.active]="activeFilter() === 'all'" [attr.aria-selected]="activeFilter() === 'all'" (click)="setFilter('all')">All</button>
