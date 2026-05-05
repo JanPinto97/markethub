@@ -29,6 +29,19 @@ const EMOJI_DATA_URL =
 const INITIAL_PER_GROUP = 8;
 const FILTER_CHUNK_SIZE = 80;
 
+const GROUP_ICONS: Record<string, string> = {
+  'Smileys & Emotion': '😀',
+  'People & Body': '👋',
+  'Component': '🖐️',
+  'Animals & Nature': '🐶',
+  'Food & Drink': '🍎',
+  'Travel & Places': '🚗',
+  'Activities': '⚽',
+  'Objects': '💡',
+  'Symbols': '❤️',
+  'Flags': '🏁',
+};
+
 let RAW_GROUPS: EmojiGroup[] | null = null;
 let RAW_INFLIGHT: Promise<EmojiGroup[]> | null = null;
 let CACHED_INITIAL: EmojiGroup[] | null = null;
@@ -228,8 +241,10 @@ function loadFullEmojis(
                 class="ep-tab"
                 [class.active]="g.label === activeGroup()"
                 (click)="selectGroup(g.label)"
+                [title]="g.label"
+                [attr.aria-label]="g.label"
                 role="tab"
-              >{{ g.label }}</button>
+              >{{ groupIcon(g) }}</button>
             }
           </div>
         }
@@ -269,7 +284,7 @@ function loadFullEmojis(
       background-color: var(--surface-container-lowest);
       border-radius: var(--radius-md);
       box-shadow: var(--shadow-ambient);
-      width: 320px;
+      width: 400px;
       height: 400px;
       display: flex;
       flex-direction: column;
@@ -314,18 +329,21 @@ function loadFullEmojis(
 
     .ep-tab {
       flex-shrink: 0;
-      padding: var(--spacing-1) var(--spacing-3);
+      width: 32px;
+      height: 32px;
+      padding: 0;
       border: none;
       background: none;
       border-radius: var(--radius-default);
-      font-family: var(--font-body);
-      font-size: var(--text-body-sm);
-      font-weight: var(--weight-medium);
+      font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+      font-size: 1.1rem;
+      line-height: 1;
       color: var(--on-surface-variant);
       cursor: pointer;
-      white-space: nowrap;
-      text-transform: capitalize;
-      transition: background-color 0.12s, color 0.12s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.12s;
     }
 
     .ep-tab:hover {
@@ -346,22 +364,26 @@ function loadFullEmojis(
 
     .ep-grid {
       display: grid;
-      grid-template-columns: repeat(8, 1fr);
+      grid-template-columns: repeat(8, minmax(0, 1fr));
       gap: var(--spacing-1);
     }
 
     .ep-btn {
       width: 100%;
       aspect-ratio: 1;
+      min-width: 0;
+      padding: 0;
       border: none;
       background: none;
       border-radius: var(--radius-default);
       font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
       font-size: 1.4rem;
+      line-height: 1;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
+      overflow: hidden;
       transition: background-color 0.12s;
     }
 
@@ -472,6 +494,10 @@ export class EmojiPickerComponent implements OnInit, OnDestroy {
 
   selectGroup(label: string) {
     this.activeGroup.set(label);
+  }
+
+  groupIcon(group: EmojiGroup): string {
+    return GROUP_ICONS[group.label] ?? group.emojis[0]?.emoji ?? '•';
   }
 
   pick(emoji: string) {
