@@ -82,14 +82,21 @@ Angular SPA serving the MarketHub UI. Runs on port 4200.
 
 | Path                 | Component          | Description           |
 | -------------------- | ------------------ | --------------------- |
-| `/`                  | HomeComponent      | Landing page          |
-| `/markets`           | MarketsComponent   | Markets dashboard     |
-| `/community`         | CommunityComponent | Community feed        |
-| `/profile/:username` | ProfileComponent   | Public user profile   |
-| `/search`            | SearchComponent    | Search results page   |
-| `/settings`          | SettingsComponent  | Private settings page |
-| `/login`             | LoginComponent     | Login form            |
-| `/register`          | RegisterComponent  | Registration form     |
+| `/`                                    | HomeComponent                    | Landing page                  |
+| `/markets`                             | MarketsComponent                 | Markets dashboard             |
+| `/community`                           | CommunityComponent               | Community feed                |
+| `/community/c/:id`                     | CommunityPublicDetailComponent   | Public community detail       |
+| `/community/p/:id`                     | CommunityPrivateDetailComponent  | Private community detail      |
+| `/community/p/:id/details`             | CommunityPrivateDetailsComponent | Members + pending requests    |
+| `/community/t/:slug`                   | TopicDetailComponent             | Discussion topic              |
+| `/community/t/:slug/p/:postId`         | PostRedditDetailComponent        | PostReddit detail             |
+| `/community/discussion/new/:commentId` | DiscussionPageComponent          | New comment-thread discussion |
+| `/community/discussion/:discussionId`  | DiscussionPageComponent          | Existing discussion thread    |
+| `/profile/:username`                   | ProfileComponent                 | Public user profile           |
+| `/search`                              | SearchComponent                  | Search results page           |
+| `/settings`                            | SettingsComponent                | Private settings page         |
+| `/login`                               | LoginComponent                   | Login form                    |
+| `/register`                            | RegisterComponent                | Registration form             |
 
 ## Running
 
@@ -125,6 +132,10 @@ Angular SPA serving the MarketHub UI. Runs on port 4200.
 - SearchBarComponent — reusable search input extracted to `/shared/components/search-bar/`. Debounced (350ms) dropdown with max 3 results per category (Users/Posts/Communities). Keyboard navigation (ArrowUp/Down/Enter/Escape). Click outside closes dropdown. "See all results" link navigates to `/search?q=`. Used in CommunityComponent header.
 - SearchComponent — full search results page at `/search`. URL-driven via `ActivatedRoute.queryParams` (q, type, page). Filter tabs: All/Users/Posts/Communities. In "All" mode shows top 3 per category with "See all X" buttons. In filtered mode shows paginated results (10 per page). Skeleton loading, error retry, empty states. Uses SearchService.
 - NavbarComponent — auth-aware: shows username+avatar+logout when authed, login/register links when not
+- CommunityPrivateDetailsComponent — `/community/p/:id/details`. authGuard. Standalone members + requests management page (separate from the in-feed side panel). Lists all members with role badges, leader-only Expel/Promote actions, and pending join requests with Accept/Reject modal. Used as a full-page alternative to the embedded panels.
+- DiscussionPageComponent — `/community/discussion/new/:commentId` and `/community/discussion/:discussionId`. authGuard. Chat-style UI for opening a threaded discussion from any PostX comment. New mode creates the discussion lazily on the first message; existing mode loads an active discussion. Auto-resizing textarea, message list scroll-to-bottom on send, reply-to-message label, paginated message history (cursor-based).
+- MarketsComponent — `/markets`. Live tickers from Finnhub (US stocks), Twelve Data (forex/crypto/gold), CoinGecko (global crypto). TradingView widget for charting. Search dropdown with debounce + keyboard navigation. WebSocket for real-time price updates. Embeds EconomicCalendarComponent.
+- EconomicCalendarComponent — under MarketsComponent. Date-range filtered economic events table (impact, country, event, forecast, actual). Sourced from market.service.ts.
 
 ## Core done
 
@@ -147,8 +158,11 @@ Angular SPA serving the MarketHub UI. Runs on port 4200.
 | `/community`         | CommunityComponent             | — (visible to all, actions require login)            |
 | `/community/c/:id`   | CommunityPublicDetailComponent | — (visible to all, actions require login)            |
 | `/community/p/:id`   | CommunityPrivateDetailComponent | authGuard (non-member sees join request view)       |
+| `/community/p/:id/details` | CommunityPrivateDetailsComponent | authGuard                                       |
 | `/community/t/:slug` | TopicDetailComponent           | — (visible to all, create post requires login)       |
 | `/community/t/:slug/p/:postId` | PostRedditDetailComponent | — (visible to all, comment/vote require login)       |
+| `/community/discussion/new/:commentId` | DiscussionPageComponent | authGuard                                  |
+| `/community/discussion/:discussionId` | DiscussionPageComponent | authGuard                                   |
 | `/search`            | SearchComponent                | — (public)                                           |
 | `/profile/:username` | ProfileComponent               | — (public, Follow gated by login)                    |
 | `/settings`          | SettingsComponent              | authGuard (private)                                  |

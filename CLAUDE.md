@@ -52,8 +52,16 @@ frontend, Node/Express backend, MongoDB, Docker.
 
 - / → Landing page (Home). Public. Only for non-authenticated users.
   Authenticated users will be redirected to /markets (Phase 2).
-- /markets → Main page after login. Visible to all, actions require login.
-- /community → Main page after login. Visible to all, actions require login.
+- /markets → Markets dashboard. Visible to all, actions require login.
+- /community → Community feed. Visible to all, actions require login.
+- /community/c/:id → Public community detail (visible to all).
+- /community/p/:id → Private community detail (auth required).
+- /community/p/:id/details → Community members + pending requests (auth required).
+- /community/t/:slug → Discussion topic (visible to all).
+- /community/t/:slug/p/:postId → PostReddit detail (visible to all).
+- /community/discussion/new/:commentId → Open new comment-thread discussion (auth required).
+- /community/discussion/:discussionId → Comment-thread discussion (auth required).
+- /search → Full search results page.
 - /login → Public.
 - /register → Public.
 - /settings → Private. Change username, email, password.
@@ -86,20 +94,30 @@ loginAttempts, lockUntil, createdAt)
 
 🔄 Phase 3: Community
 ✅ Models: PostX, PostReddit, Comment, CommunityPublic,
-CommunityPrivate, DiscussionTopic + User model updated
+CommunityPrivate, DiscussionTopic, Discussion, DiscussionMessage + User model updated
 ✅ Seed: discussion topics
 ✅ File upload setup (multer)
 ✅ API: general feed and PostX
 ✅ API: public communities
-✅ API: private communities
-✅ API: discussion topics
+✅ API: private communities (incl. discover endpoint with sort/type filters)
+✅ API: discussion topics + PostReddit + voting
+✅ API: comment-thread discussions (open-from-comment chat)
 ✅ API: user profiles and following
 ✅ API: general search
-🔄 Frontend: Community page (feed polish: video, emoji, skeletons, retry, toast, hover done, discover communities popup done)
+✅ Frontend: Community page (feed, create-post, emoji, media, skeletons, retry, toast)
 ✅ Frontend: Public user profile (`/profile/:username`)
+✅ Frontend: Public + Private community detail pages
+✅ Frontend: Topic detail + PostReddit detail + Reddit comments (one-level nesting)
+✅ Frontend: Discover communities popup (sort/type filters, debounced search)
+✅ Frontend: Comment-thread discussion page (real-time chat-style UI)
+✅ Frontend: Search bar (header dropdown) + full search page
 
-⬜ Phase 4: Markets
-⬜ Phase 5: AI assistant + Home
+🔄 Phase 4: Markets
+✅ Markets Overview (live tickers via Finnhub + Twelve Data + CoinGecko, TradingView widgets)
+✅ Economic Calendar component
+⬜ Per-asset detail pages, watchlist, alerts
+
+⬜ Phase 5: AI assistant + Home polish
 
 ## Rules
 

@@ -108,6 +108,14 @@ server.js            → Entry point: loads env, connects DB, starts Express
 
 - GET    /api/v1/search (public, supports ?q&type=users|posts|communities&limit)
 
+- GET    /api/v1/discussions/comment/:commentId (protected, returns existence + discussionId if any)
+- POST   /api/v1/discussions/comment/:commentId (protected, creates discussion + first message)
+- GET    /api/v1/discussions/:discussionId (protected, members only)
+- GET    /api/v1/discussions/:discussionId/messages (protected, cursor-paginated)
+- POST   /api/v1/discussions/:discussionId/messages (protected, body: {text, replyTo?})
+
+- GET    /api/v1/markets/* (proxy/aggregator to Finnhub, Twelve Data, CoinGecko, plus economic-calendar feed)
+
 ## Infrastructure
 - multer configured in /backend/config/upload.js
 - uploaded files served at /uploads/images/ and /uploads/videos/
@@ -132,6 +140,8 @@ server.js            → Entry point: loads env, connects DB, starts Express
 - CommunityPublic: no roles, auto-delete when empty
 - CommunityPrivate: roles (leader, moderator, little_whale, member), join requests (max 150 chars), auto-delete when empty, leader succession logic
 - DiscussionTopic: fixed topics, hardcoded via seed, never change
+- Discussion: 1-to-1 link between a PostX comment and a chat thread. Created on first message. Tracks createdBy + commentId.
+- DiscussionMessage: chat message inside a Discussion. Supports replyTo (single-level reply quotes). Cursor-paginated by createdAt.
 
 ## Current Status
 

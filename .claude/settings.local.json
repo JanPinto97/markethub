@@ -39,7 +39,9 @@
       "Bash(echo \"EXIT:$?\")",
       "Bash(git fetch *)",
       "Bash(git checkout *)",
-      "Bash(git cherry-pick *)"
+      "Bash(git cherry-pick *)",
+      "Bash(git -C \"C:/JAN/INSTI/markethub/markethub/\" log --oneline -20)",
+      "Bash(git *)"
     ]
   }
 }
