@@ -1,14 +1,16 @@
--Arreglar taula d'emojis i afegir-ne més.
+--- PRIORITAT ALTA ---
+
+--- PRIORITAT MITJA ---
+-Quan crees una comunitat, si es publica et redirigeix a la comunitat. Si es privada, et quedes en /community.
+-Eliminar els 3 punts en posts que no pots realitzar cap acció (eliminar, editar, etc.)
+
+--- PRIORITAT BAIXA ---
+-Opció de login amb nom d'usuari i contrasenya.
+
+--- EXTRES ---
 -Opció de fer votacions dins les discussions per decidir qui te raó.
 -Votació fixa en les discussions que fiqui "Agree / Disagree with original point".
 -Treure lo de que hagis de ficar dos lletres per buscar
 -Tasca de disseny, fer que es diferenciïn bé les communitats privades de les públiques.
--Quan crees una comunitat, si es publica et redirigeix a la comunitat. Si es privada, et quedes en /community.
--Eliminar els 3 punts en posts que no pots realitzar cap acció (eliminar, editar, etc.)
 
--Opció de login amb nom d'usuari i contrasenya.
-
--Opcions de disseny navbar esquerre:
-    -Fer que els titols siguin desplegables, per veure comunitats i topics.
-    -Mostrar només 3 comunitats i topics, les altres estaran amagades per un botó "Mostrar més".
     
