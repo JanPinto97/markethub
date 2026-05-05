@@ -1,8 +1,6 @@
 --- PRIORITAT ALTA ---
 
 --- PRIORITAT MITJA ---
--Quan crees una comunitat, si es publica et redirigeix a la comunitat. Si es privada, et quedes en /community.
--Eliminar els 3 punts en posts que no pots realitzar cap acció (eliminar, editar, etc.)
 
 --- PRIORITAT BAIXA ---
 -Opció de login amb nom d'usuari i contrasenya.

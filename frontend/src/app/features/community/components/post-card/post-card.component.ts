@@ -238,6 +238,10 @@ export class PostCardComponent {
     return !!this.communityContext && this.communityContext.myRole === 'leader';
   }
 
+  get hasMenuActions(): boolean {
+    return this.canPin || this.isOwner || this.isMod;
+  }
+
   onPin() {
     this.closeMenu();
     if (!this.communityContext) return;

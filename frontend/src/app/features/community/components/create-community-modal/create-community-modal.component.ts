@@ -119,7 +119,7 @@ export class CreateCommunityModalComponent implements AfterViewInit, OnDestroy {
         if (this.type() === 'public') {
           this.router.navigate(['/community/c', (community as CommunityPublic).id]);
         } else {
-          console.log('Private community created, /community/p/:id route pending');
+          this.router.navigate(['/community/p', (community as CommunityPrivate).id]);
         }
       },
       error: (err) => {
