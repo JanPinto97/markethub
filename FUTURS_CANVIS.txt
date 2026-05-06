@@ -1,6 +1,7 @@
 --- PRIORITAT ALTA ---
 
 --- PRIORITAT MITJA ---
+Implementar el ticker dinàmic a sota del header i eliminar-lo de markets.
 
 --- PRIORITAT BAIXA ---
 -Opció de login amb nom d'usuari i contrasenya.

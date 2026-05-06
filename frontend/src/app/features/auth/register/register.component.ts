@@ -10,28 +10,8 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   selector: 'app-register',
   standalone: true,
   imports: [FormsModule, RouterLink],
-  template: `
-    <h1>Register</h1>
-    <form (ngSubmit)="submit()">
-      <label>
-        Username
-        <input name="username" [(ngModel)]="username" required />
-      </label>
-      <label>
-        Email
-        <input type="email" name="email" [(ngModel)]="email" required />
-      </label>
-      <label>
-        Password
-        <input type="password" name="password" [(ngModel)]="password" required />
-      </label>
-      <button type="submit" [disabled]="loading()">Create account</button>
-    </form>
-    @if (error()) {
-      <p role="alert">{{ error() }}</p>
-    }
-    <p>Already have an account? <a routerLink="/login">Login</a></p>
-  `
+  templateUrl: './register.component.html',
+  styleUrl: './register.component.css'
 })
 export class RegisterComponent {
   private auth = inject(AuthService);
@@ -40,8 +20,13 @@ export class RegisterComponent {
   username = '';
   email = '';
   password = '';
+  showPassword = signal(false);
   error = signal<string | null>(null);
   loading = signal(false);
+
+  togglePassword() {
+    this.showPassword.update(v => !v);
+  }
 
   submit() {
     this.error.set(null);
