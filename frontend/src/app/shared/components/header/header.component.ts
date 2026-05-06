@@ -133,8 +133,10 @@ export class HeaderComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
 
   menuOpen = signal(false);
+  mobileMenuOpen = signal(false);
   hasUnreadNotifications = signal(false);
   marketBadges = signal<MarketBadge[]>([]);
+  expandedBadge = signal<string | null>(null);
 
   getUsernameColor = getUsernameColor;
   getInitial = getInitial;
@@ -167,21 +169,35 @@ export class HeaderComponent implements OnInit {
     this.menuOpen.update(v => !v);
   }
 
+  toggleMobileMenu(event: Event) {
+    event.stopPropagation();
+    this.mobileMenuOpen.update(v => !v);
+    if (!this.mobileMenuOpen()) this.expandedBadge.set(null);
+  }
+
+  toggleBadge(label: string) {
+    this.expandedBadge.update(v => v === label ? null : label);
+  }
+
   closeMenu() {
     this.menuOpen.set(false);
   }
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent) {
-    if (!this.menuOpen()) return;
-    if (!this.host.nativeElement.contains(event.target as Node)) {
+    const target = event.target as Node;
+    if (this.menuOpen() && !this.host.nativeElement.contains(target)) {
       this.menuOpen.set(false);
+    }
+    if (this.mobileMenuOpen() && !this.host.nativeElement.contains(target)) {
+      this.mobileMenuOpen.set(false);
     }
   }
 
   @HostListener('document:keydown.escape')
   onEscape() {
     this.menuOpen.set(false);
+    this.mobileMenuOpen.set(false);
   }
 
   goToProfile() {

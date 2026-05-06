@@ -446,7 +446,11 @@
   background-color: rgba(217, 48, 37, 0.08);
 }
 
-/* ── Mobile ── */
+/* ── Visibility helpers ── */
+.mobile-only {
+  display: none !important;
+}
+
 @media (max-width: 1023px) {
   .brand-name {
     display: none;
@@ -454,78 +458,349 @@
 }
 
 @media (max-width: 767px) {
+  .desktop-only {
+    display: none !important;
+  }
+
+  .mobile-only {
+    display: flex !important;
+  }
+
   .app-header {
     height: auto;
   }
 
   .header-inner {
     height: auto;
-    flex-wrap: wrap;
-    gap: var(--spacing-2);
-    padding: var(--spacing-2);
-  }
-
-  .header-left {
-    order: 1;
-    flex: 1 1 auto;
-    gap: var(--spacing-2);
-  }
-
-  .header-right {
-    order: 2;
-  }
-
-  .brand-divider {
-    display: none;
-  }
-
-  .header-nav {
-    order: 3;
-    flex: 1 1 100%;
-    justify-content: center;
+    flex-direction: column;
+    padding: 0;
     gap: 0;
   }
+}
 
-  .nav-tab {
-    flex: 1 1 0;
-    justify-content: center;
-    height: 48px;
-    padding: 0 var(--spacing-2);
-    font-size: var(--text-body-sm);
-  }
+/* ── Mobile bar ── */
+.mobile-bar {
+  display: flex;
+  align-items: center;
+  height: 56px;
+  padding: 0 var(--spacing-3);
+  gap: var(--spacing-1);
+  width: 100%;
+  box-sizing: border-box;
+}
 
-  .nav-tab.active::after {
-    left: var(--spacing-4);
-    right: var(--spacing-4);
-  }
+.mobile-logo {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-right: var(--spacing-2);
+}
 
-  .header-logo img {
-    height: 40px;
-  }
+.mobile-logo img {
+  height: 32px;
+  width: auto;
+  display: block;
+}
 
-  .market-badges {
-    gap: 2px;
-  }
+.mobile-nav {
+  display: flex;
+  align-items: center;
+  flex: 1 1 0;
+  justify-content: center;
+  gap: 0;
+}
 
-  .market-badge {
-    height: 26px;
-    padding: 0 var(--spacing-2);
-    font-size: 0.65rem;
-    gap: 4px;
-  }
+.mobile-nav-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-1);
+  height: 56px;
+  padding: 0 var(--spacing-3);
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-medium);
+  color: var(--on-surface-variant);
+  text-decoration: none;
+  white-space: nowrap;
+}
 
-  .market-dot {
-    width: 6px;
-    height: 6px;
-  }
+.mobile-nav-link .nav-icon {
+  width: 16px;
+  height: 16px;
+}
 
-  .header-icon-btn {
-    width: 34px;
-    height: 34px;
-  }
+.mobile-nav-link.active {
+  color: var(--secondary);
+  font-weight: var(--weight-semibold);
+}
 
-  .avatar-btn {
-    width: 34px;
-    height: 34px;
-  }
+.mobile-nav-link.active .nav-icon {
+  color: var(--secondary);
+}
+
+.mobile-nav-link.active::after {
+  content: '';
+  position: absolute;
+  left: var(--spacing-2);
+  right: var(--spacing-2);
+  bottom: 0;
+  height: 3px;
+  background-color: var(--secondary);
+  border-radius: var(--radius-full) var(--radius-full) 0 0;
+}
+
+.mobile-nav-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.mobile-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-default);
+  color: var(--on-surface-variant);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 0.15s;
+}
+
+.mobile-menu-btn:hover {
+  background-color: var(--surface-container-low);
+}
+
+/* ── Mobile dropdown ── */
+.mobile-dropdown {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: var(--spacing-3) var(--spacing-4) var(--spacing-4);
+  box-sizing: border-box;
+  background-color: var(--surface-container-lowest);
+  border-top: 1px solid var(--outline-variant);
+  animation: mobile-slide 0.15s ease-out;
+}
+
+@keyframes mobile-slide {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.mobile-dropdown-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.mobile-dropdown-label {
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--on-surface-variant);
+  letter-spacing: 0.03em;
+}
+
+.mobile-badges-row {
+  display: flex;
+  gap: var(--spacing-2);
+}
+
+.mobile-badges-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.mobile-badge-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-badge-tap {
+  cursor: pointer;
+  user-select: none;
+}
+
+.mobile-badge-chevron {
+  margin-left: 2px;
+  transition: transform 0.15s;
+}
+
+.mobile-badge-chevron.is-expanded {
+  transform: rotate(180deg);
+}
+
+.mobile-badge-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--spacing-2) var(--spacing-3);
+  margin-top: var(--spacing-1);
+  border-radius: var(--radius-default);
+  background-color: var(--surface-container-low);
+  animation: mobile-slide 0.12s ease-out;
+}
+
+.mobile-badge-status {
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--on-surface);
+}
+
+.mobile-badge-schedule {
+  font-size: var(--text-body-sm);
+  color: var(--on-surface-variant);
+}
+
+.mobile-dropdown-sep {
+  height: 1px;
+  background-color: var(--outline-variant);
+  margin: var(--spacing-3) 0;
+}
+
+.mobile-dropdown-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.mobile-action-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-2) var(--spacing-3);
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-default);
+  font-family: var(--font-body);
+  font-size: var(--text-body-md);
+  font-weight: var(--weight-medium);
+  color: var(--on-surface);
+  text-decoration: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.12s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.mobile-action-item:hover {
+  background-color: var(--surface-container-low);
+}
+
+.mobile-action-danger {
+  color: #d93025;
+}
+
+.mobile-action-danger:hover {
+  background-color: rgba(217, 48, 37, 0.08);
+}
+
+.mobile-notif-badge {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background-color: #e53935;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: var(--weight-bold);
+}
+
+.mobile-dropdown-user {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.mobile-user-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-2) var(--spacing-3);
+}
+
+.mobile-user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.mobile-user-initial {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  color: var(--on-primary);
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-bold);
+  flex-shrink: 0;
+}
+
+.mobile-user-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mobile-user-name {
+  font-size: var(--text-body-md);
+  font-weight: var(--weight-semibold);
+  color: var(--on-surface);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mobile-user-email {
+  font-size: var(--text-body-sm);
+  color: var(--on-surface-variant);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mobile-dropdown-auth {
+  display: flex;
+  gap: var(--spacing-3);
+  padding: var(--spacing-1) var(--spacing-3);
+}
+
+.mobile-auth-btn {
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  border-radius: var(--radius-default);
+  font-size: var(--text-body-md);
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+  transition: background-color 0.15s;
+}
+
+.mobile-auth-login {
+  color: var(--on-surface);
+  background-color: var(--surface-container-high);
+}
+
+.mobile-auth-login:hover {
+  background-color: var(--surface-container-highest);
+}
+
+.mobile-auth-signup {
+  color: var(--on-primary);
+  background-color: var(--primary);
+}
+
+.mobile-auth-signup:hover {
+  background-color: var(--primary-container);
 }

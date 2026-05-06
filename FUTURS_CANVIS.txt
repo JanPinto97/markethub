@@ -1,7 +1,7 @@
 --- PRIORITAT ALTA ---
+Implementar el ticker dinàmic a sota del header i eliminar-lo de markets.
 
 --- PRIORITAT MITJA ---
-Implementar el ticker dinàmic a sota del header i eliminar-lo de markets.
 
 --- PRIORITAT BAIXA ---
 -Opció de login amb nom d'usuari i contrasenya.
@@ -11,5 +11,14 @@ Implementar el ticker dinàmic a sota del header i eliminar-lo de markets.
 -Votació fixa en les discussions que fiqui "Agree / Disagree with original point".
 -Treure lo de que hagis de ficar dos lletres per buscar
 -Tasca de disseny, fer que es diferenciïn bé les communitats privades de les públiques.
+
+--- BLOCS A FER ---
+-Landing Page.
+-ChatBot d'IA.
+-Implementacions en tota la app amb hotlinks al chatbot d'ia.
+-Seeders amb IA.
+-Modo oscuro.
+-Verificació disseny versió mòbil.
+-Tots els elements de la membresia
 
     
