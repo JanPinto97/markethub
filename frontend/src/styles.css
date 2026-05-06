@@ -6,4 +6,5 @@ body {
   font-family: var(--font-body);
   color: var(--on-surface);
   background-color: var(--surface);
+  padding-top: var(--header-height);
 }

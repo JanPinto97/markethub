@@ -1,46 +1,43 @@
-# Claude Code Prompt — Emoji Picker Overhaul
+# Claude Code Prompt — Global Header
 
 ### Context
 
-Angular 17+ standalone components. Pure custom CSS, no external libraries. Existing `EmojiPickerComponent` has hardcoded emojis and renders above the trigger button, covering the post composer. Used inside post creation components (PostX and PostReddit composers).
+Angular 17+ standalone components, pure custom CSS with project variables, no frameworks. Auth state available via existing `AuthService` (exposes `currentUser$` and `isLoggedIn$`). Currently `/community` has a temporary inline header that must be removed and replaced by the global one. Logo file currently at `./logos/full_logo_negre_transparent.png` (provisional path).
 
 ---
 
 ### Task
 
-Replace the existing `EmojiPickerComponent` with a full standard emoji set loaded from CDN, fix popup position to always open downward, and add category tabs and search.
+Implement a global `HeaderComponent` rendered on every page via `AppComponent`, replacing the temporary header in `/community`. Remove the temporary header from the community layout.
 
 ---
 
 ### Constraints
 
-**Data source:**
+**Logo:**
 
-- Fetch emoji data from `https://cdn.jsdelivr.net/npm/unicode-emoji-json@0.6.0/data-by-group.json` once on first open, then cache in memory (do not re-fetch)
-- This JSON provides emojis grouped by category with `emoji`, `name`, and `group` fields
+- Move `./logos/full_logo_negre_transparent.png` to `frontend/src/assets/images/full_logo.png`
+- Reference it in the header as `<img src="assets/images/full_logo.png">`
 
-**Popup position:**
+**Desktop layout (single row):**
 
-- Always renders below the trigger button: `position: absolute; top: 100%; left: 0`
-- Parent container must have `position: relative`
-- `z-index` high enough to overlap composer content
+- Left: logo (`<img>`) → nav links `Community` `/community`, `Markets` `/markets`, `IA` (no route, pointer-events none or disabled state)
+- Right: if unauthenticated → `Login` (`/login`) + `Sign Up` (`/register`) buttons; if authenticated → settings icon (cog, links to `/settings`) + user avatar (links to `/profile/:username`)
+- Active nav link: green underline using `routerLinkActive` with a CSS class; use the project's existing green CSS variable for the underline color
+- Header is `position: fixed; top: 0; width: 100%; z-index` above all page content; all pages must add `padding-top` equal to header height to avoid content overlap
 
-**Popup layout:**
+**Mobile layout (two rows):**
 
-- Fixed size: `width: 320px; height: 400px`
-- Top: search input (debounce 200ms, filters by emoji `name`)
-- Below search: horizontal scrollable category tab bar; one tab per group from the JSON (use the group name as label, no icons required)
-- Main area: scrollable grid of emoji buttons (`font-size: 1.4rem`, 8 columns); clicking an emoji appends it to the post textarea and closes the picker
-- Loading state: show "Loading emojis..." text while fetching
-- Empty search state: "No emojis found"
+- Row 1: logo (left) + auth buttons or avatar/settings (right)
+- Row 2: nav links `Community`, `Markets`, `IA` centered horizontally
+- No hamburger menu
 
-**Behaviour:**
+**Community page:**
 
-- Close on outside click or Escape key
-- Search overrides category tab (shows results across all categories)
-- Clearing search restores the active category tab view
+- Remove the existing temporary header markup and styles from the community layout component
+- The sidebar and feed remain unchanged; only the header is extracted
 
-**Out of scope:** skin tone variants, recently used, keyboard navigation within grid.
+**Out of scope:** search bar in header, IA widget, notification bell, any other page layout changes.
 
 ---
 

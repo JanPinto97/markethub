@@ -82,6 +82,12 @@
   --bp-mobile: 767px;
 }
 
+@media (max-width: 767px) {
+  :root {
+    --header-height: 108px;
+  }
+}
+
 :focus-visible {
   outline: 2px solid var(--secondary);
   outline-offset: 2px;

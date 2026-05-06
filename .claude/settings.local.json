@@ -41,7 +41,9 @@
       "Bash(git checkout *)",
       "Bash(git cherry-pick *)",
       "Bash(git -C \"C:/JAN/INSTI/markethub/markethub/\" log --oneline -20)",
-      "Bash(git *)"
+      "Bash(git *)",
+      "Bash(mkdir -p C:/JAN/DAW/CODI/markethub/frontend/src/assets/images)",
+      "Bash(cp C:/JAN/DAW/CODI/markethub/logos/full_logo_negre_transparent.png C:/JAN/DAW/CODI/markethub/frontend/src/assets/images/full_logo.png)"
     ]
   }
 }

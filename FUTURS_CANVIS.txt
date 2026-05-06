@@ -1,4 +1,6 @@
 --- PRIORITAT ALTA ---
+-Afegir opció de logout a dins del perfil o configuració.
+
 
 --- PRIORITAT MITJA ---
 
