@@ -36,10 +36,20 @@
     </div>
 
     <div class="header-right">
-      <span class="markets-pill" [class.is-closed]="!marketsOpen()">
-        <span class="markets-dot" aria-hidden="true"></span>
-        Mercats oberts
-      </span>
+      <div class="market-badges">
+        @for (badge of marketBadges(); track badge.label) {
+          <span class="market-badge" [class.is-open]="badge.state === 'open'" [class.is-pre]="badge.state === 'pre'" [class.is-closed]="badge.state === 'closed'">
+            <span class="market-dot" aria-hidden="true"></span>
+            {{ badge.label }}
+            <span class="market-tooltip">
+              <span class="market-tooltip-status">{{ badge.tooltip }}</span>
+              <span class="market-tooltip-schedule">{{ badge.scheduleLabel }}</span>
+            </span>
+          </span>
+        }
+      </div>
+
+      <span class="right-divider" aria-hidden="true"></span>
 
       <button type="button" class="header-icon-btn notif-btn" aria-label="Notifications">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
