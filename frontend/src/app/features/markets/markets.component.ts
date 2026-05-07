@@ -4,7 +4,7 @@ import { MarketService } from '../../core/services/market.service';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { forkJoin, of, Subject, Subscription } from 'rxjs';
-import { catchError, debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { catchError, debounceTime, distinctUntilChanged, timeout } from 'rxjs/operators';
 import { EconomicCalendarComponent } from './economic-calendar/economic-calendar.component';
 
 declare const TradingView: any;
@@ -24,6 +24,9 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
   private apiKey = 'd7jo9s9r01qu1n4fg3pgd7jo9s9r01qu1n4fg3q0';       // Finnhub — US Stocks & Synthetic WTI
   private twelveDataApiKey = 'b21b5589fbce4aada1a45a82a7bbbbf0';      // Twelve Data — Forex, Crypto, Gold
   private coinGeckoApiKey = 'CG-T7BjzNAbWJhwFMvvbj4sM8Mp';           // CoinGecko — Global Crypto Discovery
+  private polygonApiKey = 'OCf0bs98iWLZfq_pr2qslbGqna7uOTt4';          // Fallback 1: Polygon (5 req/min)
+  private tiingoApiKey = '07705bf17ddd89eb11ea83b95d01042a522162a9';    // Fallback 2: Tiingo (50 req/hour)
+  private alphaVantageApiKey = 'SXTQA9LA0XWN7H64';                   // Fallback 3: Metales (5 req/min)
   private socket: WebSocket | null = null;
   
   widget: any;
@@ -75,12 +78,68 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  private sourceExhausted: { [key: string]: boolean } = { 'twelvedata': false, 'polygon': false, 'tiingo': false };
+  private lastExhaustedCheck: number = 0;
+  private tickerPointer = 0; 
+
+  checkPersistence() {
+    try {
+      const saved = localStorage.getItem('markethub_state');
+      if (saved) {
+        const { date, exhaustedMap, tickerPrices, lastPrice, lastCheck } = JSON.parse(saved);
+        if (date === new Date().toDateString()) {
+          this.sourceExhausted = { ...this.sourceExhausted, ...exhaustedMap };
+          this.lastExhaustedCheck = lastCheck || 0;
+          
+          if (tickerPrices) {
+            this.coins.forEach(coin => {
+              if (tickerPrices[coin.symbol]) {
+                coin.price = tickerPrices[coin.symbol].price;
+                coin.change = tickerPrices[coin.symbol].change;
+              }
+            });
+          }
+          if (lastPrice && lastPrice.symbol === this.currentApiSymbol && lastPrice.data.c > 0) {
+            this.currentPriceData = lastPrice.data;
+          } else {
+            // Fallback: Si el precio principal no está, intentamos sacarlo del ticker hidratado
+            const coinMatch = this.coins.find(c => c.apiSymbol === this.currentApiSymbol || c.tech === this.currentApiSymbol);
+            if (coinMatch && coinMatch.price > 0) {
+              this.currentPriceData = { c: coinMatch.price, dp: coinMatch.change };
+            }
+          }
+          console.log("Sistema hidratado y estados de API recuperados.");
+        }
+      }
+    } catch (e) {}
+  }
+
+  savePersistence() {
+    const tickerPrices: any = {};
+    this.coins.forEach(c => {
+      tickerPrices[c.symbol] = { price: c.price, change: c.change };
+    });
+
+    // Solo guardamos el precio de cabecera si es válido (>0) para no sobreescribir la caché con "..."
+    const lastPriceToSave = (this.currentPriceData && this.currentPriceData.c > 0) 
+      ? { symbol: this.currentApiSymbol, data: this.currentPriceData }
+      : JSON.parse(localStorage.getItem('markethub_state') || '{}').lastPrice;
+
+    localStorage.setItem('markethub_state', JSON.stringify({
+      date: new Date().toDateString(),
+      exhaustedMap: this.sourceExhausted,
+      tickerPrices: tickerPrices,
+      lastPrice: lastPriceToSave,
+      lastCheck: this.lastExhaustedCheck
+    }));
+  }
+
   ngOnInit() {
+    this.checkPersistence();
     this.initDashboard();
     this.setupWebSocket();
     this.startLiveClock();
 
-    // Optimización: Debounce para evitar que el buscador ralentice la UI
     this.searchSubject.pipe(
       debounceTime(300),
       distinctUntilChanged()
@@ -88,16 +147,106 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
       this.performSearch(query);
     });
 
-    // Polling automático para activos que NO son WebSocket (Twelve Data, CoinGecko, Synthetic)
-    // Se actualiza cada 10 segundos para respetar los límites de la API gratuita.
+    // Polling automático optimizado: Detecta agotamiento y cambia de fuente AL INSTANTE
     this.refreshInterval = setInterval(() => {
-      this.updatePrice(this.currentApiSymbol, this.currentSource);
-      // Ticker refrescado cada 30 segundos para no saturar la API
-      const now = new Date().getSeconds();
-      if (now % 30 < 10) { 
-         this.loadTickerPrices();
+      const now = new Date().getTime();
+      
+      // Resetear estado de agotamiento al día siguiente
+      const lastCheckDay = new Date(this.lastExhaustedCheck).getDate();
+      const today = new Date().getDate();
+      if (lastCheckDay !== today) {
+        this.sourceExhausted = { 'twelvedata': false, 'polygon': false, 'tiingo': false };
+        this.lastExhaustedCheck = now;
+        this.savePersistence();
       }
-    }, 10000);
+
+      // 1. Gráfico Principal (Prioridad Alta)
+      if (this.sourceExhausted['twelvedata'] && this.currentSource === 'twelvedata') {
+        this.executePriceChain(this.currentApiSymbol);
+      } else {
+        this.updatePrice(this.currentApiSymbol, this.currentSource);
+      }
+      
+      // 2. Ticker (Rotativo para no saturar limites de Polygon 5/min)
+      this.loadTickerPricesStaggered();
+    }, 8000); // Un poco más rápido para compensar el escalonado
+  }
+
+  // Actualiza los pares de TwelveData de forma inteligente
+  loadTickerPricesStaggered() {
+    const tdCoins = this.coins.filter(c => c.source === 'twelvedata');
+    if (tdCoins.length === 0) return;
+
+    if (!this.sourceExhausted['twelvedata']) {
+      const tdSymbols = tdCoins.map(c => c.apiSymbol).join(',');
+      this.http.get(`https://api.twelvedata.com/quote?symbol=${tdSymbols}&apikey=${this.twelveDataApiKey}`)
+        .subscribe({
+          next: (data: any) => {
+            if (!data || data.status === 'error' || data.code === 429 || data.message?.includes('limit')) {
+              this.sourceExhausted['twelvedata'] = true;
+              this.savePersistence();
+              this.fillAllTickerFallbacks(); 
+              return;
+            }
+            this.coins.forEach(coin => {
+              if (coin.source === 'twelvedata') {
+                const quote = tdSymbols.includes(',') ? data[coin.apiSymbol] : data;
+                if (quote && quote.close) {
+                  coin.price = parseFloat(quote.close);
+                  coin.change = parseFloat(quote.percent_change || 0);
+                }
+              }
+            });
+            this.cdr.detectChanges();
+          },
+          error: () => { 
+            this.sourceExhausted['twelvedata'] = true; 
+            this.savePersistence();
+            this.fillAllTickerFallbacks();
+          }
+        });
+    } else {
+      // Si ya sabemos que está agotado, rotamos de 1 en 1 para mantener el ritmo sin saturar
+      const coin = tdCoins[this.tickerPointer % tdCoins.length];
+      this.tickerPointer++;
+      this.fetchPriceOnlyFallback(coin.apiSymbol, (price) => {
+        coin.price = price;
+        this.cdr.detectChanges();
+      });
+    }
+
+    // El resto de Finnhub (Stocks) son ilimitados
+    this.coins.forEach(coin => {
+      if (coin.source.startsWith('finnhub')) {
+        this.updateFinnhubTicker(coin);
+      }
+    });
+  }
+
+  // Llena TODO el ticker de golpe usando fallbacks (combinando APIs para repartir carga)
+  fillAllTickerFallbacks() {
+    const tdCoins = this.coins.filter(c => c.source === 'twelvedata');
+    tdCoins.forEach((coin, index) => {
+      // Stagger de 500ms entre llamadas para que Polygon no nos bloquee por "burst"
+      setTimeout(() => {
+        this.fetchPriceOnlyFallback(coin.apiSymbol, (price) => {
+          coin.price = price;
+          this.cdr.detectChanges();
+        });
+      }, index * 500);
+    });
+  }
+
+  updateFinnhubTicker(coin: any) {
+    this.http.get(`https://finnhub.io/api/v1/quote?symbol=${coin.apiSymbol}&token=${this.apiKey}`)
+      .subscribe((data: any) => {
+        if (data && data.c && data.c !== 0) {
+          const multiplier = coin.source === 'finnhub_synthetic_wti' ? 0.7146 : 1;
+          coin.price = data.c * multiplier;
+          coin.change = data.dp || 0;
+          this.cdr.detectChanges();
+        }
+      });
   }
 
   ngOnDestroy() {
@@ -115,9 +264,9 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
   startLiveClock() {
     const tick = () => {
       const now = new Date();
-      this.lastSentimentUpdate = now.toLocaleString('es-ES', {
+      this.lastSentimentUpdate = now.toLocaleString(undefined, {
         day: '2-digit', month: 'short', year: 'numeric',
-        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
       });
       this.cdr.detectChanges();
     };
@@ -145,9 +294,9 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
           if (coin) {
             coin.price = trade.p;
           }
-          // Actualizamos el precio de la cabecera si coincide
+          // Actualizamos el precio de la cabecera SOLO si coincide exactamente
           if (trade.s === this.currentSymbol) {
-            this.currentPriceData.c = trade.p;
+            this.currentPriceData = { ...this.currentPriceData, c: trade.p };
             this.cdr.detectChanges();
           }
         });
@@ -176,7 +325,7 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
     
     this.loadNews();
     this.loadGlobalSentiment();
-    this.loadTickerPrices();
+    this.loadTickerPricesStaggered();
     this.updatePrice(this.currentApiSymbol, this.currentSource);
     this.fetchCalendarData();
   }
@@ -270,7 +419,7 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
         const cgResults = cgRes.coins || [];
         
         // Mapa de activos populares: sobreescribe el símbolo TV y la API para activos conocidos
-        const POPULAR_ASSET_MAP: { [key: string]: { tvSymbol: string; apiSymbol: string; source: string } } = {
+        const POPULAR_ASSET_MAP: { [key: string]: { tvSymbol: string; apiSymbol: string; source: string; coingeckoId?: string } } = {
           'XAU/USD':  { tvSymbol: 'OANDA:XAUUSD',   apiSymbol: 'XAU/USD', source: 'twelvedata' },
           'XAG/USD':  { tvSymbol: 'OANDA:XAGUSD',   apiSymbol: 'XAG/USD', source: 'twelvedata' },
           'EUR/USD':  { tvSymbol: 'FX:EURUSD',       apiSymbol: 'EUR/USD', source: 'twelvedata' },
@@ -280,25 +429,25 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
           'USD/CAD':  { tvSymbol: 'FX:USDCAD',       apiSymbol: 'USD/CAD', source: 'twelvedata' },
           'USD/CHF':  { tvSymbol: 'FX:USDCHF',       apiSymbol: 'USD/CHF', source: 'twelvedata' },
           'NZD/USD':  { tvSymbol: 'FX:NZDUSD',       apiSymbol: 'NZD/USD', source: 'twelvedata' },
-          'BTC/USD':  { tvSymbol: 'CRYPTO:BTCUSD',   apiSymbol: 'BTC/USD', source: 'twelvedata' },
-          'ETH/USD':  { tvSymbol: 'CRYPTO:ETHUSD',   apiSymbol: 'ETH/USD', source: 'twelvedata' },
-          'SOL/USD':  { tvSymbol: 'CRYPTO:SOLUSD',   apiSymbol: 'SOL/USD', source: 'twelvedata' },
-          'BNB/USD':  { tvSymbol: 'CRYPTO:BNBUSD',   apiSymbol: 'BNB/USD', source: 'twelvedata' },
-          'XRP/USD':  { tvSymbol: 'CRYPTO:XRPUSD',   apiSymbol: 'XRP/USD', source: 'twelvedata' },
-          'ADA/USD':  { tvSymbol: 'CRYPTO:ADAUSD',   apiSymbol: 'ADA/USD', source: 'twelvedata' },
-          'DOGE/USD': { tvSymbol: 'CRYPTO:DOGEUSD',  apiSymbol: 'DOGE/USD', source: 'twelvedata' },
-          'DOT/USD':  { tvSymbol: 'CRYPTO:DOTUSD',   apiSymbol: 'DOT/USD', source: 'twelvedata' },
-          'AVAX/USD': { tvSymbol: 'CRYPTO:AVAXUSD',  apiSymbol: 'AVAX/USD', source: 'twelvedata' },
-          'LINK/USD': { tvSymbol: 'CRYPTO:LINKUSD',  apiSymbol: 'LINK/USD', source: 'twelvedata' },
-          'MATIC/USD':{ tvSymbol: 'CRYPTO:MATICUSD', apiSymbol: 'MATIC/USD',source: 'twelvedata' },
-          'SHIB/USD': { tvSymbol: 'CRYPTO:SHIBUSD',  apiSymbol: 'SHIB/USD', source: 'twelvedata' },
-          'LTC/USD':  { tvSymbol: 'CRYPTO:LTCUSD',   apiSymbol: 'LTC/USD', source: 'twelvedata' },
-          'TRX/USD':  { tvSymbol: 'CRYPTO:TRXUSD',   apiSymbol: 'TRX/USD', source: 'twelvedata' },
-          'UNI/USD':  { tvSymbol: 'CRYPTO:UNIUSD',   apiSymbol: 'UNI/USD', source: 'twelvedata' },
-          'ATOM/USD': { tvSymbol: 'CRYPTO:ATOMUSD',  apiSymbol: 'ATOM/USD', source: 'twelvedata' },
-          'NEAR/USD': { tvSymbol: 'CRYPTO:NEARUSD',  apiSymbol: 'NEAR/USD', source: 'twelvedata' },
-          'XLM/USD':  { tvSymbol: 'CRYPTO:XLMUSD',   apiSymbol: 'XLM/USD', source: 'twelvedata' },
-          'ICP/USD':  { tvSymbol: 'CRYPTO:ICPUSD',   apiSymbol: 'ICP/USD', source: 'twelvedata' },
+          'BTC/USD':  { tvSymbol: 'CRYPTO:BTCUSD',   apiSymbol: 'BTC/USD', source: 'coingecko', coingeckoId: 'bitcoin' },
+          'ETH/USD':  { tvSymbol: 'CRYPTO:ETHUSD',   apiSymbol: 'ETH/USD', source: 'coingecko', coingeckoId: 'ethereum' },
+          'SOL/USD':  { tvSymbol: 'CRYPTO:SOLUSD',   apiSymbol: 'SOL/USD', source: 'coingecko', coingeckoId: 'solana' },
+          'BNB/USD':  { tvSymbol: 'CRYPTO:BNBUSD',   apiSymbol: 'BNB/USD', source: 'coingecko', coingeckoId: 'binancecoin' },
+          'XRP/USD':  { tvSymbol: 'CRYPTO:XRPUSD',   apiSymbol: 'XRP/USD', source: 'coingecko', coingeckoId: 'ripple' },
+          'ADA/USD':  { tvSymbol: 'CRYPTO:ADAUSD',   apiSymbol: 'ADA/USD', source: 'coingecko', coingeckoId: 'cardano' },
+          'DOGE/USD': { tvSymbol: 'CRYPTO:DOGEUSD',  apiSymbol: 'DOGE/USD', source: 'coingecko', coingeckoId: 'dogecoin' },
+          'DOT/USD':  { tvSymbol: 'CRYPTO:DOTUSD',   apiSymbol: 'DOT/USD', source: 'coingecko', coingeckoId: 'polkadot' },
+          'AVAX/USD': { tvSymbol: 'CRYPTO:AVAXUSD',  apiSymbol: 'AVAX/USD', source: 'coingecko', coingeckoId: 'avalanche-2' },
+          'LINK/USD': { tvSymbol: 'CRYPTO:LINKUSD',  apiSymbol: 'LINK/USD', source: 'coingecko', coingeckoId: 'chainlink' },
+          'MATIC/USD':{ tvSymbol: 'CRYPTO:MATICUSD', apiSymbol: 'MATIC/USD',source: 'coingecko', coingeckoId: 'polygon-ecosystem-token' },
+          'SHIB/USD': { tvSymbol: 'CRYPTO:SHIBUSD',  apiSymbol: 'SHIB/USD', source: 'coingecko', coingeckoId: 'shiba-inu' },
+          'LTC/USD':  { tvSymbol: 'CRYPTO:LTCUSD',   apiSymbol: 'LTC/USD', source: 'coingecko', coingeckoId: 'litecoin' },
+          'TRX/USD':  { tvSymbol: 'CRYPTO:TRXUSD',   apiSymbol: 'TRX/USD', source: 'coingecko', coingeckoId: 'tron' },
+          'UNI/USD':  { tvSymbol: 'CRYPTO:UNIUSD',   apiSymbol: 'UNI/USD', source: 'coingecko', coingeckoId: 'uniswap' },
+          'ATOM/USD': { tvSymbol: 'CRYPTO:ATOMUSD',  apiSymbol: 'ATOM/USD', source: 'coingecko', coingeckoId: 'cosmos' },
+          'NEAR/USD': { tvSymbol: 'CRYPTO:NEARUSD',  apiSymbol: 'NEAR/USD', source: 'coingecko', coingeckoId: 'near' },
+          'XLM/USD':  { tvSymbol: 'CRYPTO:XLMUSD',   apiSymbol: 'XLM/USD', source: 'coingecko', coingeckoId: 'stellar' },
+          'ICP/USD':  { tvSymbol: 'CRYPTO:ICPUSD',   apiSymbol: 'ICP/USD', source: 'coingecko', coingeckoId: 'internet-computer' },
         };
 
         // Procesar resultados de Twelve Data
@@ -392,15 +541,15 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
       'GOLD': { symbol: 'OANDA:XAUUSD', apiSymbol: 'XAU/USD',  source: 'twelvedata' },
       'XAG': { symbol: 'OANDA:XAGUSD',  apiSymbol: 'XAG/USD',  source: 'twelvedata' },
       'SILVER': { symbol: 'OANDA:XAGUSD', apiSymbol: 'XAG/USD', source: 'twelvedata' },
-      'BTC': { symbol: 'BINANCE:BTCUSD', apiSymbol: 'BTC/USD',  source: 'twelvedata' },
-      'BITCOIN': { symbol: 'BINANCE:BTCUSD', apiSymbol: 'BTC/USD', source: 'twelvedata' },
-      'ETH': { symbol: 'BINANCE:ETHUSD', apiSymbol: 'ETH/USD',  source: 'twelvedata' },
-      'SOL': { symbol: 'BINANCE:SOLUSD', apiSymbol: 'SOL/USD',  source: 'twelvedata' },
-      'ADA': { symbol: 'BINANCE:ADAUSD', apiSymbol: 'ADA/USD',  source: 'twelvedata' },
-      'CARDANO': { symbol: 'BINANCE:ADAUSD', apiSymbol: 'ADA/USD', source: 'twelvedata' },
-      'DOT': { symbol: 'BINANCE:DOTUSD', apiSymbol: 'DOT/USD',  source: 'twelvedata' },
-      'AVAX': { symbol: 'BINANCE:AVAXUSD', apiSymbol: 'AVAX/USD', source: 'twelvedata' },
-      'XRP': { symbol: 'BINANCE:XRPUSD', apiSymbol: 'XRP/USD',  source: 'twelvedata' },
+      'BTC': { symbol: 'BINANCE:BTCUSD', apiSymbol: 'BTC/USD',  source: 'coingecko', coingeckoId: 'bitcoin' },
+      'BITCOIN': { symbol: 'BINANCE:BTCUSD', apiSymbol: 'BTC/USD', source: 'coingecko', coingeckoId: 'bitcoin' },
+      'ETH': { symbol: 'BINANCE:ETHUSD', apiSymbol: 'ETH/USD',  source: 'coingecko', coingeckoId: 'ethereum' },
+      'SOL': { symbol: 'BINANCE:SOLUSD', apiSymbol: 'SOL/USD',  source: 'coingecko', coingeckoId: 'solana' },
+      'ADA': { symbol: 'BINANCE:ADAUSD', apiSymbol: 'ADA/USD',  source: 'coingecko', coingeckoId: 'cardano' },
+      'CARDANO': { symbol: 'BINANCE:ADAUSD', apiSymbol: 'ADA/USD', source: 'coingecko', coingeckoId: 'cardano' },
+      'DOT': { symbol: 'BINANCE:DOTUSD', apiSymbol: 'DOT/USD',  source: 'coingecko', coingeckoId: 'polkadot' },
+      'AVAX': { symbol: 'BINANCE:AVAXUSD', apiSymbol: 'AVAX/USD', source: 'coingecko', coingeckoId: 'avalanche-2' },
+      'XRP': { symbol: 'BINANCE:XRPUSD', apiSymbol: 'XRP/USD',  source: 'coingecko', coingeckoId: 'ripple' },
       'EUR': { symbol: 'FX:EURUSD',     apiSymbol: 'EUR/USD',  source: 'twelvedata' },
       'EURUSD': { symbol: 'FX:EURUSD',  apiSymbol: 'EUR/USD',  source: 'twelvedata' },
       'GBP': { symbol: 'FX:GBPUSD',     apiSymbol: 'GBP/USD',  source: 'twelvedata' },
@@ -444,6 +593,9 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.currentApiSymbol = result.apiSymbol;
     this.currentSource = result.source;
     this.currentCoingeckoId = result.coingeckoId || '';
+    
+    // LIMPIEZA ATÓMICA: Evitar que el precio del activo anterior se quede pegado
+    this.currentPriceData = { c: 0, dp: 0 };
     
     this.displaySymbol = this.formatDisplaySymbol(this.currentSymbol);
     
@@ -496,101 +648,212 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
   updatePrice(apiSymbol: string, source: string) {
     if (!apiSymbol) return;
 
-    if (source === 'twelvedata') {
-      this.http.get(`https://api.twelvedata.com/quote?symbol=${apiSymbol}&apikey=${this.twelveDataApiKey}`)
-        .subscribe((data: any) => {
-          if (data && data.close && data.status !== 'error' && parseFloat(data.close) !== 0) {
-            this.currentPriceData = {
-              c: parseFloat(data.close),
-              dp: parseFloat(data.percent_change || 0)
-            };
-            this.cdr.detectChanges();
-          }
-        });
-    } else if (source === 'coingecko') {
+    // Si ya sabemos que TwelveData está agotado y es nuestra fuente, saltamos directo al flujo de respaldo
+    if (source === 'twelvedata' && this.sourceExhausted['twelvedata']) {
+      this.executePriceChain(apiSymbol);
+      return;
+    }
+
+    // Caso especial: Otros proveedores (Finnhub, Coingecko) que funcionan bien
+    if (source === 'coingecko') {
       const id = this.currentCoingeckoId;
-      if (!id) return;
       this.http.get(`https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd&include_24hr_change=true&x_cg_demo_api_key=${this.coinGeckoApiKey}`)
         .subscribe((data: any) => {
-          if (data && data[id]) {
-            this.currentPriceData = {
-              c: data[id].usd,
-              dp: data[id].usd_24h_change || 0
-            };
+          if (data && data[id] && apiSymbol === this.currentApiSymbol) {
+            this.currentPriceData = { c: data[id].usd, dp: data[id].usd_24h_change || 0 };
+            this.savePersistence();
             this.cdr.detectChanges();
           }
         });
-    } else if (source === 'finnhub_synthetic_wti') {
+      return;
+    }
+
+    if (source.startsWith('finnhub')) {
       this.http.get(`https://finnhub.io/api/v1/quote?symbol=${apiSymbol}&token=${this.apiKey}`)
         .subscribe((data: any) => {
-          if (data && data.c && data.c !== 0) {
-            const multiplier = 0.7146; 
-            this.currentPriceData = {
-              c: data.c * multiplier,
-              dp: data.dp || 0
-            };
-            this.cdr.detectChanges();
-          }
-        });
-    } else {
-      this.http.get(`https://finnhub.io/api/v1/quote?symbol=${apiSymbol}&token=${this.apiKey}`)
-        .subscribe((data: any) => {
-          if (data && data.c && data.c !== 0) {
+          if (data && data.c && data.c !== 0 && apiSymbol === this.currentApiSymbol) {
+            const multiplier = source === 'finnhub_synthetic_wti' ? 0.7146 : 1;
             let dp = data.dp;
             if (dp === 0 && data.pc !== 0) dp = ((data.c - data.pc) / data.pc) * 100;
-            this.currentPriceData = {
-              c: data.c,
-              dp: dp || 0
-            };
+            this.currentPriceData = { c: data.c * multiplier, dp: dp || 0, timestamp: new Date().getTime() };
             this.cdr.detectChanges();
           }
         });
+      return;
     }
+
+    // PASO 1: Intentar TwelveData (con timeout de 10s)
+    this.http.get(`https://api.twelvedata.com/quote?symbol=${apiSymbol}&apikey=${this.twelveDataApiKey}`)
+      .pipe(
+        timeout(10000),
+        catchError(() => of({ status: 'error', code: 429 }))
+      )
+      .subscribe((data: any) => {
+        // Si el símbolo ya no coincide con lo que el usuario está viendo, abortamos para no contaminar datos
+        if (apiSymbol !== this.currentApiSymbol) return;
+
+        if (data && data.close && data.status !== 'error' && parseFloat(data.close) !== 0) {
+          this.currentPriceData = {
+            c: parseFloat(data.close),
+            dp: parseFloat(data.percent_change || 0),
+            timestamp: new Date().getTime()
+          };
+          this.savePersistence();
+          this.cdr.detectChanges();
+        } else {
+          // Si falla TwelveData (o timeout), vamos al flujo de respaldo
+          if (data.code === 429 || data.status === 'error' || data.message?.includes('limit')) {
+            this.sourceExhausted['twelvedata'] = true;
+            this.savePersistence();
+          }
+          this.executePriceChain(apiSymbol);
+        }
+      });
   }
 
-  loadTickerPrices() {
-    // 1. Batch para Twelve Data (ahorramos muchísimas peticiones)
-    const tdSymbols = this.coins.filter(c => c.source === 'twelvedata').map(c => c.apiSymbol).join(',');
-    if (tdSymbols) {
-      this.http.get(`https://api.twelvedata.com/quote?symbol=${tdSymbols}&apikey=${this.twelveDataApiKey}`)
-        .subscribe((data: any) => {
-          if (!data || data.status === 'error') return;
-          this.coins.forEach(coin => {
-            if (coin.source === 'twelvedata') {
-              const quote = tdSymbols.includes(',') ? data[coin.apiSymbol] : data;
-              if (quote && quote.close) {
-                coin.price = parseFloat(quote.close);
-                coin.change = parseFloat(quote.percent_change || 0);
-              }
-            }
-          });
-          this.cdr.detectChanges();
-        });
+  // FLUJO DE RESPALDO ESTRICTO: Polygon -> Tiingo -> Alpha Vantage
+  executePriceChain(apiSymbol: string) {
+    if (apiSymbol !== this.currentApiSymbol) return;
+
+    const cleanSymbol = apiSymbol.replace('/', '').toUpperCase();
+    const [from, to] = apiSymbol.includes('/') ? apiSymbol.split('/') : [apiSymbol, 'USD'];
+    
+    // PASO 2: Polygon.io (Skip si está agotado o Timeout 10s)
+    if (this.sourceExhausted['polygon']) {
+      this.step3Tiingo(apiSymbol, from, to, cleanSymbol);
+      return;
     }
 
-    // 2. Otros activos (Finnhub)
-    this.coins.forEach((coin) => {
-      if (coin.source === 'finnhub_synthetic_wti') {
-        this.http.get(`https://finnhub.io/api/v1/quote?symbol=${coin.apiSymbol}&token=${this.apiKey}`)
-          .subscribe((data: any) => {
-            if (data && data.c && data.c !== 0) {
-              const multiplier = 0.7146;
-              coin.price = data.c * multiplier;
-              coin.change = data.dp || 0;
-              this.cdr.detectChanges();
-            }
-          });
-      } else if (coin.source === 'finnhub') {
-        this.http.get(`https://finnhub.io/api/v1/quote?symbol=${coin.apiSymbol}&token=${this.apiKey}`)
-          .subscribe((data: any) => {
-            if (data && data.c && data.c !== 0) {
-              coin.price = data.c;
-              let dp = data.dp;
-              if (dp === 0 && data.pc !== 0) dp = ((data.c - data.pc) / data.pc) * 100;
-              coin.change = dp || 0;
-              this.cdr.detectChanges();
-            }
-          });
+    const polygonUrl = apiSymbol.includes('/') 
+      ? `https://api.polygon.io/v1/last/currencies/${from}/${to}?apiKey=${this.polygonApiKey}`
+      : `https://api.polygon.io/v2/last/nbbo/${cleanSymbol}?apiKey=${this.polygonApiKey}`;
+
+    this.http.get(polygonUrl).pipe(
+      timeout(10000),
+      catchError(() => of(null))
+    ).subscribe((data: any) => {
+      if (apiSymbol !== this.currentApiSymbol) return;
+
+      const price = data?.last?.price || data?.results?.p;
+      if (price) {
+        this.currentPriceData = { ...this.currentPriceData, c: price, timestamp: new Date().getTime() };
+        this.savePersistence();
+        this.cdr.detectChanges();
+      } else {
+        if (data?.status === 'ERROR' || data?.message?.includes('limit')) {
+          this.sourceExhausted['polygon'] = true;
+          this.savePersistence();
+        }
+        if (apiSymbol === this.currentApiSymbol) {
+          this.step3Tiingo(apiSymbol, from, to, cleanSymbol);
+        }
+      }
+    });
+  }
+
+  private step3Tiingo(apiSymbol: string, from: string, to: string, cleanSymbol: string) {
+    if (this.sourceExhausted['tiingo']) {
+      this.step4AlphaVantage(apiSymbol, from, to);
+      return;
+    }
+
+    const tiingoTicker = apiSymbol.includes('/') ? apiSymbol.replace('/', '').toLowerCase() : apiSymbol.toLowerCase();
+    const tiingoUrl = apiSymbol.includes('/')
+      ? `https://api.tiingo.com/tiingo/fx/${tiingoTicker}/top?token=${this.tiingoApiKey}`
+      : `https://api.tiingo.com/tiingo/crypto/prices?tickers=${tiingoTicker}&token=${this.tiingoApiKey}`;
+
+    this.http.get(tiingoUrl).pipe(
+      timeout(10000),
+      catchError(() => of(null))
+    ).subscribe((tData: any) => {
+      if (apiSymbol !== this.currentApiSymbol) return;
+
+      const tPrice = tData && tData[0] ? (tData[0]?.midPrice || tData[0]?.lastPrice) : null;
+      if (tPrice) {
+        this.currentPriceData = { ...this.currentPriceData, c: tPrice, timestamp: new Date().getTime() };
+        this.savePersistence();
+        this.cdr.detectChanges();
+      } else {
+        // Detectar agotamiento de Tiingo (Captura de usuario: -11 req left)
+        this.sourceExhausted['tiingo'] = true;
+        this.savePersistence();
+        this.step4AlphaVantage(apiSymbol, from, to);
+      }
+    });
+  }
+
+  private step4AlphaVantage(apiSymbol: string, from: string, to: string) {
+    const avUrl = `https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=${from}&to_currency=${to}&apikey=${this.alphaVantageApiKey}`;
+    this.http.get(avUrl).pipe(timeout(10000), catchError(() => of(null))).subscribe((avRes: any) => {
+      if (apiSymbol !== this.currentApiSymbol) return;
+      const rate = avRes ? avRes['Realtime Currency Exchange Rate'] : null;
+      if (rate && rate['5. Exchange Rate']) {
+        this.currentPriceData = {
+          ...this.currentPriceData,
+          c: parseFloat(rate['5. Exchange Rate']),
+          timestamp: new Date().getTime()
+        };
+        this.savePersistence();
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  // Versión ligera del fallback para el ticker (solo precio, con flujo estricto)
+  fetchPriceOnlyFallback(apiSymbol: string, callback: (price: number) => void) {
+    const cleanSymbol = apiSymbol.replace('/', '').toUpperCase();
+    const [from, to] = apiSymbol.includes('/') ? apiSymbol.split('/') : [apiSymbol, 'USD'];
+
+    // PASO 2: Polygon.io
+    if (this.sourceExhausted['polygon']) {
+      this.fetchStep3Tiingo(apiSymbol, from, to, callback);
+      return;
+    }
+
+    const polygonUrl = apiSymbol.includes('/') 
+      ? `https://api.polygon.io/v1/last/currencies/${from}/${to}?apiKey=${this.polygonApiKey}`
+      : `https://api.polygon.io/v2/last/nbbo/${cleanSymbol}?apiKey=${this.polygonApiKey}`;
+
+    this.http.get(polygonUrl).pipe(timeout(10000), catchError(() => of(null))).subscribe((data: any) => {
+      const price = data?.last?.price || data?.results?.p;
+      if (price) {
+        callback(price);
+      } else {
+        if (data?.status === 'ERROR') this.sourceExhausted['polygon'] = true;
+        this.fetchStep3Tiingo(apiSymbol, from, to, callback);
+      }
+    });
+  }
+
+  private fetchStep3Tiingo(apiSymbol: string, from: string, to: string, callback: (price: number) => void) {
+    if (this.sourceExhausted['tiingo']) {
+      this.fetchStep4AlphaVantage(from, to, callback);
+      return;
+    }
+
+    const tiingoTicker = apiSymbol.includes('/') ? apiSymbol.replace('/', '').toLowerCase() : apiSymbol.toLowerCase();
+    const tiingoUrl = apiSymbol.includes('/')
+      ? `https://api.tiingo.com/tiingo/fx/${tiingoTicker}/top?token=${this.tiingoApiKey}`
+      : `https://api.tiingo.com/tiingo/crypto/prices?tickers=${tiingoTicker}&token=${this.tiingoApiKey}`;
+    
+    this.http.get(tiingoUrl).pipe(timeout(10000), catchError(() => of(null))).subscribe((tData: any) => {
+      const tPrice = tData && tData[0] ? (tData[0]?.midPrice || tData[0]?.lastPrice) : null;
+      if (tPrice) {
+        callback(tPrice);
+      } else {
+        this.sourceExhausted['tiingo'] = true;
+        this.savePersistence();
+        this.fetchStep4AlphaVantage(from, to, callback);
+      }
+    });
+  }
+
+  private fetchStep4AlphaVantage(from: string, to: string, callback: (price: number) => void) {
+    const avUrl = `https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=${from}&to_currency=${to}&apikey=${this.alphaVantageApiKey}`;
+    this.http.get(avUrl).pipe(timeout(10000), catchError(() => of(null))).subscribe((avRes: any) => {
+      const rate = avRes ? avRes['Realtime Currency Exchange Rate'] : null;
+      if (rate && rate['5. Exchange Rate']) {
+        callback(parseFloat(rate['5. Exchange Rate']));
       }
     });
   }
@@ -619,10 +882,23 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.http.get(`https://finnhub.io/api/v1/calendar/economic?from=${dateStr}&to=${dateStr}&token=${this.apiKey}`)
       .subscribe((res: any) => {
         this.economicEvents = (res.economicCalendar || []).map((event: any) => {
-          const impactMap: { [key: string]: number } = { 'low': 1, 'med': 2, 'medium': 2, 'high': 3 };
+          const impactMap: { [key: string]: number } = { 'low': 1, 'med': 2, 'medium': 2, 'high': 3, 'none': 0 };
+          
+          let localTime = '--:--';
+          if (event.time) {
+            // Finnhub devuelve UTC "YYYY-MM-DD HH:mm:ss", lo convertimos a local
+            const utcDate = new Date(event.time + ' UTC');
+            if (!isNaN(utcDate.getTime())) {
+              localTime = utcDate.toLocaleTimeString(undefined, {
+                hour: '2-digit', minute: '2-digit', hour12: true
+              });
+            }
+          }
+
           return {
             ...event,
-            impact: impactMap[event.impact?.toLowerCase()] || 1
+            localTime: localTime,
+            impact: impactMap[event.impact?.toLowerCase()] || 0
           };
         });
         this.applyFilters();

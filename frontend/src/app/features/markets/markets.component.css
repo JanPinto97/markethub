@@ -82,3 +82,9 @@
   0%, 100% { opacity: 1; }
   50% { opacity: .8; }
 }
+
+/* Impact Colors */
+.text-impact-high { color: #cf352e; }
+.text-impact-medium { color: rgb(255, 128, 0); }
+.text-impact-low { color: #facc15; }
+.text-impact-none { color: #cbd5e1; }

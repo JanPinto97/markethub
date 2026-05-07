@@ -7,8 +7,11 @@
         <div *ngFor="let coin of coins" class="ticker-item px-12 border-r border-slate-50">
           <span class="text-slate-400 font-black uppercase text-[9px] tracking-tighter">{{ coin.symbol }}</span>
           <span [style.color]="coin.change >= 0 ? '#006c49' : '#cf352e'" class="font-mono text-[11px]">
-            {{ coin.price | currency:'USD':'symbol':getPriceFormat(coin.tech) }}
-            <span class="text-[9px] font-bold ml-1">({{ coin.change | number:'1.2-2' }}%)</span>
+            <ng-container *ngIf="coin.price > 0; else tickerLoading">
+              {{ coin.price | currency:'USD':'symbol':getPriceFormat(coin.tech) }}
+              <span class="text-[9px] font-bold ml-1">({{ coin.change | number:'1.2-2' }}%)</span>
+            </ng-container>
+            <ng-template #tickerLoading>...</ng-template>
           </span>
         </div>
       </div>
@@ -212,14 +215,17 @@
             class="px-6 py-4 flex flex-col gap-2 hover:bg-[#f7f9fb] transition-colors group">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-3">
-                <span class="text-[9px] font-mono text-slate-400">{{ event.time ? (event.time.split(' ')[1] || event.time) : '--:--' }}</span>
+                <span class="text-[9px] font-mono text-slate-400">{{ event.localTime }}</span>
                 <span class="text-[9px] font-black text-slate-900 uppercase px-1.5 py-0.5 bg-slate-100 rounded">{{ event.country }}</span>
               </div>
-              <div class="flex gap-1">
-                <!-- 3 dots always present: filling 1/3, 2/3 or 3/3 with #cf352e -->
-                <div class="w-1.5 h-1.5 rounded-full" [style.background]="event.impact >= 1 ? '#cf352e' : '#e2e8f0'"></div>
-                <div class="w-1.5 h-1.5 rounded-full" [style.background]="event.impact >= 2 ? '#cf352e' : '#e2e8f0'"></div>
-                <div class="w-1.5 h-1.5 rounded-full" [style.background]="event.impact >= 3 ? '#cf352e' : '#e2e8f0'"></div>
+              <div class="flex">
+                <span class="material-symbols-outlined text-[18px]"
+                  [ngClass]="{
+                    'text-impact-high': event.impact >= 3,
+                    'text-impact-medium': event.impact === 2,
+                    'text-impact-low': event.impact === 1,
+                    'text-impact-none': event.impact === 0
+                  }">folder</span>
               </div>
             </div>
             <span class="text-[11px] font-bold text-[#44474d] group-hover:text-[#191c1e] transition-colors leading-tight">{{ event.event }}</span>
