@@ -104,17 +104,47 @@
         }
         @for (c of visibleComments(); track c.id) {
           <div class="pc-comment">
-            @if (commentAuthorAvatar(c)) {
-              <img [src]="commentAuthorAvatar(c) | mediaUrl" class="pc-comment-avatar" alt="" />
+            @if (commentAuthorUsername(c); as cUsername) {
+              <a [routerLink]="'/profile/' + cUsername" class="pc-comment-avatar-link">
+                @if (commentAuthorAvatar(c)) {
+                  <img [src]="commentAuthorAvatar(c) | mediaUrl" class="pc-comment-avatar" alt="" />
+                } @else {
+                  <div class="pc-comment-avatar pc-avatar-initial" [style.background-color]="initialColor(commentAuthorName(c))">
+                    {{ initial(commentAuthorName(c)) }}
+                  </div>
+                }
+              </a>
             } @else {
-              <div class="pc-comment-avatar pc-avatar-initial" [style.background-color]="initialColor(commentAuthorName(c))">
-                {{ initial(commentAuthorName(c)) }}
-              </div>
+              @if (commentAuthorAvatar(c)) {
+                <img [src]="commentAuthorAvatar(c) | mediaUrl" class="pc-comment-avatar" alt="" />
+              } @else {
+                <div class="pc-comment-avatar pc-avatar-initial" [style.background-color]="initialColor(commentAuthorName(c))">
+                  {{ initial(commentAuthorName(c)) }}
+                </div>
+              }
             }
             <div class="pc-comment-body">
               <div class="pc-comment-top">
-                <span class="pc-comment-author">{{ commentAuthorName(c) }}</span>
+                @if (commentAuthorUsername(c); as cUsername) {
+                  <a [routerLink]="'/profile/' + cUsername" class="pc-comment-author">{{ commentAuthorName(c) }}</a>
+                } @else {
+                  <span class="pc-comment-author">{{ commentAuthorName(c) }}</span>
+                }
                 <span class="pc-comment-time">{{ relativeTime(c.createdAt) }}</span>
+                @if (canDeleteComment(c)) {
+                  <div class="pc-menu-wrap pc-comment-menu-wrap">
+                    <button class="pc-menu-btn" (click)="toggleCommentMenu($event, c.id)" aria-label="Comment options" aria-haspopup="true" [attr.aria-expanded]="openCommentMenuId() === c.id">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                        <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
+                      </svg>
+                    </button>
+                    @if (openCommentMenuId() === c.id) {
+                      <ul role="menu" class="pc-menu" (click)="$event.stopPropagation()">
+                        <li role="menuitem"><button class="pc-menu-item pc-menu-danger" (click)="deleteComment(c)" aria-label="Delete comment">Delete</button></li>
+                      </ul>
+                    }
+                  </div>
+                }
               </div>
               <p class="pc-comment-text">{{ c.text }}</p>
             </div>

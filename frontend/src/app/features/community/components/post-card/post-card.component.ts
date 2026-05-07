@@ -28,6 +28,7 @@ export class PostCardComponent {
 
   expanded = signal(false);
   menuOpen = signal(false);
+  openCommentMenuId = signal<string | null>(null);
   removing = signal(false);
   videoError = signal(false);
 
@@ -131,6 +132,7 @@ export class PostCardComponent {
 
   toggleMenu(event: Event) {
     event.stopPropagation();
+    this.openCommentMenuId.set(null);
     this.menuOpen.update(v => !v);
   }
 
@@ -138,9 +140,16 @@ export class PostCardComponent {
     this.menuOpen.set(false);
   }
 
+  toggleCommentMenu(event: Event, commentId: string) {
+    event.stopPropagation();
+    this.menuOpen.set(false);
+    this.openCommentMenuId.update(id => id === commentId ? null : commentId);
+  }
+
   @HostListener('document:click')
   onDocClick() {
     if (this.menuOpen()) this.menuOpen.set(false);
+    if (this.openCommentMenuId() !== null) this.openCommentMenuId.set(null);
   }
 
   requireAuth(): boolean {
@@ -232,6 +241,42 @@ export class PostCardComponent {
     const a = c.author;
     if (!a || typeof a === 'string') return undefined;
     return a.avatar;
+  }
+
+  commentAuthorUsername(c: PostComment): string | null {
+    const a = c.author;
+    if (!a || typeof a === 'string') return null;
+    return a.username || null;
+  }
+
+  canDeleteComment(c: PostComment): boolean {
+    const u = this.auth.currentUser();
+    if (!u) return false;
+    if (this.isMod) return true;
+    const a = c.author;
+    if (!a || typeof a === 'string') return false;
+    return a._id === u.id;
+  }
+
+  deleteComment(c: PostComment): void {
+    if (!this.canDeleteComment(c)) return;
+    this.openCommentMenuId.set(null);
+    if (!confirm('Delete this comment?')) return;
+
+    const prev = this.comments();
+    this.comments.set(prev.filter(x => x.id !== c.id));
+    this.post.commentCount = Math.max(0, (this.post.commentCount || 0) - 1);
+
+    this.svc.deleteComment(this.post.id, c.id).subscribe({
+      next: () => {
+        this.toast.show('Comment deleted', 'success');
+      },
+      error: () => {
+        this.comments.set(prev);
+        this.post.commentCount = (this.post.commentCount || 0) + 1;
+        this.toast.show('Could not delete comment', 'error');
+      }
+    });
   }
 
   get canPin(): boolean {

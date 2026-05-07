@@ -125,8 +125,10 @@
   justify-content: center;
 }
 
-.pc-card:hover .pc-menu-btn,
-.pc-menu-btn:focus {
+.pc-header:hover > .pc-menu-wrap .pc-menu-btn,
+.pc-comment:hover .pc-menu-btn,
+.pc-menu-btn:focus-visible,
+.pc-menu-btn[aria-expanded="true"] {
   opacity: 1;
 }
 
@@ -312,6 +314,25 @@
   font-weight: var(--weight-semibold);
   font-size: var(--text-body-sm);
   color: var(--on-surface);
+  text-decoration: none;
+}
+
+a.pc-comment-author:hover {
+  text-decoration: underline;
+}
+
+.pc-comment-avatar-link {
+  display: inline-flex;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+.pc-comment-menu-wrap {
+  margin-left: auto;
+}
+
+.pc-comment-menu-wrap .pc-menu-btn {
+  padding: 2px;
 }
 
 .pc-comment-time {
