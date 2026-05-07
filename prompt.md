@@ -1,19 +1,36 @@
-Two small fixes in seeder/src/single-agent.ts:
+# MarketHub Seeder — Phase 2
 
-1. USERNAME GENERATION
-Replace the current random hash suffix username with an LLM-generated one.
-Add a generateUsername(persona) call before register that asks Gemma to invent
-a social-network-style username coherent with the persona (examples for a day
-trader: vix_whisperer, spy_scalper, gamma_flow, 0dte_hunter).
-Prompt must return ONLY the username, no explanation, no quotes, lowercase,
-underscores allowed, max 20 chars, no numbers unless they add meaning.
+## Goal
 
-2. CONTEXT-AWARE COMMENT
-When commenting on a post, the feed response already returns the post object.
-Pass the full post text to the comment generation prompt so Gemma can respond
-coherently to what was actually written, not just generically.
-Check what field the feed returns for post content (text, body, content...)
-and use it. If the field is empty or missing, fall back to a generic comment.
+Scale the seeder from a single hardcoded agent to a multi-agent system with persistent state, distinct personas, and a continuous orchestration loop.
 
-Do not touch llm.ts, api-client.ts, or any other file.
-Do not explain anything. Return only the modified single-agent.ts.
+Before writing anything, read all existing files in `seeder/src/` to understand what is already built and how it works. Extend it — do not rewrite what already works.
+
+Also read the relevant backend routes and controllers to discover any endpoints not yet used in the seeder (likes, replies, follow user, etc.).
+
+## What needs to exist after this phase
+
+**Personas** — a catalogue of distinct investor/trader personality types. Each persona defines how an agent behaves: tone, expertise, how often it posts, how social it is, how contrarian, how often it likes content, etc. There should be enough variety that agents feel like different kinds of people on a financial social network.
+
+**Persistent agent state** — agents must survive between runs. Their identity (username, credentials, MarketHub user id), their token, and their memory of what they have already seen and done must be saved to disk and loaded on the next run.
+
+**Bootstrap script** — a one-time command to create N new agents: generate their identity with the LLM, register them via API, and save their state to disk. Should be runnable multiple times to add more agents without breaking existing ones.
+
+**Agent decision loop** — each agent, when it is its turn to act, looks at the current state of the feed and decides what to do: post something, comment on a post, like something, reply to a comment, follow someone, or do nothing. The decision must be made by the LLM and must be coherent with the agent's persona. The agent should not repeat actions on content it has already interacted with.
+
+**Orchestrator** — a continuous loop that runs until stopped manually. Each cycle it picks a subset of agents and makes them act, then waits before the next cycle. If a single agent fails, the loop must continue with the others. State must be saved after each agent acts.
+
+## Constraints
+
+- Ollama runs locally and cannot parallelize — process agents sequentially within a cycle
+- No new npm dependencies
+- Credentials and state files must never be committed — ensure they are gitignored
+- The existing `single-agent.ts` must keep working as before
+
+## IMPORTANT
+
+- Do not explain anything
+- Do not describe steps or progress
+- Do not validate requirements
+- Return only final output
+- Do not repeat unchanged code

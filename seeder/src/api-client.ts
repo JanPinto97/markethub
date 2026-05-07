@@ -66,6 +66,37 @@ interface CommentResponse {
   comment: { id: string; text: string; [k: string]: unknown };
 }
 
+export interface PostCommentItem {
+  id: string;
+  author: string | PostAuthor;
+  text: string;
+  createdAt?: string;
+  replies?: PostCommentItem[];
+  [k: string]: unknown;
+}
+
+interface CommentsListResponse {
+  success: boolean;
+  comments: PostCommentItem[];
+}
+
+interface LikeResponse {
+  success: boolean;
+  liked: boolean;
+  likesCount: number;
+}
+
+interface FollowResponse {
+  success: boolean;
+  following: boolean;
+  followerCount?: number;
+}
+
+interface UserProfileResponse {
+  success: boolean;
+  user: { id: string; username: string; [k: string]: unknown };
+}
+
 export class MarketHubClient {
   private token: string | null = null;
 
@@ -153,6 +184,44 @@ export class MarketHubClient {
       method: 'POST',
       auth: true,
       body: JSON.stringify(payload),
+    });
+  }
+
+  async getPostComments(postId: string): Promise<CommentsListResponse> {
+    return this.request<CommentsListResponse>(`/posts/${postId}/comments`, {
+      method: 'GET',
+    });
+  }
+
+  async likePost(postId: string): Promise<LikeResponse> {
+    return this.request<LikeResponse>(`/posts/${postId}/like`, {
+      method: 'POST',
+      auth: true,
+    });
+  }
+
+  async replyToComment(
+    postId: string,
+    commentId: string,
+    payload: CommentPayload,
+  ): Promise<CommentResponse> {
+    return this.request<CommentResponse>(`/posts/${postId}/comments/${commentId}/reply`, {
+      method: 'POST',
+      auth: true,
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async followUser(username: string): Promise<FollowResponse> {
+    return this.request<FollowResponse>(`/users/${encodeURIComponent(username)}/follow`, {
+      method: 'POST',
+      auth: true,
+    });
+  }
+
+  async getUserProfile(username: string): Promise<UserProfileResponse> {
+    return this.request<UserProfileResponse>(`/users/${encodeURIComponent(username)}`, {
+      method: 'GET',
     });
   }
 }
