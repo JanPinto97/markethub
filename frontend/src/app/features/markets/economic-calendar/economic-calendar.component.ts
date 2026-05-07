@@ -35,10 +35,10 @@ export class EconomicCalendarComponent implements OnInit {
   // Filters State
   showFilters = false;
   searchQuery = '';
-  currencyList = ['USD','EUR','GBP','JPY','AUD','CAD','CHF','NZD','CNY'];
+  currencyList = ['USD','EUR','GBP','JPY','AUD','CAD','CHF','NZD','CNY','OTHER'];
   filters: { impact: Record<string, boolean>, currencies: Record<string, boolean> } = {
     impact: { high: true, medium: true, low: true, none: true },
-    currencies: { USD: true, EUR: true, GBP: true, JPY: true, AUD: true, CAD: true, CHF: true, NZD: true, CNY: true }
+    currencies: { USD: true, EUR: true, GBP: true, JPY: true, AUD: true, CAD: true, CHF: true, NZD: true, CNY: true, OTHER: true }
   };
 
   loading = true;
@@ -178,6 +178,7 @@ export class EconomicCalendarComponent implements OnInit {
       if (cur === 'CHF' && !this.filters.currencies['CHF']) return false;
       if (cur === 'NZD' && !this.filters.currencies['NZD']) return false;
       if (cur === 'CNY' && !this.filters.currencies['CNY']) return false;
+      if (cur === 'OTHER' && !this.filters.currencies['OTHER']) return false;
 
       return true;
     });

@@ -35,3 +35,9 @@
 .animate-fade-in {
   animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* Impact Colors */
+.text-impact-high { color: #cf352e; }
+.text-impact-medium { color: rgb(255, 128, 0); }
+.text-impact-low { color: #facc15; }
+.text-impact-none { color: #cbd5e1; }

@@ -57,19 +57,19 @@
         <h3 class="text-xs font-black tracking-[0.2em] text-slate-400 uppercase border-b border-slate-100 pb-2 mb-2">Legend</h3>
         <div class="flex flex-col gap-3">
           <div class="flex items-center gap-3">
-            <span class="material-symbols-outlined text-rose-500 text-[18px]">folder</span>
+            <span class="material-symbols-outlined text-impact-high text-[18px]">folder</span>
             <span class="text-xs font-bold text-slate-600">High Impact Expected</span>
           </div>
           <div class="flex items-center gap-3">
-            <span class="material-symbols-outlined text-amber-500 text-[18px]">folder</span>
+            <span class="material-symbols-outlined text-impact-medium text-[18px]">folder</span>
             <span class="text-xs font-bold text-slate-600">Medium Impact Expected</span>
           </div>
           <div class="flex items-center gap-3">
-            <span class="material-symbols-outlined text-yellow-400 text-[18px]">folder</span>
+            <span class="material-symbols-outlined text-impact-low text-[18px]">folder</span>
             <span class="text-xs font-bold text-slate-600">Low Impact Expected</span>
           </div>
           <div class="flex items-center gap-3">
-            <span class="material-symbols-outlined text-slate-300 text-[18px]">folder</span>
+            <span class="material-symbols-outlined text-impact-none text-[18px]">folder</span>
             <span class="text-xs font-bold text-slate-600">Non-Economic</span>
           </div>
           <div class="mt-4 border-t border-slate-100 pt-4 flex flex-col gap-2">
@@ -133,22 +133,22 @@
           <div class="flex flex-col gap-2">
             <label class="flex items-center gap-3 cursor-pointer group">
               <input type="checkbox" [checked]="filters.impact['high']" (change)="setImpactFilter('high', $event)" class="accent-rose-500 w-4 h-4">
-              <span class="material-symbols-outlined text-rose-500 text-[18px]">folder</span>
+              <span class="material-symbols-outlined text-impact-high text-[18px]">folder</span>
               <span class="text-sm font-bold text-slate-700 group-hover:text-rose-600 transition-colors">High Impact</span>
             </label>
             <label class="flex items-center gap-3 cursor-pointer group">
               <input type="checkbox" [checked]="filters.impact['medium']" (change)="setImpactFilter('medium', $event)" class="accent-amber-500 w-4 h-4">
-              <span class="material-symbols-outlined text-amber-500 text-[18px]">folder</span>
+              <span class="material-symbols-outlined text-impact-medium text-[18px]">folder</span>
               <span class="text-sm font-bold text-slate-700 group-hover:text-amber-600 transition-colors">Medium Impact</span>
             </label>
             <label class="flex items-center gap-3 cursor-pointer group">
               <input type="checkbox" [checked]="filters.impact['low']" (change)="setImpactFilter('low', $event)" class="accent-yellow-400 w-4 h-4">
-              <span class="material-symbols-outlined text-yellow-400 text-[18px]">folder</span>
+              <span class="material-symbols-outlined text-impact-low text-[18px]">folder</span>
               <span class="text-sm font-bold text-slate-700 group-hover:text-yellow-500 transition-colors">Low Impact</span>
             </label>
             <label class="flex items-center gap-3 cursor-pointer group">
               <input type="checkbox" [checked]="filters.impact['none']" (change)="setImpactFilter('none', $event)" class="accent-slate-400 w-4 h-4">
-              <span class="material-symbols-outlined text-slate-300 text-[18px]">folder</span>
+              <span class="material-symbols-outlined text-impact-none text-[18px]">folder</span>
               <span class="text-sm font-bold text-slate-700 group-hover:text-slate-900 transition-colors">Non-Economic</span>
             </label>
           </div>
@@ -230,10 +230,10 @@
                   <td class="py-3 px-4 text-center">
                     <span class="material-symbols-outlined text-[20px]"
                       [ngClass]="{
-                        'text-rose-500': event.impactLevel === 3,
-                        'text-amber-500': event.impactLevel === 2,
-                        'text-yellow-400': event.impactLevel === 1,
-                        'text-slate-300': event.impactLevel === 0
+                        'text-impact-high': event.impactLevel === 3,
+                        'text-impact-medium': event.impactLevel === 2,
+                        'text-impact-low': event.impactLevel === 1,
+                        'text-impact-none': event.impactLevel === 0
                       }">
                       folder
                     </span>
