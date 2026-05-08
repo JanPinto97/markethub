@@ -1,20 +1,19 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { EconomicCalendarComponent } from './economic-calendar.component';
 
-import { EconomicCalendar } from './economic-calendar';
-
-describe('EconomicCalendar', () => {
-  let component: EconomicCalendar;
-  let fixture: ComponentFixture<EconomicCalendar>;
+describe('EconomicCalendarComponent', () => {
+  let component: EconomicCalendarComponent;
+  let fixture: ComponentFixture<EconomicCalendarComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EconomicCalendar]
+      imports: [EconomicCalendarComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(EconomicCalendar);
+    fixture = TestBed.createComponent(EconomicCalendarComponent);
     component = fixture.componentInstance;
-    await fixture.whenStable();
+    fixture.detectChanges();
   });
 
   it('should create', () => {

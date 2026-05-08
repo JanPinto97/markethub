@@ -1,95 +1,108 @@
 <div class="news-container max-w-[1440px] mx-auto font-sans text-[#191c1e]">
-    <!-- Header Section (Floating Card) -->
-    <header class="card-premium p-8 mb-8 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-            <h1 class="text-3xl font-black tracking-tight uppercase">Financial News</h1>
-            <div class="group relative flex items-center justify-center">
-                <img src="assets/images/info-light.png" alt="Info" 
-                     class="w-4 h-4 opacity-50 hover:opacity-100 cursor-pointer transition-opacity">
-                <div class="absolute left-0 top-full mt-2 w-[300px] p-4 bg-slate-800 text-white text-[11px] leading-relaxed rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 normal-case font-medium">
-                  Recent updates on international currency, natural resource, and stock markets, along with the latest financial reports. In addition, more comprehensive coverage will be offered on natural resources, stocks, interest rates, and various other economic indicators.
+    <ng-container *ngIf="!selectedArticle">
+        <!-- Header Section (Floating Card) -->
+        <header class="card-premium p-8 mb-8 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <h1 class="text-3xl font-black tracking-tight uppercase">Financial News</h1>
+                <div class="group relative flex items-center justify-center">
+                    <img src="assets/images/info-light.png" alt="Info" 
+                         class="w-4 h-4 opacity-50 hover:opacity-100 cursor-pointer transition-opacity">
+                    <div class="absolute left-0 top-full mt-2 w-[300px] p-4 bg-slate-800 text-white text-[11px] leading-relaxed rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 normal-case font-medium">
+                      Recent updates on international currency, natural resource, and stock markets, along with the latest financial reports. In addition, more comprehensive coverage will be offered on natural resources, stocks, interest rates, and various other economic indicators.
+                    </div>
                 </div>
             </div>
+            <div class="hidden lg:flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                Live Market Updates
+            </div>
+        </header>
+
+        <!-- Categories Tabs (Floating Card) -->
+        <nav class="card-premium mb-10 flex overflow-x-auto no-scrollbar">
+            <button *ngFor="let cat of categories" 
+                    (click)="setCategory(cat)"
+                    [class.active]="activeCategory === cat"
+                    class="flex-1 px-8 py-5 text-[10px] font-black uppercase tracking-widest transition-all hover:bg-slate-50 whitespace-nowrap border-r border-slate-50 last:border-none">
+                {{ cat }}
+            </button>
+        </nav>
+
+        <!-- LOADING STATE -->
+        <div *ngIf="isLoading" class="card-premium flex flex-col items-center justify-center py-20 gap-4">
+            <div class="w-12 h-12 border-4 border-slate-100 border-t-[#006c49] rounded-full animate-spin"></div>
+            <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">Aggregating Global Feed...</span>
         </div>
-        <div class="hidden lg:flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
-            <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-            Live Market Updates
-        </div>
-    </header>
 
-    <!-- Categories Tabs (Floating Card) -->
-    <nav class="card-premium mb-10 flex overflow-x-auto no-scrollbar">
-        <button *ngFor="let cat of categories" 
-                (click)="setCategory(cat)"
-                [class.active]="activeCategory === cat"
-                class="flex-1 px-8 py-5 text-[10px] font-black uppercase tracking-widest transition-all hover:bg-slate-50 whitespace-nowrap border-r border-slate-50 last:border-none">
-            {{ cat }}
-        </button>
-    </nav>
-
-    <!-- LOADING STATE -->
-    <div *ngIf="isLoading" class="card-premium flex flex-col items-center justify-center py-20 gap-4">
-        <div class="w-12 h-12 border-4 border-slate-100 border-t-[#006c49] rounded-full animate-spin"></div>
-        <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">Aggregating Global Feed...</span>
-    </div>
-
-    <ng-container *ngIf="!isLoading && filteredNews.length > 0">
-        <!-- HERO NEWS (High Impact Floating Card) -->
-        <div class="card-premium p-6 lg:p-10 mb-16 group cursor-pointer grid grid-cols-1 lg:grid-cols-12 gap-10" 
-             (click)="openUrl(filteredNews[0].url)">
-            <div class="lg:col-span-7 relative overflow-hidden rounded-2xl bg-slate-100 aspect-video lg:h-[400px]">
-                <img [src]="filteredNews[0].image || 'assets/images/news-placeholder.png'" 
-                     class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-                     alt="Hero News">
-                <div class="absolute top-6 left-6 flex gap-2">
-                    <span *ngIf="filteredNews[0].isPro" class="bg-[#ffbb00] text-black text-[9px] font-black uppercase px-2 py-1 rounded shadow-lg">PRO</span>
-                    <span class="bg-[#0d1c32] text-white text-[9px] font-black uppercase px-2 py-1 rounded shadow-lg">{{ filteredNews[0].category }}</span>
+        <ng-container *ngIf="!isLoading && filteredNews.length > 0">
+            <!-- HERO NEWS (High Impact Floating Card) -->
+            <div class="card-premium p-6 lg:p-10 mb-16 group cursor-pointer grid grid-cols-1 lg:grid-cols-12 gap-10" 
+                 (click)="openArticle(filteredNews[0])">
+                <div class="lg:col-span-7 relative overflow-hidden rounded-2xl bg-slate-100 aspect-video lg:h-[400px]">
+                    <img [src]="filteredNews[0].image || 'assets/images/news-placeholder.png'" 
+                         #heroImg
+                         (error)="heroImg.src='assets/images/news-placeholder.png'"
+                         class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                         alt="Hero News">
+                    <div class="absolute top-6 left-6 flex gap-2">
+                        <span *ngIf="filteredNews[0].isPro" class="bg-[#ffbb00] text-black text-[9px] font-black uppercase px-2 py-1 rounded shadow-lg">PRO</span>
+                        <span class="bg-[#0d1c32] text-white text-[9px] font-black uppercase px-2 py-1 rounded shadow-lg">{{ filteredNews[0].category }}</span>
+                    </div>
+                </div>
+                <div class="lg:col-span-5 flex flex-col justify-center">
+                    <div class="flex items-center gap-2 mb-4">
+                        <span class="text-xs font-black text-[#006c49] uppercase">{{ filteredNews[0].source }}</span>
+                        <span class="text-slate-300">•</span>
+                        <span class="text-xs text-slate-400 font-mono">{{ filteredNews[0].time | date:'shortTime' }}</span>
+                    </div>
+                    <h2 class="text-3xl font-black leading-[1.1] mb-6 group-hover:text-[#006c49] transition-colors tracking-tight">
+                        {{ filteredNews[0].title }}
+                    </h2>
+                    <p class="text-sm text-slate-500 leading-relaxed line-clamp-4">
+                        {{ filteredNews[0].snippet }}
+                    </p>
                 </div>
             </div>
-            <div class="lg:col-span-5 flex flex-col justify-center">
-                <div class="flex items-center gap-2 mb-4">
-                    <span class="text-xs font-black text-[#006c49] uppercase">{{ filteredNews[0].source }}</span>
-                    <span class="text-slate-300">•</span>
-                    <span class="text-xs text-slate-400 font-mono">{{ filteredNews[0].time | date:'shortTime' }}</span>
-                </div>
-                <h2 class="text-3xl font-black leading-[1.1] mb-6 group-hover:text-[#006c49] transition-colors tracking-tight">
-                    {{ filteredNews[0].title }}
-                </h2>
-                <p class="text-sm text-slate-500 leading-relaxed line-clamp-4">
-                    {{ filteredNews[0].snippet }}
-                </p>
-            </div>
-        </div>
 
-        <!-- LIST FEED (Floating Card with Internal Dividers) -->
-        <div class="card-premium p-0 overflow-hidden">
-            <div class="p-8 border-b border-slate-50 flex items-center justify-between bg-[#f8fafc]">
-                <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Latest Updates</h4>
-                <span class="text-[8px] font-black uppercase bg-emerald-100 text-emerald-700 px-2 py-1 rounded">New Content Available</span>
-            </div>
-            <div class="divide-y divide-slate-50">
-                <div *ngFor="let news of filteredNews | slice:1:20" 
-                     class="px-8 py-8 group cursor-pointer flex flex-col md:flex-row gap-8 md:items-center hover:bg-slate-50 transition-colors"
-                     (click)="openUrl(news.url)">
-                    <div class="flex-1">
-                        <div class="flex items-center gap-3 mb-3">
-                            <span class="text-[10px] font-black text-[#006c49] uppercase tracking-wider">{{ news.source }}</span>
-                            <span class="text-[10px] text-slate-400 font-mono">{{ news.time | date:'HH:mm' }}</span>
-                            <span *ngIf="news.isPro" class="text-[8px] font-black bg-[#ffbb00] px-1.5 py-0.5 rounded">PRO</span>
+            <!-- LIST FEED (Floating Card with Internal Dividers) -->
+            <div class="card-premium p-0 overflow-hidden">
+                <div class="p-8 border-b border-slate-50 flex items-center justify-between bg-[#f8fafc]">
+                    <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Latest Updates</h4>
+                    <span class="text-[8px] font-black uppercase bg-emerald-100 text-emerald-700 px-2 py-1 rounded">New Content Available</span>
+                </div>
+                <div class="divide-y divide-slate-50">
+                    <div *ngFor="let news of filteredNews | slice:1:20" 
+                         class="px-8 py-8 group cursor-pointer flex flex-col md:flex-row gap-8 md:items-center hover:bg-slate-50 transition-colors"
+                         (click)="openArticle(news)">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-3 mb-3">
+                                <span class="text-[10px] font-black text-[#006c49] uppercase tracking-wider">{{ news.source }}</span>
+                                <span class="text-[10px] text-slate-400 font-mono">{{ news.time | date:'HH:mm' }}</span>
+                                <span *ngIf="news.isPro" class="text-[8px] font-black bg-[#ffbb00] px-1.5 py-0.5 rounded">PRO</span>
+                            </div>
+                            <h4 class="text-xl font-bold group-hover:text-[#006c49] transition-colors mb-3 leading-tight">
+                                {{ news.title }}
+                            </h4>
+                            <p class="text-sm text-slate-500 line-clamp-2 leading-relaxed">
+                                {{ news.snippet }}
+                            </p>
                         </div>
-                        <h4 class="text-xl font-bold group-hover:text-[#006c49] transition-colors mb-3 leading-tight">
-                            {{ news.title }}
-                        </h4>
-                        <p class="text-sm text-slate-500 line-clamp-2 leading-relaxed">
-                            {{ news.snippet }}
-                        </p>
-                    </div>
-                    <div class="w-full md:w-40 h-24 rounded-xl overflow-hidden bg-slate-100 shrink-0">
-                        <img [src]="news.image || 'assets/images/news-placeholder.png'" 
-                             class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                        <div class="w-full md:w-40 h-24 rounded-xl overflow-hidden bg-slate-100 shrink-0">
+                            <img [src]="news.image || 'assets/images/news-placeholder.png'" 
+                                 #listImg
+                                 (error)="listImg.src='assets/images/news-placeholder.png'"
+                                 class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </ng-container>
     </ng-container>
+
+    <!-- ARTICLE DETAIL VIEW -->
+    <app-news-article 
+        *ngIf="selectedArticle" 
+        [article]="selectedArticle" 
+        (back)="backToList()">
+    </app-news-article>
 </div>

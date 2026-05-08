@@ -124,7 +124,7 @@
                 class="w-4 h-4 opacity-50 hover:opacity-100 cursor-pointer transition-opacity">
               <div
                 class="absolute right-0 top-full mt-2 w-max max-w-[200px] p-2 bg-slate-800 text-white text-[10px] rounded shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
-                {{ currentSource === 'finnhub' ? 'Real-time Data' : 'Data Delayed 10 seconds' }}
+                Prices may be out of sync with those shown in the chart, so they are not accurate.
               </div>
             </div>
             <div class="text-2xl font-mono font-bold text-[#191c1e] tracking-tighter leading-none">
@@ -170,9 +170,11 @@
         </div>
 
         <!-- HERO NEWS (Investing.com Style) -->
-        <div *ngIf="marketNews.length > 0" class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-12 group cursor-pointer" (click)="openUrl(marketNews[0].url)">
+        <div *ngIf="marketNews.length > 0" class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-12 group cursor-pointer" (click)="openArticle(marketNews[0])">
           <div class="lg:col-span-7 relative overflow-hidden rounded-xl bg-slate-100 aspect-video lg:aspect-auto h-[300px]">
             <img [src]="marketNews[0].image || 'assets/images/news-placeholder.png'" 
+                 #overviewHeroImg
+                 (error)="overviewHeroImg.src='assets/images/news-placeholder.png'"
                  class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                  alt="Hero News">
             <div class="absolute top-4 left-4">
@@ -209,9 +211,11 @@
           <div class="flex gap-6 overflow-x-auto pb-6 no-scrollbar snap-x scroll-smooth" #newsSlider>
             <div *ngFor="let news of marketNews | slice:1:10" 
                  class="min-w-[280px] max-w-[280px] snap-start group cursor-pointer"
-                 (click)="openUrl(news.url)">
+                 (click)="openArticle(news)">
               <div class="aspect-video rounded-lg overflow-hidden bg-slate-100 mb-4">
                 <img [src]="news.image || 'assets/images/news-placeholder.png'" 
+                     #overviewSliderImg
+                     (error)="overviewSliderImg.src='assets/images/news-placeholder.png'"
                      class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                      alt="News">
               </div>
@@ -227,6 +231,14 @@
         </div>
       </div>
     </section>
+
+    <!-- ARTICLE DETAIL VIEW OVERLAY -->
+    <div *ngIf="selectedArticle" class="fixed inset-0 z-[100] bg-white overflow-y-auto">
+        <app-news-article 
+            [article]="selectedArticle" 
+            (back)="backToList()">
+        </app-news-article>
+    </div>
 
     <!-- RIGHT SECTION (4 Columns): Sentiment & Calendar -->
     <section class="col-span-12 lg:col-span-4 flex flex-col gap-8">

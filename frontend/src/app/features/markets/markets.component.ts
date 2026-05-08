@@ -7,13 +7,14 @@ import { forkJoin, of, Subject, Subscription } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, timeout } from 'rxjs/operators';
 import { EconomicCalendarComponent } from './economic-calendar/economic-calendar.component';
 import { MarketNewsComponent } from './market-news/market-news.component';
+import { NewsArticleComponent } from './market-news/news-article/news-article';
 
 declare const TradingView: any;
 
 @Component({
   selector: 'app-markets',
   standalone: true,
-  imports: [CommonModule, FormsModule, DecimalPipe, CurrencyPipe, DatePipe, EconomicCalendarComponent, MarketNewsComponent],
+  imports: [CommonModule, FormsModule, DecimalPipe, CurrencyPipe, DatePipe, EconomicCalendarComponent, MarketNewsComponent, NewsArticleComponent],
   templateUrl: './markets.component.html',
   styleUrls: ['./markets.component.css']
 })
@@ -72,6 +73,7 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
   marketNews: any[] = [];
   sentimentData: any = { value: 0, value_classification: '...' };
   activeTab: 'overview' | 'calendar' | 'news' = 'overview';
+  selectedArticle: any = null;
   
   @ViewChild('newsSlider') newsSlider!: ElementRef;
 
@@ -967,9 +969,31 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
       }
 
       // Ordenar y seleccionar los 10 mejores
-      this.marketNews = combined.sort((a, b) => b.datetime - a.datetime).slice(0, 10);
+      this.marketNews = combined
+        .filter(n => this.isFinancialRelevant(n))
+        .sort((a, b) => b.datetime - a.datetime)
+        .slice(0, 10);
+
       this.cdr.detectChanges();
     });
+  }
+
+  private isFinancialRelevant(n: any): boolean {
+    const text = (n.headline + ' ' + (n.summary || '')).toLowerCase();
+    const blacklist = [
+      'fruit', 'recipe', 'hello', 'prediction', 'wwe', 'backlash', 'show', 'entertainment',
+      'lifestyle', 'travel', 'fashion', 'sport', 'football', 'soccer', 'celebrity'
+    ];
+    if (blacklist.some(word => text.includes(word))) return false;
+
+    const whitelist = [
+      'market', 'stock', 'invest', 'fed', 'bank', 'inflation', 'gdp', 'economy',
+      'currency', 'forex', 'usd', 'eur', 'gold', 'oil', 'wti', 'commodit',
+      'crypto', 'bitcoin', 'btc', 'eth', 'price', 'trade', 'finance', 'report',
+      'earnings', 'dividend', 'share', 'bond', 'yield', 'rate', 'central bank',
+      'wall street', 'nasdaq', 'sp 500', 'dow jones', 'recession'
+    ];
+    return whitelist.some(word => text.includes(word));
   }
 
   scrollNews(dir: number) {
@@ -993,7 +1017,6 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
           
           let localTime = '--:--';
           if (event.time) {
-            // Finnhub devuelve UTC "YYYY-MM-DD HH:mm:ss", lo convertimos a local
             const utcDate = new Date(event.time + ' UTC');
             if (!isNaN(utcDate.getTime())) {
               localTime = utcDate.toLocaleTimeString(undefined, {
@@ -1051,5 +1074,32 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
   goToday() {
     this.selectedDate = new Date();
     this.fetchCalendarData();
+  }
+
+  openArticle(news: any) {
+    this.selectedArticle = {
+      ...news,
+      title: news.headline,
+      snippet: news.summary,
+      time: news.datetime * 1000
+    };
+    history.pushState({ view: 'article-overview' }, '');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  @HostListener('window:popstate', ['$event'])
+  onPopState(event: any) {
+    if (this.selectedArticle) {
+      this.selectedArticle = null;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  backToList() {
+    this.selectedArticle = null;
+    if (history.state?.view === 'article-overview') {
+        history.back();
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 }

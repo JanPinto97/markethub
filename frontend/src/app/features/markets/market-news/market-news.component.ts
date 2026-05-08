@@ -1,13 +1,15 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
+import { NewsArticleComponent } from './news-article/news-article';
+
 @Component({
   selector: 'app-market-news',
   standalone: true,
-  imports: [CommonModule, DatePipe],
+  imports: [CommonModule, DatePipe, NewsArticleComponent],
   templateUrl: './market-news.component.html',
   styleUrls: ['./market-news.component.css']
 })
@@ -27,6 +29,7 @@ export class MarketNewsComponent implements OnInit {
   fullNews: any[] = [];
   filteredNews: any[] = [];
   isLoading: boolean = true;
+  selectedArticle: any = null;
 
   constructor(private http: HttpClient, private cdr: ChangeDetectorRef) {}
 
@@ -74,17 +77,45 @@ export class MarketNewsComponent implements OnInit {
     } else {
       const target = this.activeCategory.toLowerCase();
       this.filteredNews = this.fullNews.filter(n => {
-        const cat = n.category.toLowerCase();
-        const title = n.title.toLowerCase();
+        const cat = (n.category || '').toLowerCase();
+        const title = (n.title || '').toLowerCase();
         const snippet = (n.snippet || '').toLowerCase();
+        const fullText = title + ' ' + snippet;
 
-        if (target.includes('stock')) return cat.includes('stock') || cat.includes('market') || cat.includes('general');
-        if (target.includes('currency') || target.includes('forex')) return cat.includes('currency') || cat.includes('forex') || title.includes('usd') || title.includes('euro') || title.includes('forex');
-        if (target.includes('crypto')) return cat.includes('crypto') || cat.includes('bitcoin') || title.includes('crypto') || title.includes('btc') || title.includes('eth');
-        if (target.includes('commodit')) return cat.includes('commodit') || cat.includes('gold') || cat.includes('oil') || title.includes('gold') || title.includes('oil') || title.includes('wti');
-        if (target.includes('economy')) return cat.includes('economy') || cat.includes('macro') || cat.includes('central bank');
+        // STOCK MARKETS: Precisión extrema para Acciones, Índices y ETFs
+        if (target.includes('stock')) {
+          const isEquityCat = cat === 'stock markets' || cat === 'stocks' || cat === 'equity';
+          
+          const hasEquityKeywords = /\b(stock|shares|equity|etf|fund|index|s&p|nasdaq|dow|nikkei|dax|ftse|shares)\b/i.test(fullText);
+          
+          // No permitir que Forex (AUDUSD, EURUSD) entre aquí a menos que mencione explícitamente acciones/indices
+          return isEquityCat || hasEquityKeywords;
+        }
+
+        if (target.includes('currency') || target.includes('forex')) {
+          return cat.includes('currency') || cat.includes('forex') || 
+                 fullText.includes('usd') || fullText.includes('eur') || fullText.includes('forex') || 
+                 fullText.includes('pair');
+        }
+
+        if (target.includes('crypto')) {
+          return cat.includes('crypto') || cat.includes('bitcoin') || 
+                 fullText.includes('crypto') || fullText.includes('btc') || fullText.includes('eth') || 
+                 fullText.includes('token');
+        }
+
+        if (target.includes('commodit')) {
+          return cat.includes('commodit') || cat.includes('gold') || cat.includes('oil') || 
+                 fullText.includes('gold') || fullText.includes('oil') || fullText.includes('wti') || 
+                 fullText.includes('silver') || fullText.includes('commodity');
+        }
+
+        if (target.includes('economy')) {
+          return cat.includes('economy') || cat.includes('macro') || cat.includes('central bank') || 
+                 fullText.includes('fed') || fullText.includes('inflation') || fullText.includes('gdp');
+        }
         
-        return cat.includes(target);
+        return cat.includes(target) || fullText.includes(target);
       });
     }
     this.cdr.detectChanges();
@@ -219,12 +250,64 @@ export class MarketNewsComponent implements OnInit {
         }))];
       }
 
-      this.fullNews = combined.sort((a, b) => b.time - a.time);
+      // Ordenar y guardar
+      this.fullNews = combined
+        .filter(n => this.isFinancialRelevant(n))
+        .sort((a, b) => b.time - a.time);
+      
       this.savePersistence();
       this.filterNews();
       this.isLoading = false;
       this.cdr.detectChanges();
     });
+  }
+
+  private isFinancialRelevant(n: any): boolean {
+    const text = (n.title + ' ' + (n.snippet || '')).toLowerCase();
+    
+    // Blacklist: Términos que gritan "no es finanzas"
+    const blacklist = [
+      'fruit', 'recipe', 'hello', 'prediction', 'wwe', 'backlash', 'show', 'entertainment',
+      'lifestyle', 'travel', 'fashion', 'sport', 'football', 'soccer', 'celebrity'
+    ];
+
+    if (blacklist.some(word => text.includes(word))) return false;
+
+    // Whitelist: Términos que confirman que es finanzas
+    const whitelist = [
+      'market', 'stock', 'invest', 'fed', 'bank', 'inflation', 'gdp', 'economy',
+      'currency', 'forex', 'usd', 'eur', 'gold', 'oil', 'wti', 'commodit',
+      'crypto', 'bitcoin', 'btc', 'eth', 'price', 'trade', 'finance', 'report',
+      'earnings', 'dividend', 'share', 'bond', 'yield', 'rate', 'central bank',
+      'wall street', 'nasdaq', 'sp 500', 'dow jones', 'recession'
+    ];
+
+    return whitelist.some(word => text.includes(word));
+  }
+
+  openArticle(news: any) {
+    this.selectedArticle = news;
+    // Añadir estado al historial para que el botón "Atrás" funcione internamente
+    history.pushState({ view: 'article' }, '');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  @HostListener('window:popstate', ['$event'])
+  onPopState(event: any) {
+    // Si hay un artículo abierto y el usuario da a "Atrás", lo cerramos
+    if (this.selectedArticle) {
+      this.selectedArticle = null;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  backToList() {
+    this.selectedArticle = null;
+    // Si volvemos manualmente, quitamos el estado del historial para no dejar basura
+    if (history.state?.view === 'article') {
+        history.back();
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   openUrl(url: string) {
