@@ -11,12 +11,38 @@
   scrollbar-width: none;
 }
 
+.material-symbols-outlined.text-sm {
+  font-size: 14px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+button:has(.material-symbols-outlined) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* Regulatory rules: No borders, only shadows or tonal changes */
 .card-premium {
   background: #ffffff;
   border: none !important;
   box-shadow: 0 20px 40px rgba(13, 28, 50, 0.04);
-  border-radius: 0.75rem;
+  border-bottom: 2px solid #0d1c32;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.snap-x img {
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 /* Glassmorphism for floating elements */
@@ -88,3 +114,26 @@
 .text-impact-medium { color: rgb(255, 128, 0); }
 .text-impact-low { color: #facc15; }
 .text-impact-none { color: #cbd5e1; }
+
+/* News Tab Navigation Styles */
+.active-news-tab {
+    color: #191c1e !important;
+    position: relative;
+}
+
+.active-news-tab::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: #191c1e;
+}
+
+.line-clamp-4 {
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}

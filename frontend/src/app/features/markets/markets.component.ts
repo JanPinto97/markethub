@@ -6,13 +6,14 @@ import { HttpClient } from '@angular/common/http';
 import { forkJoin, of, Subject, Subscription } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, timeout } from 'rxjs/operators';
 import { EconomicCalendarComponent } from './economic-calendar/economic-calendar.component';
+import { MarketNewsComponent } from './market-news/market-news.component';
 
 declare const TradingView: any;
 
 @Component({
   selector: 'app-markets',
   standalone: true,
-  imports: [CommonModule, FormsModule, DecimalPipe, CurrencyPipe, DatePipe, EconomicCalendarComponent],
+  imports: [CommonModule, FormsModule, DecimalPipe, CurrencyPipe, DatePipe, EconomicCalendarComponent, MarketNewsComponent],
   templateUrl: './markets.component.html',
   styleUrls: ['./markets.component.css']
 })
@@ -21,12 +22,16 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('searchContainer') searchContainer!: ElementRef;
 
   // CONFIGURACIÓN (API Keys)
-  private apiKey = 'd7jo9s9r01qu1n4fg3pgd7jo9s9r01qu1n4fg3q0';       // Finnhub — US Stocks & Synthetic WTI
-  private twelveDataApiKey = 'b21b5589fbce4aada1a45a82a7bbbbf0';      // Twelve Data — Forex, Crypto, Gold
-  private coinGeckoApiKey = 'CG-T7BjzNAbWJhwFMvvbj4sM8Mp';           // CoinGecko — Global Crypto Discovery
-  private polygonApiKey = 'OCf0bs98iWLZfq_pr2qslbGqna7uOTt4';          // Fallback 1: Polygon (5 req/min)
-  private tiingoApiKey = '07705bf17ddd89eb11ea83b95d01042a522162a9';    // Fallback 2: Tiingo (50 req/hour)
-  private alphaVantageApiKey = 'SXTQA9LA0XWN7H64';                   // Fallback 3: Metales (5 req/min)
+  private apiKey = 'd7jo9s9r01qu1n4fg3pgd7jo9s9r01qu1n4fg3q0';       // Finnhub
+  private rapidApiKey = '1e856b26f1msh7ff07161e81308ep1bec53jsn7edd8d75b995';
+  private rapidApiHost = 'yahoo-finance15.p.rapidapi.com';
+  private newsDataKey = 'pub_51b0bb5e9a054ff19dbd2272f643fef5';
+  private marketauxKey = 'TUzZlehn8kwZmGgBBbQW4Rmzds6ZRYLwwRdd8VO1';
+  private tiingoApiKey = '07705bf17ddd89eb11ea83b95d01042a522162a9';
+  private twelveDataApiKey = 'b21b5589fbce4aada1a45a82a7bbbbf0';
+  private coinGeckoApiKey = 'CG-T7BjzNAbWJhwFMvvbj4sM8Mp';
+  private polygonApiKey = 'OCf0bs98iWLZfq_pr2qslbGqna7uOTt4';
+  private alphaVantageApiKey = 'SXTQA9LA0XWN7H64';
   private socket: WebSocket | null = null;
   
   widget: any;
@@ -66,7 +71,9 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
   filteredEvents: any[] = [];
   marketNews: any[] = [];
   sentimentData: any = { value: 0, value_classification: '...' };
-  activeTab: 'overview' | 'calendar' = 'overview';
+  activeTab: 'overview' | 'calendar' | 'news' = 'overview';
+  
+  @ViewChild('newsSlider') newsSlider!: ElementRef;
 
   constructor(private http: HttpClient, private cdr: ChangeDetectorRef, private el: ElementRef) {}
 
@@ -259,6 +266,10 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.refreshInterval) {
       clearInterval(this.refreshInterval);
     }
+  }
+
+  openUrl(url: string) {
+    if (url) window.open(url, '_blank');
   }
 
   startLiveClock() {
@@ -865,12 +876,108 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  setNewsCategory(cat: string) {
+    // Logic moved to MarketNewsComponent
+  }
+
+  filterNews() {
+    // Logic moved to MarketNewsComponent
+  }
+
   loadNews() {
-    this.http.get(`https://finnhub.io/api/v1/news?category=general&token=${this.apiKey}`)
-      .subscribe((data: any) => {
-        this.marketNews = data.slice(0, 8);
-        this.cdr.detectChanges();
-      });
+    const rapidHeaders = {
+      'x-rapidapi-key': this.rapidApiKey,
+      'x-rapidapi-host': this.rapidApiHost
+    };
+
+    const sources = {
+      finnhub: this.http.get(`https://finnhub.io/api/v1/news?category=general&token=${this.apiKey}`).pipe(catchError(() => of([]))),
+      newsData: this.http.get(`https://newsdata.io/api/1/news?apikey=${this.newsDataKey}&q=finance&language=en`).pipe(catchError(() => of({ results: [] }))),
+      marketaux: this.http.get(`https://api.marketaux.com/v1/news/all?language=en&api_token=${this.marketauxKey}`).pipe(catchError(() => of({ data: [] }))),
+      tiingo: this.http.get(`https://api.tiingo.com/tiingo/news?token=${this.tiingoApiKey}`).pipe(catchError(() => of([]))),
+      yahoo: this.http.get(`https://yahoo-finance15.p.rapidapi.com/api/v1/markets/news?ticker=AAPL,TSLA,BTC-USD,EURUSD=X`, { headers: rapidHeaders }).pipe(catchError(() => of({ body: [] })))
+    };
+
+    forkJoin(sources).subscribe((res: any) => {
+      let combined: any[] = [];
+
+      // Yahoo
+      if (res.yahoo?.body) {
+        combined = [...combined, ...res.yahoo.body.map((n: any) => ({
+          headline: n.title,
+          source: n.source || 'Yahoo Finance',
+          datetime: new Date(n.pubDate).getTime() / 1000,
+          image: null,
+          url: n.link,
+          summary: n.description,
+          category: 'Stock Markets'
+        }))];
+      }
+
+      // Finnhub
+      if (Array.isArray(res.finnhub)) {
+        combined = [...combined, ...res.finnhub.map((n: any) => ({
+          headline: n.headline,
+          source: n.source,
+          datetime: n.datetime,
+          image: n.image,
+          url: n.url,
+          summary: n.summary,
+          category: 'Economy'
+        }))];
+      }
+
+      // NewsData
+      if (res.newsData?.results) {
+        combined = [...combined, ...res.newsData.results.map((n: any) => ({
+          headline: n.title,
+          source: n.source_id,
+          datetime: new Date(n.pubDate).getTime() / 1000,
+          image: n.image_url,
+          url: n.link,
+          summary: n.description,
+          category: 'Stock Markets'
+        }))];
+      }
+
+      // Marketaux
+      if (res.marketaux?.data) {
+        combined = [...combined, ...res.marketaux.data.map((n: any) => ({
+          headline: n.title,
+          source: n.source,
+          datetime: new Date(n.published_at).getTime() / 1000,
+          image: n.image_url,
+          url: n.link,
+          summary: n.description,
+          category: 'Currencies'
+        }))];
+      }
+
+      // Tiingo
+      if (Array.isArray(res.tiingo)) {
+        combined = [...combined, ...res.tiingo.map((n: any) => ({
+          headline: n.title,
+          source: n.sourceName,
+          datetime: new Date(n.publishedDate).getTime() / 1000,
+          image: null,
+          url: n.url,
+          summary: n.description,
+          category: 'Cryptocurrencies'
+        }))];
+      }
+
+      // Ordenar y seleccionar los 10 mejores
+      this.marketNews = combined.sort((a, b) => b.datetime - a.datetime).slice(0, 10);
+      this.cdr.detectChanges();
+    });
+  }
+
+  scrollNews(dir: number) {
+    if (this.newsSlider) {
+      const container = this.newsSlider.nativeElement;
+      const scrollAmount = 310 * 3; // Item width (280) + gap (30) approx * 3
+      container.scrollBy({ left: dir * scrollAmount, behavior: 'smooth' });
+    }
   }
 
   fetchCalendarData() {
