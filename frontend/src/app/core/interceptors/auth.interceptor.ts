@@ -5,12 +5,20 @@ import { catchError, switchMap, throwError } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 import { ToastService } from '../services/toast.service';
 
+const API_ORIGIN = 'http://localhost:3000';
+
 function addToken(req: HttpRequest<unknown>, token: string | null): HttpRequest<unknown> {
   if (!token) return req;
   return req.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
 }
 
+function isInternal(url: string): boolean {
+  return url.startsWith('/api/') || url.startsWith(API_ORIGIN);
+}
+
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
+  if (!isInternal(req.url)) return next(req);
+
   const auth = inject(AuthService);
   const router = inject(Router);
   const toast = inject(ToastService);
