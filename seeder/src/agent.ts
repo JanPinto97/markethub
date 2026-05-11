@@ -3,6 +3,8 @@ import {
   type PostXItem,
   type PostCommentItem,
   type CommunitySummary,
+  type TopicSummary,
+  type PostRedditItem,
 } from './api-client.js';
 import { generateText } from './llm.js';
 import { getPersonaById, buildSystemPrompt, type Persona } from './personas.js';
@@ -13,6 +15,10 @@ import {
   generateCommunity,
   generateCommunityPostText,
   generateJoinRequestMessage,
+  generateRedditPost,
+  generateRedditComment,
+  generateDiscussionOpener,
+  generateDiscussionReply,
 } from './generators.js';
 import {
   getAuthorId,
@@ -33,9 +39,15 @@ export type ActionType =
   | 'follow'
   | 'nothing'
   | 'community_post'
+  | 'community_engage'
   | 'join_community'
   | 'create_community'
-  | 'handle_requests';
+  | 'handle_requests'
+  | 'topic_post'
+  | 'topic_vote'
+  | 'topic_comment'
+  | 'start_discussion'
+  | 'reply_discussion';
 
 interface Decision {
   action: ActionType;
@@ -74,11 +86,24 @@ export class Agent {
     const b = this.persona.behavior;
     if (Math.random() < b.silenceRate) return 'nothing';
 
+    const inCommunities = this.state.communities.length > 0;
+    const ownsPrivate = this.state.communities.some(
+      (c) => c.type === 'private' && (c.role === 'leader' || c.role === 'moderator'),
+    );
+    const hasDiscussions = this.state.discussions.length > 0;
+    const hasAuthoredComments = this.state.authoredCommentIds.length > 0;
+
     const r = Math.random();
-    if (r < 0.05) return 'community_post';
-    if (r < 0.08) return 'join_community';
-    if (r < 0.095) return 'create_community';
-    if (r < 0.11) return 'handle_requests';
+    if (inCommunities && r < 0.05) return 'community_engage';
+    if (inCommunities && r < 0.08) return 'community_post';
+    if (r < 0.11) return 'join_community';
+    if (r < 0.12) return 'create_community';
+    if (ownsPrivate && r < 0.13) return 'handle_requests';
+    if (r < 0.16) return 'topic_vote';
+    if (r < 0.185) return 'topic_comment';
+    if (r < 0.195) return 'topic_post';
+    if (hasDiscussions && r < 0.215) return 'reply_discussion';
+    if (hasAuthoredComments && r < 0.225) return 'start_discussion';
 
     if (Math.random() < b.socialRate) {
       const s = Math.random();
@@ -105,9 +130,12 @@ export class Agent {
     const prompt = [
       `You are acting on MarketHub as ${this.persona.name}.`,
       `Behavior knobs: postRate=${b.postRate}, socialRate=${b.socialRate}, contrarianness=${b.contrarianness}, followRate=${b.followRate}, silenceRate=${b.silenceRate}.`,
-      `Available actions: post, comment, like, reply, follow, nothing, community_post, join_community, create_community, handle_requests.`,
+      `Available actions: post, comment, like, reply, follow, nothing, community_post, community_engage, join_community, create_community, handle_requests, topic_post, topic_vote, topic_comment, start_discussion, reply_discussion.`,
       `On a real social network, LIKES are the most common action by far. Most engagement turns should be a "like", not a "comment" or "post". Only pick "post" when you genuinely have something to say.`,
-      `Community actions are valid but RARE: prefer them when the heuristic suggests one, otherwise leave them alone. "create_community" should be very occasional. "handle_requests" only makes sense if you are leader/moderator of a private community.`,
+      `Where to post: if you belong to a community whose theme matches what you want to say, prefer "community_post" over a generic "post". Otherwise stick to "post".`,
+      `Community actions are valid but RARE: prefer them when the heuristic suggests one, otherwise leave them alone. "community_engage" means liking or commenting on a post INSIDE one of your communities — only pick it if you actually belong to communities. "create_community" should be very occasional. "handle_requests" only makes sense if you are leader or moderator of a private community.`,
+      `Topic actions live in long-form discussion topics (Reddit-style). "topic_post" is a structured analytical post with a title — only pick it if you actually have a thesis. "topic_vote" is upvote/downvote, the cheapest action. "topic_comment" is a comment on someone else's topic post.`,
+      `Discussion actions are private 1-to-1 chats. "start_discussion" turns one of YOUR comments into a private follow-up with whoever you were debating — pick rarely, only if there is a public exchange worth taking off-feed. "reply_discussion" continues an existing private chat where someone is waiting on you.`,
       `Your current communities: ${this.describeCommunities()}.`,
       `Heuristic suggestion (lean toward this unless it clearly doesn't fit): ${heuristic}.`,
       `Feed snapshot:`,
@@ -122,7 +150,8 @@ export class Agent {
       const parsed = JSON.parse(raw) as Decision;
       const valid: ActionType[] = [
         'post', 'comment', 'like', 'reply', 'follow', 'nothing',
-        'community_post', 'join_community', 'create_community', 'handle_requests',
+        'community_post', 'community_engage', 'join_community', 'create_community', 'handle_requests',
+        'topic_post', 'topic_vote', 'topic_comment', 'start_discussion', 'reply_discussion',
       ];
       if (valid.includes(parsed.action)) return parsed;
     } catch {
@@ -160,7 +189,13 @@ export class Agent {
         case 'reply':           await this.doReply(feed.posts); break;
         case 'follow':          await this.doFollow(feed.posts); break;
         case 'community_post':  await this.doCommunityPost(); break;
+        case 'community_engage':await this.doCommunityEngage(); break;
         case 'join_community':  await this.doJoinCommunity(); break;
+        case 'topic_post':      await this.doTopicPost(); break;
+        case 'topic_vote':      await this.doTopicVote(); break;
+        case 'topic_comment':   await this.doTopicComment(); break;
+        case 'start_discussion':await this.doStartDiscussion(feed.posts); break;
+        case 'reply_discussion':await this.doReplyDiscussion(); break;
         case 'create_community':await this.doCreateCommunity(); break;
         case 'handle_requests': await this.doHandleRequests(); break;
         case 'nothing':         break;
@@ -188,6 +223,20 @@ export class Agent {
         };
       });
       this.state.communities = next;
+      const joinedIds = new Set(next.map((c) => c.id));
+      this.state.requestedPrivateCommunityIds = this.state.requestedPrivateCommunityIds.filter(
+        (id) => !joinedIds.has(id),
+      );
+      for (const c of next) {
+        if (c.type !== 'private' || c.role) continue;
+        try {
+          const detail = await this.client.getPrivateCommunity(c.id);
+          const myRole = detail.community?.myRole ?? detail.membership?.role;
+          if (myRole) c.role = myRole;
+        } catch {
+          // ignore — role stays undefined
+        }
+      }
     } catch (err) {
       console.warn(`[${this.state.username}] syncCommunities failed: ${(err as Error).message}`);
     }
@@ -210,6 +259,7 @@ export class Agent {
     const text = await generateCommentText(this.persona, this.system, body, this.persona.behavior.contrarianness);
     const cmt = await this.client.commentOnPost(picked.post.id, { text });
     this.state.commentedPostIds.push(picked.post.id);
+    if (cmt.comment?.id) this.state.authoredCommentIds.push(cmt.comment.id);
     console.log(`[${this.state.username}] commented post=${picked.post.id} comment=${cmt.comment.id}`);
   }
 
@@ -246,6 +296,7 @@ export class Agent {
       const text = await generateReplyText(this.persona, this.system, target.text ?? '', this.persona.behavior.contrarianness);
       const res = await this.client.replyToComment(post.id, target.id, { text });
       this.state.repliedCommentIds.push(target.id);
+      if (res.comment?.id) this.state.authoredCommentIds.push(res.comment.id);
       console.log(`[${this.state.username}] replied comment=${target.id} reply=${res.comment.id}`);
       return;
     }
@@ -359,10 +410,57 @@ export class Agent {
     if (lastErr) console.warn(`[${this.state.username}] create_community failed: ${(lastErr as Error).message}`);
   }
 
+  private async doCommunityEngage(): Promise<void> {
+    if (this.state.communities.length === 0) {
+      console.log(`[${this.state.username}] community_engage skipped (no communities)`);
+      return;
+    }
+    const ordered = shuffle(this.state.communities);
+    for (const community of ordered) {
+      let posts: PostXItem[] = [];
+      try {
+        const res = community.type === 'public'
+          ? await this.client.getPublicCommunityFeed(community.id, 20)
+          : await this.client.getPrivateCommunityFeed(community.id, 20);
+        posts = res.posts ?? [];
+      } catch (err) {
+        console.warn(`[${this.state.username}] community feed failed (${community.name}): ${(err as Error).message}`);
+        continue;
+      }
+      const candidates = posts.filter((p) => getAuthorId(p) !== this.state.userId);
+      if (candidates.length === 0) continue;
+
+      const wantsComment = Math.random() < 0.35;
+      if (wantsComment) {
+        const eligible = candidates.filter((p) => !this.state.commentedPostIds.includes(p.id));
+        const picked = pickTarget(eligible, this.state.userId) ?? pickTarget(candidates, this.state.userId);
+        if (!picked) continue;
+        const body = (picked.post.text ?? '').toString();
+        const text = await generateCommentText(this.persona, this.system, body, this.persona.behavior.contrarianness);
+        const cmt = await this.client.commentOnPost(picked.post.id, { text });
+        if (!this.state.commentedPostIds.includes(picked.post.id)) this.state.commentedPostIds.push(picked.post.id);
+        if (cmt.comment?.id) this.state.authoredCommentIds.push(cmt.comment.id);
+        console.log(`[${this.state.username}] community_engage commented in="${community.name}" post=${picked.post.id} comment=${cmt.comment.id}`);
+        return;
+      }
+
+      const likeCandidates = candidates.filter((p) => !this.state.likedPostIds.includes(p.id));
+      if (likeCandidates.length === 0) continue;
+      const target = weightedPick(shuffle(likeCandidates).slice(0, 10));
+      if (!target) continue;
+      const res = await this.client.likePost(target.id);
+      if (res.liked && !this.state.likedPostIds.includes(target.id)) this.state.likedPostIds.push(target.id);
+      console.log(`[${this.state.username}] community_engage liked in="${community.name}" post=${target.id} liked=${res.liked}`);
+      return;
+    }
+  }
+
   private async doHandleRequests(): Promise<void> {
-    const owned = this.state.communities.filter((c) => c.type === 'private' && c.role === 'leader');
+    const owned = this.state.communities.filter(
+      (c) => c.type === 'private' && (c.role === 'leader' || c.role === 'moderator'),
+    );
     if (owned.length === 0) {
-      console.log(`[${this.state.username}] handle_requests skipped (no leader role)`);
+      console.log(`[${this.state.username}] handle_requests skipped (no leader/moderator role)`);
       return;
     }
     const community = owned[Math.floor(Math.random() * owned.length)]!;
@@ -391,6 +489,223 @@ export class Agent {
         console.warn(`[${this.state.username}] handle_request failed: ${(err as Error).message}`);
       }
     }
+  }
+
+  private async pickTopicForPersona(): Promise<TopicSummary | null> {
+    let topics: TopicSummary[] = [];
+    try {
+      const res = await this.client.listTopics();
+      topics = res.topics ?? [];
+    } catch {
+      return null;
+    }
+    if (topics.length === 0) return null;
+    const haystack = [
+      ...this.persona.topics.map((t) => t.toLowerCase()),
+      this.persona.expertise.toLowerCase(),
+    ].join(' ');
+    const scored = topics.map((t) => {
+      const words = t.name.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 3);
+      let score = 0;
+      for (const w of words) if (haystack.includes(w)) score += 2;
+      return { t, score };
+    });
+    scored.sort((a, b) => b.score - a.score);
+    const matched = scored.filter((s) => s.score > 0).slice(0, 5);
+    const pool = matched.length > 0 ? matched : scored.slice(0, 8);
+    return pool[Math.floor(Math.random() * pool.length)]!.t;
+  }
+
+  private async doTopicPost(): Promise<void> {
+    const topic = await this.pickTopicForPersona();
+    if (!topic) {
+      console.log(`[${this.state.username}] topic_post skipped (no topic)`);
+      return;
+    }
+    const { title, text } = await generateRedditPost(this.persona, this.system, topic.name);
+    try {
+      const res = await this.client.createTopicPost(topic.slug, { title, text });
+      this.state.postedRedditPostIds.push(res.post.id);
+      console.log(`[${this.state.username}] topic_post topic="${topic.name}" id=${res.post.id}`);
+    } catch (err) {
+      console.warn(`[${this.state.username}] topic_post failed: ${(err as Error).message}`);
+    }
+  }
+
+  private async doTopicVote(): Promise<void> {
+    const topic = await this.pickTopicForPersona();
+    if (!topic) return;
+    let posts: PostRedditItem[] = [];
+    try {
+      const res = await this.client.getTopicFeed(topic.slug, Math.random() < 0.5 ? 'top' : 'recent', 25);
+      posts = res.posts ?? [];
+    } catch (err) {
+      console.warn(`[${this.state.username}] topic feed failed: ${(err as Error).message}`);
+      return;
+    }
+    const eligible = posts.filter(
+      (p) => getAuthorId(p as unknown as PostXItem) !== this.state.userId
+        && !this.state.votedRedditPostIds.includes(p.id),
+    );
+    if (eligible.length === 0) return;
+    const target = weightedPick(shuffle(eligible).slice(0, 12));
+    if (!target) return;
+    const vote: 'up' | 'down' = Math.random() < (0.85 - this.persona.behavior.contrarianness * 0.4) ? 'up' : 'down';
+    try {
+      const res = await this.client.voteTopicPost(topic.slug, target.id, vote);
+      this.state.votedRedditPostIds.push(target.id);
+      console.log(`[${this.state.username}] topic_vote topic="${topic.name}" post=${target.id} vote=${vote} up=${res.upvotes} down=${res.downvotes}`);
+    } catch (err) {
+      console.warn(`[${this.state.username}] topic_vote failed: ${(err as Error).message}`);
+    }
+  }
+
+  private async doTopicComment(): Promise<void> {
+    const topic = await this.pickTopicForPersona();
+    if (!topic) return;
+    let posts: PostRedditItem[] = [];
+    try {
+      const res = await this.client.getTopicFeed(topic.slug, 'top', 20);
+      posts = res.posts ?? [];
+    } catch {
+      return;
+    }
+    const eligible = posts.filter(
+      (p) => getAuthorId(p as unknown as PostXItem) !== this.state.userId
+        && !this.state.commentedRedditPostIds.includes(p.id),
+    );
+    if (eligible.length === 0) return;
+    const target = weightedPick(shuffle(eligible).slice(0, 8));
+    if (!target) return;
+    const text = await generateRedditComment(
+      this.persona,
+      this.system,
+      target.title ?? '',
+      target.text ?? '',
+      this.persona.behavior.contrarianness,
+    );
+    try {
+      const res = await this.client.commentTopicPost(topic.slug, target.id, { text });
+      this.state.commentedRedditPostIds.push(target.id);
+      console.log(`[${this.state.username}] topic_comment topic="${topic.name}" post=${target.id} comment=${res.comment.id}`);
+    } catch (err) {
+      console.warn(`[${this.state.username}] topic_comment failed: ${(err as Error).message}`);
+    }
+  }
+
+  private async doStartDiscussion(feedPosts: PostXItem[]): Promise<void> {
+    const candidatePosts = shuffle(feedPosts.filter((p) => getAuthorId(p) !== this.state.userId)).slice(0, 6);
+    for (const post of candidatePosts) {
+      let comments: PostCommentItem[] = [];
+      try {
+        const res = await this.client.getPostComments(post.id);
+        comments = res.comments ?? [];
+      } catch {
+        continue;
+      }
+      const target = comments.find((c) => {
+        const aid = typeof c.author === 'string' ? c.author : c.author?._id ?? c.author?.id;
+        if (!aid || aid === this.state.userId) return false;
+        return !this.state.discussions.some((d) => d.otherUserId === aid);
+      });
+      if (!target) continue;
+      const aid = typeof target.author === 'string' ? target.author : target.author?._id ?? target.author?.id;
+      const aname = typeof target.author === 'string' ? 'someone' : target.author?.username ?? 'someone';
+
+      try {
+        const existing = await this.client.checkDiscussion(target.id);
+        if (existing.exists) continue;
+      } catch {
+        continue;
+      }
+
+      const text = await generateDiscussionOpener(this.persona, this.system, target.text ?? '', aname);
+      try {
+        const res = await this.client.createDiscussion(target.id, text);
+        this.state.discussions.push({
+          id: res.discussion._id,
+          otherUserId: aid,
+          otherUsername: aname,
+          lastMessageAt: new Date().toISOString(),
+        });
+        console.log(`[${this.state.username}] start_discussion with=@${aname} discussion=${res.discussion._id}`);
+      } catch (err) {
+        console.warn(`[${this.state.username}] start_discussion failed: ${(err as Error).message}`);
+      }
+      return;
+    }
+    console.log(`[${this.state.username}] start_discussion no eligible comment`);
+  }
+
+  private async syncInboundDiscussions(): Promise<void> {
+    const knownCommentIds = new Set(this.state.discussions.map((d) => d.id));
+    const sample = shuffle(this.state.authoredCommentIds).slice(0, 4);
+    for (const cid of sample) {
+      try {
+        const res = await this.client.checkDiscussion(cid);
+        if (res.exists && res.discussionId && !knownCommentIds.has(res.discussionId)
+          && !this.state.discussions.some((d) => d.id === res.discussionId)) {
+          let otherUserId: string | undefined;
+          let otherUsername: string | undefined;
+          try {
+            const detail = await this.client.getDiscussion(res.discussionId);
+            const createdBy = detail.discussion.createdBy;
+            if (createdBy && createdBy !== this.state.userId) {
+              otherUserId = createdBy;
+              otherUsername = detail.discussion.commentId?.author?.username;
+            }
+          } catch {
+            // ignore
+          }
+          this.state.discussions.push({
+            id: res.discussionId,
+            otherUserId,
+            otherUsername,
+            lastMessageAt: new Date(0).toISOString(),
+          });
+          console.log(`[${this.state.username}] inbound discussion detected id=${res.discussionId}`);
+        }
+      } catch {
+        // ignore single-failure
+      }
+    }
+  }
+
+  private async doReplyDiscussion(): Promise<void> {
+    await this.syncInboundDiscussions();
+    if (this.state.discussions.length === 0) {
+      console.log(`[${this.state.username}] reply_discussion no discussions`);
+      return;
+    }
+    const ordered = shuffle(this.state.discussions);
+    for (const d of ordered) {
+      let messages: { _id: string; author: { _id: string; username: string }; text: string; createdAt: string }[] = [];
+      try {
+        const res = await this.client.getDiscussionMessages(d.id);
+        messages = res.messages ?? [];
+      } catch {
+        continue;
+      }
+      if (messages.length === 0) continue;
+      const last = messages[messages.length - 1]!;
+      if (last.author._id === this.state.userId) continue;
+
+      const history = messages.map((m) => ({ author: m.author.username, text: m.text }));
+      const text = await generateDiscussionReply(this.persona, this.system, history);
+      try {
+        await this.client.addDiscussionMessage(d.id, text);
+        d.lastMessageAt = new Date().toISOString();
+        if (!d.otherUserId) {
+          d.otherUserId = last.author._id;
+          d.otherUsername = last.author.username;
+        }
+        console.log(`[${this.state.username}] reply_discussion id=${d.id} to=@${last.author.username}`);
+      } catch (err) {
+        console.warn(`[${this.state.username}] reply_discussion failed: ${(err as Error).message}`);
+      }
+      return;
+    }
+    console.log(`[${this.state.username}] reply_discussion nothing pending`);
   }
 }
 

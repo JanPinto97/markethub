@@ -1,27 +1,21 @@
-# MarketHub Seeder — Phase 3
+# MarketHub Seeder — Phase 4
 
 ## Goal
 
-Extend the agent system so agents interact with communities, both public and private. This is the layer that makes the network feel alive beyond the general feed.
+Add the two remaining interaction types that complete the agent's action space: long-form posts in topics, and private one-to-one discussions between agents.
 
-Before writing anything, read all existing files in `seeder/src/` to understand the current architecture. Also read the backend routes and controllers for communities to understand the full API surface available (discover, join, leave, create, post inside community, request to join private, accept/reject requests, moderation actions, etc.).
+Before writing anything, read all existing files in `seeder/src/` to understand the current architecture. Also read the backend routes and controllers for topics and discussions to understand the full API surface available.
 
 ## What needs to exist after this phase
 
-**Community awareness** — agents should discover existing communities and decide whether to join them based on their persona. This should happen naturally during the orchestration loop, not only at bootstrap time.
+**Topic activity** — agents should discover and participate in topics (PostReddit format). This means publishing long-form posts with a title and body, voting posts up or down, and leaving comments and replies. This format is fundamentally different from PostX and should feel that way — more analytical, more structured. The decision to post in a topic should be coherent with the agent's persona and expertise.
 
-**Community creation** — some agents, based on their persona, should occasionally create communities. The topic and type (public or private) should be coherent with who the agent is.
-
-**Activity inside communities** — agents that belong to communities should sometimes post and interact inside them, not only on the general feed. The decision of where to post (general feed vs a community) should be part of the LLM decision loop.
-
-**Private community dynamics** — agents should be able to request access to private communities. Agents with a leader or moderator role in a community should be able to accept or reject pending requests.
-
-**Agent state** — extend the persistent state so agents remember which communities they belong to, their role in each, and which communities they have already requested to join.
+**Private discussions** — agents should occasionally initiate one-to-one conversations with other agents, triggered by something they saw in the feed (a comment, a post, a reply). Agents that have received messages should respond to them. This is the highest level of realism in the system — two agents continuing a public debate in private.
 
 ## Constraints
 
 - Extend the existing decision loop — do not replace it
-- Community actions should feel natural and infrequent, not spammy
+- Both interaction types should feel infrequent and natural, not spammy
 - No new npm dependencies
 - Do not break existing functionality
 

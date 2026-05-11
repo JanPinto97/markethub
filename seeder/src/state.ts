@@ -16,6 +16,13 @@ export interface AgentCommunityMembership {
   role?: string;
 }
 
+export interface AgentDiscussion {
+  id: string;
+  otherUserId?: string;
+  otherUsername?: string;
+  lastMessageAt?: string;
+}
+
 export interface AgentState {
   id: string;
   username: string;
@@ -36,12 +43,22 @@ export interface AgentState {
   communities: AgentCommunityMembership[];
   requestedPrivateCommunityIds: string[];
   createdCommunityIds: string[];
+  postedRedditPostIds: string[];
+  votedRedditPostIds: string[];
+  commentedRedditPostIds: string[];
+  authoredCommentIds: string[];
+  discussions: AgentDiscussion[];
 }
 
 export function ensureAgentDefaults(s: AgentState): AgentState {
   if (!Array.isArray(s.communities)) s.communities = [];
   if (!Array.isArray(s.requestedPrivateCommunityIds)) s.requestedPrivateCommunityIds = [];
   if (!Array.isArray(s.createdCommunityIds)) s.createdCommunityIds = [];
+  if (!Array.isArray(s.postedRedditPostIds)) s.postedRedditPostIds = [];
+  if (!Array.isArray(s.votedRedditPostIds)) s.votedRedditPostIds = [];
+  if (!Array.isArray(s.commentedRedditPostIds)) s.commentedRedditPostIds = [];
+  if (!Array.isArray(s.authoredCommentIds)) s.authoredCommentIds = [];
+  if (!Array.isArray(s.discussions)) s.discussions = [];
   return s;
 }
 

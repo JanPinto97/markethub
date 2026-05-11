@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { Agent } from './agent.js';
 import { loadAllAgents } from './state.js';
 import { shuffle, sleep } from './utils.js';
+import { initFileLogger, closeFileLogger } from './logger.js';
 
 interface Config {
   baseUrl: string;
@@ -23,6 +24,10 @@ let stopping = false;
 process.on('SIGINT', () => {
   console.log('\n[orchestrator] SIGINT received, finishing current agent and stopping');
   stopping = true;
+});
+
+process.on('exit', () => {
+  void closeFileLogger();
 });
 
 async function runCycle(cfg: Config, cycleNo: number): Promise<void> {
@@ -48,7 +53,9 @@ async function runCycle(cfg: Config, cycleNo: number): Promise<void> {
 }
 
 async function main(): Promise<void> {
+  const logPath = initFileLogger();
   const cfg = loadConfig();
+  console.log(`[orchestrator] log file: ${logPath}`);
   console.log(`[orchestrator] base=${cfg.baseUrl} cycleSize=${cfg.cycleSize} cycleDelay=${cfg.cycleDelayMs}ms perAgentDelay=${cfg.perAgentDelayMs}ms`);
   let cycleNo = 1;
   while (!stopping) {

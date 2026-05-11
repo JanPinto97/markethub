@@ -206,6 +206,123 @@ export async function generateJoinRequestMessage(
   return trim(strip(raw), 150);
 }
 
+export interface GeneratedRedditPost {
+  title: string;
+  text: string;
+}
+
+export async function generateRedditPost(
+  persona: Persona,
+  system: string,
+  topicName: string,
+): Promise<GeneratedRedditPost> {
+  const seed = Math.floor(Math.random() * 1_000_000);
+  const prompt = [
+    `Write ONE Reddit-style long-form post for the MarketHub topic "${topicName}".`,
+    `You are a ${persona.name}. Tone: analytical, structured, more depth than a tweet — but still your voice.`,
+    `Return STRICT JSON: {"title": "...", "text": "..."}.`,
+    `Constraints:`,
+    `- title: 8 to 140 characters. No quotes around it. No emojis. No leading "PSA:" or "DD:" unless it fits naturally.`,
+    `- text: 200 to 900 characters. 2 to 5 short paragraphs separated by single newlines. State a thesis, give a reason or two, end with a question or open hook.`,
+    `- No hashtags. No emojis. No markdown headers. No "Edit:" notes.`,
+    `- Stay strictly inside your niche (${persona.expertise}). Topic anchor: ${topicName}.`,
+    `Variation seed (do not output): ${seed}.`,
+  ].join('\n');
+
+  let raw = '';
+  try {
+    raw = await generateText(prompt, { system, maxTokens: 600, json: true });
+    const parsed = JSON.parse(raw) as { title?: string; text?: string };
+    const title = trim(strip(parsed.title ?? ''), 280);
+    const text = trim((parsed.text ?? '').replace(/[#*_`>]/g, '').trim(), 1900);
+    if (title.length >= 8 && text.length >= 40) {
+      console.log(`[gen] redditPost topic="${topicName}" title="${title.slice(0, 40)}..."`);
+      return { title, text };
+    }
+  } catch {
+    // fall through
+  }
+  const fallbackTitle = `${topicName}: a quick take`;
+  return {
+    title: fallbackTitle,
+    text: `Sketching a quick thesis on ${topicName} from a ${persona.name} angle. Curious what others see here.`,
+  };
+}
+
+export async function generateRedditComment(
+  persona: Persona,
+  system: string,
+  postTitle: string,
+  postBody: string,
+  contrarianness: number,
+): Promise<string> {
+  const seed = Math.floor(Math.random() * 1_000_000);
+  const tilt =
+    contrarianness > 0.6
+      ? 'Lean toward pushback or skepticism, but engage with the argument honestly.'
+      : contrarianness < 0.35
+        ? 'Lean toward agreement or extending the idea.'
+        : 'Mixed stance, react honestly.';
+  const prompt = [
+    `Comment on a MarketHub Reddit-style post inside a discussion topic.`,
+    `Reference something concrete from the title or body.`,
+    `You are a ${persona.name}. ${tilt}`,
+    `Length: 1 to 3 sentences, max 380 characters. No hashtags, no emojis, no markdown.`,
+    `Variation seed (do not output): ${seed}.`,
+    ``,
+    `TITLE: ${postTitle}`,
+    `BODY: """${(postBody || '').slice(0, 600)}"""`,
+    `Return only the comment text.`,
+  ].join('\n');
+  const raw = await generateText(prompt, { system, maxTokens: 200 });
+  return trim(strip(raw), 380);
+}
+
+export async function generateDiscussionOpener(
+  persona: Persona,
+  system: string,
+  triggerText: string,
+  triggerAuthor: string,
+): Promise<string> {
+  const seed = Math.floor(Math.random() * 1_000_000);
+  const prompt = [
+    `You are opening a private 1-to-1 chat with @${triggerAuthor} on MarketHub, triggered by something they wrote.`,
+    `Tone: casual continuation of a public exchange, like "hey, wanted to keep this off-feed". You are a ${persona.name}.`,
+    `Length: 1 to 3 sentences, max 280 characters. No hashtags, no emojis.`,
+    `Reference the trigger naturally — don't quote it verbatim.`,
+    `Variation seed (do not output): ${seed}.`,
+    ``,
+    `TRIGGER: """${triggerText.slice(0, 400)}"""`,
+    `Return only the opening message.`,
+  ].join('\n');
+  const raw = await generateText(prompt, { system, maxTokens: 180 });
+  return trim(strip(raw), 280);
+}
+
+export async function generateDiscussionReply(
+  persona: Persona,
+  system: string,
+  history: { author: string; text: string }[],
+): Promise<string> {
+  const seed = Math.floor(Math.random() * 1_000_000);
+  const transcript = history
+    .slice(-6)
+    .map((m) => `@${m.author}: ${m.text.slice(0, 200)}`)
+    .join('\n');
+  const prompt = [
+    `Continue a private 1-to-1 chat on MarketHub. Stay in character as a ${persona.name}.`,
+    `Length: 1 to 3 sentences, max 280 characters. Conversational, not a monologue. No hashtags, no emojis.`,
+    `Engage with the LAST message specifically — agree, push back, or ask one targeted question.`,
+    `Variation seed (do not output): ${seed}.`,
+    ``,
+    `TRANSCRIPT (oldest to newest):`,
+    transcript,
+    `Return only your next message.`,
+  ].join('\n');
+  const raw = await generateText(prompt, { system, maxTokens: 180 });
+  return trim(strip(raw), 280);
+}
+
 export async function generateReplyText(
   persona: Persona,
   system: string,

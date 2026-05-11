@@ -158,6 +158,30 @@ interface HandleRequestResponse {
   message?: string;
 }
 
+export interface TopicSummary {
+  id: string;
+  name: string;
+  slug: string;
+  category: string;
+  description?: string;
+  postCount?: number;
+}
+
+export interface PostRedditItem {
+  id: string;
+  author: string | PostAuthor;
+  title: string;
+  text: string;
+  upvotes?: number;
+  downvotes?: number;
+  voteScore?: number;
+  commentCount?: number;
+  topic?: string;
+  createdAt?: string;
+  userVote?: 'up' | 'down' | null;
+  [k: string]: unknown;
+}
+
 export interface CreateCommunityPayload {
   name: string;
   description?: string;
@@ -401,6 +425,92 @@ export class MarketHubClient {
       method: 'POST',
       auth: true,
       body: fd,
+    });
+  }
+
+  async listTopics(): Promise<{ success: boolean; topics: TopicSummary[] }> {
+    return this.request('/topics', { method: 'GET' });
+  }
+
+  async getTopicFeed(slug: string, sort: 'top' | 'recent' = 'top', limit = 20): Promise<{ success: boolean; posts: PostRedditItem[] }> {
+    return this.request(`/topics/${encodeURIComponent(slug)}/feed?sort=${sort}&limit=${limit}`, {
+      method: 'GET',
+      auth: true,
+    });
+  }
+
+  async createTopicPost(slug: string, payload: { title: string; text: string }): Promise<{ success: boolean; post: PostRedditItem }> {
+    const fd = new FormData();
+    fd.append('title', payload.title);
+    fd.append('text', payload.text);
+    return this.request(`/topics/${encodeURIComponent(slug)}/posts`, {
+      method: 'POST',
+      auth: true,
+      body: fd,
+    });
+  }
+
+  async voteTopicPost(slug: string, postId: string, vote: 'up' | 'down'): Promise<{ success: boolean; upvotes: number; downvotes: number }> {
+    return this.request(`/topics/${encodeURIComponent(slug)}/posts/${postId}/vote`, {
+      method: 'POST',
+      auth: true,
+      body: JSON.stringify({ vote }),
+    });
+  }
+
+  async commentTopicPost(slug: string, postId: string, payload: CommentPayload): Promise<CommentResponse> {
+    return this.request<CommentResponse>(`/topics/${encodeURIComponent(slug)}/posts/${postId}/comments`, {
+      method: 'POST',
+      auth: true,
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async listTopicPostComments(slug: string, postId: string): Promise<CommentsListResponse> {
+    return this.request<CommentsListResponse>(`/topics/${encodeURIComponent(slug)}/posts/${postId}/comments`, {
+      method: 'GET',
+    });
+  }
+
+  async checkDiscussion(commentId: string): Promise<{ success: boolean; exists: boolean; discussionId?: string }> {
+    return this.request(`/discussions/comment/${commentId}`, { method: 'GET', auth: true });
+  }
+
+  async createDiscussion(commentId: string, text: string): Promise<{ success: boolean; discussion: { _id: string; commentId: string; createdBy: string }; message: { _id: string; text: string } }> {
+    return this.request(`/discussions/comment/${commentId}`, {
+      method: 'POST',
+      auth: true,
+      body: JSON.stringify({ text }),
+    });
+  }
+
+  async getDiscussion(discussionId: string): Promise<{ success: boolean; discussion: { _id: string; createdBy: string; commentId?: { _id: string; author?: { _id?: string; username?: string } } } }> {
+    return this.request(`/discussions/${discussionId}`, { method: 'GET', auth: true });
+  }
+
+  async getDiscussionMessages(discussionId: string, cursor?: string): Promise<{ success: boolean; messages: { _id: string; author: { _id: string; username: string }; text: string; createdAt: string }[]; hasMore: boolean }> {
+    const qs = cursor ? `?cursor=${encodeURIComponent(cursor)}` : '';
+    return this.request(`/discussions/${discussionId}/messages${qs}`, { method: 'GET', auth: true });
+  }
+
+  async addDiscussionMessage(discussionId: string, text: string, replyTo?: string): Promise<{ success: boolean; message: { _id: string; text: string } }> {
+    return this.request(`/discussions/${discussionId}/messages`, {
+      method: 'POST',
+      auth: true,
+      body: JSON.stringify({ text, replyTo: replyTo ?? null }),
+    });
+  }
+
+  async getPublicCommunityFeed(id: string, limit = 20): Promise<FeedResponse> {
+    return this.request<FeedResponse>(`/communities/public/${id}/feed?limit=${limit}`, {
+      method: 'GET',
+    });
+  }
+
+  async getPrivateCommunityFeed(id: string, limit = 20): Promise<FeedResponse> {
+    return this.request<FeedResponse>(`/communities/private/${id}/feed?limit=${limit}`, {
+      method: 'GET',
+      auth: true,
     });
   }
 }

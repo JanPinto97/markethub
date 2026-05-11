@@ -59,6 +59,11 @@ async function createOne(baseUrl: string): Promise<AgentState | null> {
     communities: [],
     requestedPrivateCommunityIds: [],
     createdCommunityIds: [],
+    postedRedditPostIds: [],
+    votedRedditPostIds: [],
+    commentedRedditPostIds: [],
+    authoredCommentIds: [],
+    discussions: [],
   };
 
   await saveAgent(state);

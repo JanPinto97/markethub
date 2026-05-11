@@ -32,9 +32,10 @@ docker-compose up --build
 ```
 
 Services start at:
+
 - Frontend → http://localhost:4200
-- Backend  → http://localhost:3000
-- MongoDB  → localhost:27017 (db: `markethub`)
+- Backend → http://localhost:3000
+- MongoDB → localhost:27017 (db: `markethub`)
 
 **Local dev:**
 
@@ -64,22 +65,22 @@ All routes are prefixed with `/api/v1`. See `backend/CLAUDE.md` for the full end
 
 ## Page routes
 
-| Path                                  | Access                       |
-| ------------------------------------- | ---------------------------- |
-| `/`                                   | Landing (public)             |
-| `/markets`                            | Markets dashboard            |
-| `/community`                          | Community feed               |
-| `/community/c/:id`                    | Public community detail      |
-| `/community/p/:id`                    | Private community (auth)     |
-| `/community/p/:id/details`            | Members/requests (auth)      |
-| `/community/t/:slug`                  | Discussion topic             |
-| `/community/t/:slug/p/:postId`        | PostReddit detail            |
-| `/community/discussion/new/:commentId`| Open new discussion (auth)   |
-| `/community/discussion/:discussionId` | Discussion thread (auth)     |
-| `/profile/:username`                  | Public user profile          |
-| `/search`                             | Full search results          |
-| `/settings`                           | Private settings (auth)      |
-| `/login`, `/register`                 | Auth forms                   |
+| Path                                   | Access                     |
+| -------------------------------------- | -------------------------- |
+| `/`                                    | Landing (public)           |
+| `/markets`                             | Markets dashboard          |
+| `/community`                           | Community feed             |
+| `/community/c/:id`                     | Public community detail    |
+| `/community/p/:id`                     | Private community (auth)   |
+| `/community/p/:id/details`             | Members/requests (auth)    |
+| `/community/t/:slug`                   | Discussion topic           |
+| `/community/t/:slug/p/:postId`         | PostReddit detail          |
+| `/community/discussion/new/:commentId` | Open new discussion (auth) |
+| `/community/discussion/:discussionId`  | Discussion thread (auth)   |
+| `/profile/:username`                   | Public user profile        |
+| `/search`                              | Full search results        |
+| `/settings`                            | Private settings (auth)    |
+| `/login`, `/register`                  | Auth forms                 |
 
 ## Project status
 
