@@ -1,0 +1,16 @@
+<div class="ticker-wrap">
+  <div class="ticker-move">
+    <div *ngFor="let set of loops" class="ticker-group">
+      <div *ngFor="let coin of coins" class="ticker-item">
+        <span class="ticker-label">{{ coin.symbol }}</span>
+        <span class="ticker-value" [class.is-up]="coin.change >= 0" [class.is-down]="coin.change < 0">
+          <ng-container *ngIf="coin.price > 0; else loading">
+            {{ coin.price | currency:'USD':'symbol':getPriceFormat(coin.tech) }}
+            <span class="ticker-change">({{ coin.change | number:'1.2-2' }}%)</span>
+          </ng-container>
+          <ng-template #loading>...</ng-template>
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
