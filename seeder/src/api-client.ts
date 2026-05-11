@@ -97,6 +97,73 @@ interface UserProfileResponse {
   user: { id: string; username: string; [k: string]: unknown };
 }
 
+export interface CommunitySummary {
+  id: string;
+  name: string;
+  type: 'public' | 'private';
+  memberCount?: number;
+  avatar?: string;
+  isJoined?: boolean;
+  createdAt?: string;
+}
+
+interface DiscoverResponse {
+  success: boolean;
+  communities: CommunitySummary[];
+  pagination?: unknown;
+}
+
+interface MyCommunitiesResponse {
+  success: boolean;
+  communities: { id: string; name: string; type: 'public' | 'private'; memberCount: number; avatar?: string }[];
+}
+
+interface CommunityCreateResponse {
+  success: boolean;
+  community: { id?: string; _id?: string; name: string; [k: string]: unknown };
+}
+
+interface CommunityJoinResponse {
+  success: boolean;
+  message?: string;
+  memberCount?: number;
+}
+
+export interface PendingJoinRequest {
+  id: string;
+  user: { id?: string; _id?: string; username?: string; avatar?: string } | string;
+  message?: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  createdAt?: string;
+}
+
+interface PrivateCommunityDetailResponse {
+  success: boolean;
+  community?: {
+    id?: string;
+    _id?: string;
+    name?: string;
+    members?: { user: { id?: string; _id?: string; username?: string }; role?: string }[];
+    pendingRequests?: PendingJoinRequest[];
+    myRole?: string;
+    [k: string]: unknown;
+  };
+  membership?: { isMember?: boolean; role?: string; myRequestStatus?: string };
+  [k: string]: unknown;
+}
+
+interface HandleRequestResponse {
+  success: boolean;
+  action: 'accept' | 'reject';
+  message?: string;
+}
+
+export interface CreateCommunityPayload {
+  name: string;
+  description?: string;
+  avatar?: string;
+}
+
 export class MarketHubClient {
   private token: string | null = null;
 
@@ -222,6 +289,118 @@ export class MarketHubClient {
   async getUserProfile(username: string): Promise<UserProfileResponse> {
     return this.request<UserProfileResponse>(`/users/${encodeURIComponent(username)}`, {
       method: 'GET',
+    });
+  }
+
+  async discoverCommunities(query: {
+    search?: string;
+    sort?: 'popularity' | 'members' | 'new';
+    type?: ('public' | 'private')[];
+    limit?: number;
+    page?: number;
+  } = {}): Promise<DiscoverResponse> {
+    const params = new URLSearchParams();
+    if (query.search) params.set('search', query.search);
+    if (query.sort) params.set('sort', query.sort);
+    if (query.type && query.type.length > 0) params.set('type', query.type.join(','));
+    if (query.limit) params.set('limit', String(query.limit));
+    if (query.page) params.set('page', String(query.page));
+    const qs = params.toString();
+    return this.request<DiscoverResponse>(`/communities/discover${qs ? `?${qs}` : ''}`, {
+      method: 'GET',
+      auth: true,
+    });
+  }
+
+  async getMyCommunities(): Promise<MyCommunitiesResponse> {
+    return this.request<MyCommunitiesResponse>('/communities/my', {
+      method: 'GET',
+      auth: true,
+    });
+  }
+
+  async createPublicCommunity(payload: CreateCommunityPayload): Promise<CommunityCreateResponse> {
+    const fd = new FormData();
+    fd.append('name', payload.name);
+    if (payload.description) fd.append('description', payload.description);
+    if (payload.avatar) fd.append('avatar', payload.avatar);
+    return this.request<CommunityCreateResponse>('/communities/public', {
+      method: 'POST',
+      auth: true,
+      body: fd,
+    });
+  }
+
+  async joinPublicCommunity(id: string): Promise<CommunityJoinResponse> {
+    return this.request<CommunityJoinResponse>(`/communities/public/${id}/join`, {
+      method: 'POST',
+      auth: true,
+    });
+  }
+
+  async leavePublicCommunity(id: string): Promise<CommunityJoinResponse> {
+    return this.request<CommunityJoinResponse>(`/communities/public/${id}/leave`, {
+      method: 'POST',
+      auth: true,
+    });
+  }
+
+  async createPublicCommunityPost(id: string, payload: CreatePostPayload): Promise<CreatePostResponse> {
+    const fd = new FormData();
+    fd.append('text', payload.text);
+    return this.request<CreatePostResponse>(`/communities/public/${id}/posts`, {
+      method: 'POST',
+      auth: true,
+      body: fd,
+    });
+  }
+
+  async createPrivateCommunity(payload: CreateCommunityPayload): Promise<CommunityCreateResponse> {
+    const fd = new FormData();
+    fd.append('name', payload.name);
+    if (payload.description) fd.append('description', payload.description);
+    if (payload.avatar) fd.append('avatar', payload.avatar);
+    return this.request<CommunityCreateResponse>('/communities/private', {
+      method: 'POST',
+      auth: true,
+      body: fd,
+    });
+  }
+
+  async getPrivateCommunity(id: string): Promise<PrivateCommunityDetailResponse> {
+    return this.request<PrivateCommunityDetailResponse>(`/communities/private/${id}`, {
+      method: 'GET',
+      auth: true,
+    });
+  }
+
+  async requestPrivateCommunity(id: string, message?: string): Promise<{ success: boolean; message?: string }> {
+    return this.request(`/communities/private/${id}/request`, {
+      method: 'POST',
+      auth: true,
+      body: JSON.stringify({ message: message ?? '' }),
+    });
+  }
+
+  async handleJoinRequest(
+    communityId: string,
+    requestId: string,
+    action: 'accept' | 'reject',
+  ): Promise<HandleRequestResponse> {
+    return this.request<HandleRequestResponse>(`/communities/private/${communityId}/requests/${requestId}`, {
+      method: 'POST',
+      auth: true,
+      body: JSON.stringify({ action }),
+    });
+  }
+
+  async createPrivateCommunityPost(id: string, payload: CreatePostPayload): Promise<CreatePostResponse> {
+    const fd = new FormData();
+    fd.append('text', payload.text);
+    return this.request<CreatePostResponse>(`/communities/private/${id}/posts`, {
+      method: 'POST',
+      auth: true,
+      body: fd,
     });
   }
 }

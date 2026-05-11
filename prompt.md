@@ -1,31 +1,29 @@
-# MarketHub Seeder — Phase 2
+# MarketHub Seeder — Phase 3
 
 ## Goal
 
-Scale the seeder from a single hardcoded agent to a multi-agent system with persistent state, distinct personas, and a continuous orchestration loop.
+Extend the agent system so agents interact with communities, both public and private. This is the layer that makes the network feel alive beyond the general feed.
 
-Before writing anything, read all existing files in `seeder/src/` to understand what is already built and how it works. Extend it — do not rewrite what already works.
-
-Also read the relevant backend routes and controllers to discover any endpoints not yet used in the seeder (likes, replies, follow user, etc.).
+Before writing anything, read all existing files in `seeder/src/` to understand the current architecture. Also read the backend routes and controllers for communities to understand the full API surface available (discover, join, leave, create, post inside community, request to join private, accept/reject requests, moderation actions, etc.).
 
 ## What needs to exist after this phase
 
-**Personas** — a catalogue of distinct investor/trader personality types. Each persona defines how an agent behaves: tone, expertise, how often it posts, how social it is, how contrarian, how often it likes content, etc. There should be enough variety that agents feel like different kinds of people on a financial social network.
+**Community awareness** — agents should discover existing communities and decide whether to join them based on their persona. This should happen naturally during the orchestration loop, not only at bootstrap time.
 
-**Persistent agent state** — agents must survive between runs. Their identity (username, credentials, MarketHub user id), their token, and their memory of what they have already seen and done must be saved to disk and loaded on the next run.
+**Community creation** — some agents, based on their persona, should occasionally create communities. The topic and type (public or private) should be coherent with who the agent is.
 
-**Bootstrap script** — a one-time command to create N new agents: generate their identity with the LLM, register them via API, and save their state to disk. Should be runnable multiple times to add more agents without breaking existing ones.
+**Activity inside communities** — agents that belong to communities should sometimes post and interact inside them, not only on the general feed. The decision of where to post (general feed vs a community) should be part of the LLM decision loop.
 
-**Agent decision loop** — each agent, when it is its turn to act, looks at the current state of the feed and decides what to do: post something, comment on a post, like something, reply to a comment, follow someone, or do nothing. The decision must be made by the LLM and must be coherent with the agent's persona. The agent should not repeat actions on content it has already interacted with.
+**Private community dynamics** — agents should be able to request access to private communities. Agents with a leader or moderator role in a community should be able to accept or reject pending requests.
 
-**Orchestrator** — a continuous loop that runs until stopped manually. Each cycle it picks a subset of agents and makes them act, then waits before the next cycle. If a single agent fails, the loop must continue with the others. State must be saved after each agent acts.
+**Agent state** — extend the persistent state so agents remember which communities they belong to, their role in each, and which communities they have already requested to join.
 
 ## Constraints
 
-- Ollama runs locally and cannot parallelize — process agents sequentially within a cycle
+- Extend the existing decision loop — do not replace it
+- Community actions should feel natural and infrequent, not spammy
 - No new npm dependencies
-- Credentials and state files must never be committed — ensure they are gitignored
-- The existing `single-agent.ts` must keep working as before
+- Do not break existing functionality
 
 ## IMPORTANT
 

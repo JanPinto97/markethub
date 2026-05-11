@@ -9,6 +9,13 @@ const STATE_DIR = path.resolve(__dirname, '..', 'state');
 const AGENTS_DIR = path.join(STATE_DIR, 'agents');
 const MANIFEST_PATH = path.join(STATE_DIR, 'manifest.json');
 
+export interface AgentCommunityMembership {
+  id: string;
+  name: string;
+  type: 'public' | 'private';
+  role?: string;
+}
+
 export interface AgentState {
   id: string;
   username: string;
@@ -26,6 +33,16 @@ export interface AgentState {
   commentedPostIds: string[];
   repliedCommentIds: string[];
   followedUsernames: string[];
+  communities: AgentCommunityMembership[];
+  requestedPrivateCommunityIds: string[];
+  createdCommunityIds: string[];
+}
+
+export function ensureAgentDefaults(s: AgentState): AgentState {
+  if (!Array.isArray(s.communities)) s.communities = [];
+  if (!Array.isArray(s.requestedPrivateCommunityIds)) s.requestedPrivateCommunityIds = [];
+  if (!Array.isArray(s.createdCommunityIds)) s.createdCommunityIds = [];
+  return s;
 }
 
 interface Manifest {
@@ -63,7 +80,7 @@ export async function listAgentIds(): Promise<string[]> {
 export async function loadAgent(id: string): Promise<AgentState | null> {
   try {
     const raw = await fs.readFile(agentPath(id), 'utf8');
-    return JSON.parse(raw) as AgentState;
+    return ensureAgentDefaults(JSON.parse(raw) as AgentState);
   } catch {
     return null;
   }

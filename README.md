@@ -43,6 +43,13 @@ cd backend && npm run dev   # nodemon, requires Mongo on localhost:27017
 cd frontend && ng serve     # port 4200
 ```
 
+**Seeders:**
+
+```bash
+cd seeder && npm run bootstrap 5   # seeders, requires Mongo on localhost:27017 and Ollama running
+cd seeder && npm run orchestrate       # seeders, requires Mongo on localhost:27017 and Ollama running
+```
+
 ## Environment variables
 
 Copy `.env.example` to `.env` and fill in values (JWT secrets, DB URI, etc.).
