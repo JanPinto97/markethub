@@ -1,0 +1,184 @@
+<div class="charts-root font-body antialiased">
+  <!-- Barra superior MarketHub (control del workspace) -->
+  <header class="charts-topbar">
+    <div class="charts-topbar__left" #searchWrap>
+      <div class="charts-search-slot">
+        <div class="charts-symbol-search">
+          <span class="material-symbols-outlined charts-symbol-search__icon">search</span>
+          <input
+            type="text"
+            class="charts-symbol-search__input"
+            [(ngModel)]="searchQuery"
+            (ngModelChange)="onSearchModelChange($event)"
+            (focus)="onSearchFocus()"
+            (keyup.enter)="submitSearch()"
+            placeholder="Buscar activo (BTC, AAPL, EURUSD)..."
+            aria-label="Buscar símbolo"
+            autocomplete="off"
+          />
+        </div>
+
+        @if (showSearchModal && searchResults.length > 0) {
+          <div class="charts-search-modal" role="listbox">
+            <div class="charts-search-modal__head">
+              <span class="charts-search-modal__title">
+                {{ searchQuery.length < 1 ? 'Activos destacados' : 'Resultados' }}
+              </span>
+              <button type="button" class="charts-search-modal__close" (click)="closeSearchModal()" aria-label="Cerrar">
+                <span class="material-symbols-outlined text-base">close</span>
+              </button>
+            </div>
+            <div class="charts-search-modal__list">
+              @for (result of searchResults; track result.symbol + result.apiSymbol) {
+                <button type="button" class="charts-search-row" (click)="applySearchResult(result)">
+                  <div class="charts-search-row__sym">{{ result.symbol }}</div>
+                  <div class="charts-search-row__meta">
+                    <span class="charts-search-row__type">{{ result.type }}</span>
+                    <span class="charts-search-row__desc">{{ result.description }}</span>
+                  </div>
+                </button>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="charts-pills" aria-label="Temporalidad">
+        @for (iv of intervals; track iv.id) {
+          <button
+            type="button"
+            class="charts-pill"
+            [class.charts-pill--active]="selectedInterval === iv.id"
+            (click)="setInterval(iv.id)"
+          >
+            {{ iv.label }}
+          </button>
+        }
+      </div>
+
+      <div class="charts-style" aria-label="Tipo de gráfico">
+        @for (st of chartStyles; track st.id) {
+          <button
+            type="button"
+            class="charts-style__btn"
+            [class.charts-style__btn--active]="selectedChartStyle === st.id"
+            [title]="st.label"
+            (click)="setChartStyle(st.id)"
+          >
+            <span class="material-symbols-outlined charts-style__icon">{{ st.icon }}</span>
+          </button>
+        }
+      </div>
+
+      <p class="charts-hint">
+        Indicadores, alertas, replay y dibujos: barra nativa de TradingView dentro del gráfico.
+      </p>
+    </div>
+
+    <div class="charts-topbar__right">
+      <button type="button" class="charts-btn charts-btn--trade" (click)="onTradeClick()">Trade</button>
+      <button type="button" class="charts-btn charts-btn--publish" (click)="onPublishClick()">Publish</button>
+    </div>
+  </header>
+
+  <div class="charts-body">
+    <!-- Área central + lateral derecha (watchlist); herramientas de dibujo = iframe TradingView (barra izquierda interna) -->
+    <section class="charts-main">
+      <div class="charts-main__head">
+        <div>
+          <h1 class="charts-asset-title">{{ displaySymbol }}</h1>
+          <p class="charts-asset-sub">{{ currentTvSymbol }}</p>
+        </div>
+        <div class="charts-tz">
+          <label class="charts-tz__label" for="charts-tz-select">Zona horaria</label>
+          <select
+            id="charts-tz-select"
+            class="charts-tz__select"
+            [value]="selectedTimezone"
+            (change)="onTimezoneChange($any($event.target).value)"
+          >
+            @for (tz of timezones; track tz.id) {
+              <option [value]="tz.id">{{ tz.label }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <div class="charts-tv-wrap">
+        @if (assetNotSupported) {
+          <div class="charts-overlay">
+            <span class="material-symbols-outlined charts-overlay__icon">warning</span>
+            <h2 class="charts-overlay__title">Activo no disponible</h2>
+            <p class="charts-overlay__text">No encontramos este símbolo en los datos del gráfico.</p>
+            <button type="button" class="charts-btn charts-btn--primary" (click)="dismissAssetError()">Volver</button>
+          </div>
+        }
+        <div [id]="containerId" class="charts-tv-host" role="region" aria-label="Gráfico TradingView"></div>
+      </div>
+
+      <!-- Barra inferior: estado mercado + reloj (rangos 1D / 1M… los aporta el propio widget con withdateranges) -->
+      <footer class="charts-bottombar">
+        <div class="charts-bottombar__left">
+          <span class="charts-bottombar__tag">Rangos rápidos en el gráfico</span>
+          <span class="charts-bottombar__muted">Usa la barra inferior del widget (1D, 5D, 1M, YTD…)</span>
+        </div>
+        <div class="charts-bottombar__right">
+          <span
+            class="charts-market-dot"
+            [class.charts-market-dot--open]="marketOpen"
+            [class.charts-market-dot--closed]="!marketOpen"
+            [attr.aria-label]="marketOpen ? 'Sesión EE.UU. abierta' : 'Sesión EE.UU. cerrada'"
+          ></span>
+          <span class="charts-clock">{{ nowLabel }} · {{ selectedTimezone }}</span>
+        </div>
+      </footer>
+    </section>
+
+    <aside class="charts-watch" aria-label="Lista de seguimiento">
+      <div class="charts-watch__head">
+        <h2 class="charts-watch__title">Watchlist</h2>
+        <span class="charts-watch__hint">Last · Chg%</span>
+      </div>
+
+      @for (group of watchlistGroups; track group.id) {
+        <div class="charts-watch__group">
+          <h3 class="charts-watch__group-title">{{ group.label }}</h3>
+          <div class="charts-watch__table">
+            <div class="charts-watch__row charts-watch__row--hdr">
+              <span>Símbolo</span>
+              <span class="charts-watch__num">Last</span>
+              <span class="charts-watch__num">Chg%</span>
+            </div>
+            @for (row of group.rows; track row.tvSymbol) {
+              <button
+                type="button"
+                class="charts-watch__row charts-watch__row--data"
+                [class.charts-watch__row--active]="isRowActive(row)"
+                (click)="selectFromWatch(row)"
+              >
+                <span class="charts-watch__sym">
+                  <span class="charts-watch__avatar">{{ row.label.slice(0, 2) }}</span>
+                  {{ row.label }}
+                </span>
+                <span class="charts-watch__num font-mono">
+                  @if (row.last !== null) {
+                    {{ row.last | number: '1.2-4' }}
+                  } @else {
+                    —
+                  }
+                </span>
+                <span class="charts-watch__num font-mono" [ngClass]="chgClass(row.chgPct)">
+                  @if (row.chgPct !== null) {
+                    {{ row.chgPct > 0 ? '+' : '' }}{{ row.chgPct | number: '1.2-2' }}%
+                  } @else {
+                    —
+                  }
+                </span>
+              </button>
+            }
+          </div>
+        </div>
+      }
+    </aside>
+  </div>
+</div>

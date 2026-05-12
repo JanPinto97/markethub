@@ -15,7 +15,9 @@
         <a class="font-bold pb-1 cursor-pointer"
            [ngClass]="activeTab === 'news' ? 'text-[#006c49] border-b-2 border-[#006c49]' : 'text-slate-500 hover:text-slate-900 transition-colors'"
            (click)="activeTab = 'news'">News</a>
-        <a class="text-slate-500 hover:text-slate-900 transition-colors cursor-pointer">Charts</a>
+        <a class="font-bold pb-1 cursor-pointer"
+           [ngClass]="activeTab === 'charts' ? 'text-[#006c49] border-b-2 border-[#006c49]' : 'text-slate-500 hover:text-slate-900 transition-colors'"
+           (click)="activeTab = 'charts'">Charts</a>
       </section>
     </div>
     <div class="flex items-center gap-4">
@@ -214,14 +216,6 @@
       </div>
     </section>
 
-    <!-- ARTICLE DETAIL VIEW OVERLAY -->
-    <div *ngIf="selectedArticle" class="fixed inset-0 z-[100] bg-white overflow-y-auto">
-        <app-news-article 
-            [article]="selectedArticle" 
-            (back)="backToList()">
-        </app-news-article>
-    </div>
-
     <!-- RIGHT SECTION (4 Columns): Sentiment & Calendar -->
     <section class="col-span-12 lg:col-span-4 flex flex-col gap-8">
 
@@ -295,11 +289,17 @@
   <!-- Economic Calendar Tab -->
   <app-economic-calendar [style.display]="activeTab === 'calendar' ? 'block' : 'none'"></app-economic-calendar>
 
-  <!-- News Tab Section -->
-  <div *ngIf="activeTab === 'news'" class="p-10">
-    <app-market-news></app-market-news>
+  <!-- News (montado siempre para poder abrir detalle desde Overview con el mismo layout) -->
+  <div [style.display]="activeTab === 'news' ? 'block' : 'none'" class="p-10">
+    <app-market-news
+      [articleFromOverview]="pendingNewsArticle"
+      (articleFromOverviewConsumed)="clearPendingNewsArticle()"
+    ></app-market-news>
   </div>
 
+  <div *ngIf="activeTab === 'charts'" class="charts-tab-shell">
+    <app-charts></app-charts>
+  </div>
 
   <footer class="w-full py-16 px-12 bg-white mt-12 border-t border-slate-50">
     <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-12">
