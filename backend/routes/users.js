@@ -3,6 +3,7 @@ const auth = require('../middleware/auth');
 const optionalAuth = require('../middleware/optionalAuth');
 const ctrl = require('../controllers/userController');
 
+router.get('/trending', ctrl.getTrending);
 router.get('/:username', optionalAuth, ctrl.getPublicProfile);
 router.get('/:username/posts', ctrl.getUserPosts);
 router.post('/:username/follow', auth, ctrl.followUser);

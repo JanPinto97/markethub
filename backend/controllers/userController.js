@@ -7,6 +7,51 @@ function fail(res, code, message) {
   return res.status(code).json({ success: false, message, code });
 }
 
+exports.getTrending = async (req, res, next) => {
+  try {
+    const limit = Math.min(20, Math.max(1, parseInt(req.query.limit) || 3));
+    const period = req.query.period || 'week';
+    const days = period === 'day' ? 1 : period === 'month' ? 30 : 7;
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    const pipeline = [
+      { $lookup: {
+          from: 'users',
+          let: { followerIds: '$followers' },
+          pipeline: [
+            { $match: { $expr: { $in: ['$_id', '$$followerIds'] } } },
+            { $match: { createdAt: { $gte: since } } },
+            { $count: 'count' },
+          ],
+          as: 'recentFollowers',
+      } },
+      { $addFields: {
+          recentFollowerCount: { $ifNull: [{ $arrayElemAt: ['$recentFollowers.count', 0] }, 0] },
+          followersCount: { $size: { $ifNull: ['$followers', []] } },
+      } },
+      { $match: { $or: [{ recentFollowerCount: { $gt: 0 } }, { followersCount: { $gt: 0 } }] } },
+      { $sort: { recentFollowerCount: -1, followersCount: -1, createdAt: -1 } },
+      { $limit: limit },
+      { $project: { username: 1, avatar: 1, bio: 1, role: 1, followersCount: 1, recentFollowerCount: 1 } },
+    ];
+
+    const users = await User.aggregate(pipeline);
+
+    res.json({
+      success: true,
+      users: users.map(u => ({
+        id: u._id,
+        username: u.username,
+        avatar: u.avatar || '',
+        bio: u.bio || '',
+        role: u.role,
+        followersCount: u.followersCount,
+        recentFollowerCount: u.recentFollowerCount,
+      })),
+    });
+  } catch (err) { next(err); }
+};
+
 exports.getPublicProfile = async (req, res, next) => {
   try {
     const user = await User.findOne({ username: { $regex: `^${req.params.username}$`, $options: 'i' } });

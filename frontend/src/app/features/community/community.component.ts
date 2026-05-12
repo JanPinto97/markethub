@@ -10,13 +10,14 @@ import { EmojiPickerComponent } from '../../shared/components/emoji-picker/emoji
 import { CreateCommunityModalComponent } from './components/create-community-modal/create-community-modal.component';
 import { TopicSearchPopupComponent } from './components/topic-search-popup/topic-search-popup.component';
 import { DiscoverCommunitiesPopupComponent } from './components/discover-communities-popup/discover-communities-popup.component';
+import { RightSidebarComponent } from './components/right-sidebar/right-sidebar.component';
 import { MediaUrlPipe } from '../../shared/pipes/media-url.pipe';
 import { getUsernameColor, getInitial } from '../../shared/utils/color.utils';
 
 @Component({
   selector: 'app-community',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive, PostCardComponent, PostSkeletonComponent, EmojiPickerComponent, CreateCommunityModalComponent, TopicSearchPopupComponent, DiscoverCommunitiesPopupComponent, MediaUrlPipe],
+  imports: [RouterLink, RouterLinkActive, PostCardComponent, PostSkeletonComponent, EmojiPickerComponent, CreateCommunityModalComponent, TopicSearchPopupComponent, DiscoverCommunitiesPopupComponent, MediaUrlPipe, RightSidebarComponent],
   templateUrl: './community.component.html',
   styleUrl: './community.component.css'
 })

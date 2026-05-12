@@ -1,1 +1,9 @@
-<p>news-detail works!</p>
+@if (article()) {
+  <app-news-article [article]="article()" backLabel="Back to Community" (back)="goBack()"></app-news-article>
+} @else if (notFound()) {
+  <div class="news-detail-empty">
+    <h2>Article not available</h2>
+    <p>The article you're looking for is no longer cached. Open Markets &gt; News to refresh today's headlines.</p>
+    <a routerLink="/markets" class="news-detail-cta">Go to Markets</a>
+  </div>
+}

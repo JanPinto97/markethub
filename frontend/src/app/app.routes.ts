@@ -15,6 +15,10 @@ export const routes: Routes = [
     loadComponent: () => import('./features/markets/markets.component').then(m => m.MarketsComponent)
   },
   {
+    path: 'markets/news/:id',
+    loadComponent: () => import('./features/markets/news-detail/news-detail').then(m => m.NewsDetail)
+  },
+  {
     path: 'community',
     loadComponent: () => import('./features/community/community.component').then(m => m.CommunityComponent)
   },

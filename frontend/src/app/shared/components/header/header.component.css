@@ -14,7 +14,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: var(--header-height);
+  height: var(--header-bar-height);
   padding: 0 var(--spacing-6) 0 var(--spacing-5);
   gap: var(--spacing-4);
 }
@@ -69,7 +69,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-2);
-  height: var(--header-height);
+  height: var(--header-bar-height);
   padding: 0 var(--spacing-4);
   font-size: var(--text-body-md);
   font-weight: var(--weight-medium);

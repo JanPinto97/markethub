@@ -1,13 +1,17 @@
 .ticker-wrap {
+  position: fixed;
+  top: var(--header-bar-height);
+  left: 0;
+  right: 0;
   width: 100%;
+  height: var(--ticker-height);
   overflow: hidden;
   background: #ffffff;
-  border-bottom: 1px solid #f2f4f6;
-  padding: 8px 0;
+  border-bottom: 1px solid var(--outline-variant, #f2f4f6);
+  display: flex;
+  align-items: center;
   white-space: nowrap;
-  position: sticky;
-  top: 0;
-  z-index: 40;
+  z-index: 999;
 }
 
 .ticker-move {

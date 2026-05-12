@@ -1,17 +1,34 @@
-# Google OAuth Implementation
+# Community Page — Right Sidebar
 
 ## Context
-MarketHub — Angular 17 + Node/Express + MongoDB + JWT (access token in memory, refresh token httpOnly cookie). Auth already implemented.
+MarketHub — Angular 17 standalone components, Node/Express backend, MongoDB.
+Visual reference at `./reference1.png` (use only as layout inspiration, not as exact spec).
 
 ## Task
-Add Google OAuth as an additional login method without replacing the existing auth flow.
+Build the right sidebar of `/community` with three vertical blocks: **Top Communities**, **Hot News**, **Trending Users**.
+
+## Blocks
+
+**Top Communities**
+- Show the 3 public communities with the most members
+- Card style similar to reference1.png
+- Do NOT show online member count, do NOT show info icon
+- Backend endpoint if missing: `GET /api/v1/communities/public?sort=members&limit=3`
+
+**Hot News**
+- Show the single most recent financial news article
+- Before implementing: read `./frontend/src/app/features/markets/market-news` and `./frontend/src/app/features/markets/news-detail` to understand the existing news API integration and reuse it
+- Display title + clickable link to open the article
+
+**Trending Users**
+- Users who gained the most followers in the past 7 days
+- Show top 3
+- Backend endpoint if missing: `GET /api/v1/users/trending?period=week&limit=3`
 
 ## Constraints
-- Backend: `passport` + `passport-google-oauth20`, endpoints `/api/v1/auth/google` and `/api/v1/auth/google/callback`, integrate with existing JWT logic
-- User model: add optional `googleId` field, handle email collision between regular and Google accounts
-- Frontend: add "Continue with Google" button to existing login and register components
-- Env vars: add `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL` to `.env.example`
-- Callback flow must redirect to frontend with access token
+- Angular standalone component for the sidebar, integrated into the existing community page layout
+- New backend endpoints only if they don't already exist
+- CSS custom properties / existing design tokens, no Bootstrap
 
 ## Output format
 Only new or modified files.

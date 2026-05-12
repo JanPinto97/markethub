@@ -13,7 +13,7 @@ declare const TradingView: any;
       <nav class="sticky top-0 z-[60] bg-white/90 backdrop-blur-md border-b border-slate-100 px-6 py-4 flex items-center justify-between">
         <button (click)="onBack()" class="flex items-center gap-2 text-slate-500 hover:text-[#006c49] transition-colors group">
           <span class="material-symbols-outlined text-sm group-hover:-translate-x-1 transition-transform">arrow_back</span>
-          <span class="text-[10px] font-black uppercase tracking-widest">Back to News</span>
+          <span class="text-[10px] font-black uppercase tracking-widest">{{ backLabel }}</span>
         </button>
         <div class="flex items-center gap-4">
             <span class="text-[10px] font-black uppercase text-slate-400 tracking-tighter hidden md:block">Reading: {{ article.title | slice:0:40 }}...</span>
@@ -193,6 +193,7 @@ declare const TradingView: any;
 })
 export class NewsArticleComponent implements OnInit, AfterViewInit {
   @Input() article: any;
+  @Input() backLabel: string = 'Back to News';
   @Output() back = new EventEmitter<void>();
 
   fontSize: number = 18;

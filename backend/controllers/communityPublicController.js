@@ -162,14 +162,43 @@ exports.listCommunities = async (req, res, next) => {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 20));
     const skip = (page - 1) * limit;
+    const sort = req.query.sort;
 
     const filter = {};
     if (req.query.search) {
       filter.name = { $regex: req.query.search, $options: 'i' };
     }
 
+    if (sort === 'members') {
+      const pipeline = [
+        { $match: filter },
+        { $addFields: { memberCount: { $size: { $ifNull: ['$members', []] } } } },
+        { $sort: { memberCount: -1, createdAt: -1 } },
+        { $skip: skip },
+        { $limit: limit },
+      ];
+      const [communities, total] = await Promise.all([
+        CommunityPublic.aggregate(pipeline),
+        CommunityPublic.countDocuments(filter),
+      ]);
+      const totalPages = Math.ceil(total / limit);
+      return res.json({
+        success: true,
+        communities: communities.map(c => ({
+          id: c._id,
+          name: c.name,
+          description: c.description,
+          avatar: c.avatar,
+          memberCount: c.memberCount,
+          postCount: c.postCount,
+          createdAt: c.createdAt,
+        })),
+        pagination: { page, limit, total, totalPages, hasNextPage: page < totalPages, hasPrevPage: page > 1 },
+      });
+    }
+
     const [communities, total] = await Promise.all([
-      CommunityPublic.find(filter).sort({ 'members.length': -1 }).skip(skip).limit(limit),
+      CommunityPublic.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
       CommunityPublic.countDocuments(filter),
     ]);
 

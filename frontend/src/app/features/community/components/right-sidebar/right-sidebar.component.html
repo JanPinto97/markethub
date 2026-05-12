@@ -1,0 +1,76 @@
+<div class="rs-block">
+  <div class="rs-header">
+    <h3 class="rs-title">Top Communities</h3>
+  </div>
+  @if (communitiesLoading()) {
+    <div class="rs-skeleton"></div>
+    <div class="rs-skeleton"></div>
+    <div class="rs-skeleton"></div>
+  } @else if (communities().length === 0) {
+    <p class="rs-empty">No communities yet.</p>
+  } @else {
+    @for (c of communities(); track c.id) {
+      <a [routerLink]="'/community/c/' + c.id" class="rs-item">
+        @if (c.avatar) {
+          <img [src]="c.avatar | mediaUrl" [alt]="c.name" class="rs-avatar-img" />
+        } @else {
+          <span class="rs-avatar-initial" [style.background-color]="getColor(c.name)">{{ getInitial(c.name) }}</span>
+        }
+        <div class="rs-item-text">
+          <div class="rs-item-name">{{ c.name }}</div>
+          <div class="rs-item-meta">{{ formatMembers(c.memberCount) }} members</div>
+        </div>
+      </a>
+    }
+  }
+</div>
+
+<div class="rs-block">
+  <div class="rs-header">
+    <h3 class="rs-title">Hot News</h3>
+  </div>
+  @if (newsLoading()) {
+    <div class="rs-skeleton"></div>
+    <div class="rs-skeleton short"></div>
+  } @else if (!news()) {
+    <p class="rs-empty">No news available.</p>
+  } @else {
+    <a [routerLink]="['/markets/news', news()!.id]" class="rs-news">
+      <div class="rs-news-title">{{ news()!.title }}</div>
+      <div class="rs-news-meta">{{ news()!.source }}</div>
+    </a>
+  }
+</div>
+
+<div class="rs-block">
+  <div class="rs-header">
+    <h3 class="rs-title">Trending Users</h3>
+  </div>
+  @if (usersLoading()) {
+    <div class="rs-skeleton"></div>
+    <div class="rs-skeleton"></div>
+    <div class="rs-skeleton"></div>
+  } @else if (users().length === 0) {
+    <p class="rs-empty">No trending users.</p>
+  } @else {
+    @for (u of users(); track u.id) {
+      <a [routerLink]="'/profile/' + u.username" class="rs-item">
+        @if (u.avatar) {
+          <img [src]="u.avatar | mediaUrl" [alt]="u.username" class="rs-avatar-img" />
+        } @else {
+          <span class="rs-avatar-initial" [style.background-color]="getColor(u.username)">{{ getInitial(u.username) }}</span>
+        }
+        <div class="rs-item-text">
+          <div class="rs-item-name">{{ '@' + u.username }}</div>
+          <div class="rs-item-meta">
+            @if (u.recentFollowerCount > 0) {
+              +{{ u.recentFollowerCount }} this week
+            } @else {
+              {{ formatMembers(u.followersCount) }} followers
+            }
+          </div>
+        </div>
+      </a>
+    }
+  }
+</div>

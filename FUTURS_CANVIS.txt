@@ -1,9 +1,14 @@
 --- PRIORITAT ALTA ---
 
+-UI problem a l'hora de crear comunitat
+-Afegir pàgines de consentiment / privacitat
+
+
 --- PRIORITAT MITJA ---
 
+-Que els agents dels seeders es segueixin entre ells
+
 --- PRIORITAT BAIXA ---
--Opció de login amb nom d'usuari i contrasenya.
 
 --- EXTRES ---
 -Opció de fer votacions dins les discussions per decidir qui te raó.

@@ -71,7 +71,9 @@
   --radius-full: 9999px;
 
   /* ── Layout ── */
-  --header-height: 72px;
+  --header-bar-height: 72px;
+  --ticker-height: 30px;
+  --header-height: calc(var(--header-bar-height) + var(--ticker-height));
   --sidebar-left-width: 240px;
   --sidebar-right-width: 300px;
 
@@ -84,7 +86,7 @@
 
 @media (max-width: 767px) {
   :root {
-    --header-height: 56px;
+    --header-bar-height: 56px;
   }
 }
 
