@@ -19,6 +19,19 @@ export class AuthService {
   getToken(): string | null { return this.accessToken; }
   setToken(token: string | null): void { this.accessToken = token; }
 
+  loginWithGoogle(): void {
+    window.location.href = `${this.baseUrl}/auth/google`;
+  }
+
+  finalizeOAuthLogin(token: string): Observable<User | null> {
+    this.accessToken = token;
+    return this.http.get<MeResponse>(`${this.baseUrl}/auth/me`).pipe(
+      tap(res => this.currentUser.set(res.user)),
+      map(res => res.user),
+      catchError(() => { this.accessToken = null; this.currentUser.set(null); return of(null); })
+    );
+  }
+
   updateCurrentUser(patch: Partial<User>): void {
     const current = this.currentUser();
     if (!current) return;

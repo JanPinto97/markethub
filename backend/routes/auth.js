@@ -1,8 +1,11 @@
 const router = require('express').Router();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const passport = require('../config/passport');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
+
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:4200';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SALT_ROUNDS = 10;
@@ -110,5 +113,31 @@ router.get('/me', auth, async (req, res, next) => {
     res.json({ success: true, user: user.toPrivateJSON() });
   } catch (err) { next(err); }
 });
+
+const googleEnabled = passport.GOOGLE_ENABLED;
+
+router.get('/google', (req, res, next) => {
+  if (!googleEnabled) return fail(res, 503, 'Google OAuth not configured');
+  return passport.authenticate('google', { scope: ['profile', 'email'], session: false })(req, res, next);
+});
+
+router.get(
+  '/google/callback',
+  (req, res, next) => {
+    if (!googleEnabled) return res.redirect(`${FRONTEND_URL}/login?error=google_auth_failed`);
+    return passport.authenticate('google', { session: false, failureRedirect: `${FRONTEND_URL}/login?error=google_auth_failed` })(req, res, next);
+  },
+  (req, res) => {
+    try {
+      const user = req.user;
+      if (!user) return res.redirect(`${FRONTEND_URL}/login?error=google_auth_failed`);
+      const accessToken = signAccess(user);
+      setRefreshCookie(res, signRefresh(user));
+      res.redirect(`${FRONTEND_URL}/auth/google/success?token=${encodeURIComponent(accessToken)}`);
+    } catch {
+      res.redirect(`${FRONTEND_URL}/login?error=google_auth_failed`);
+    }
+  }
+);
 
 module.exports = router;

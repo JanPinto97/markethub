@@ -25,9 +25,17 @@ economic calendar, and interact in communities (X-style and Reddit-style discuss
 
 ## Running
 
-**Docker (recommended):**
+### Docker (recommended)
+
+The stack defines 3 services in `docker-compose.yml`: `mongo`, `backend`, `frontend`.
+Source folders are bind-mounted for live reload (`./backend:/app`, `./frontend:/app`),
+and `node_modules` are kept inside anonymous volumes (`/app/node_modules`) so the host
+versions don't override the container's.
+
+**First-time start (or after pulling new code):**
 
 ```bash
+cp .env.example .env       # then edit values (JWT secrets, Google OAuth, etc.)
 docker-compose up --build
 ```
 
@@ -37,11 +45,65 @@ Services start at:
 - Backend → http://localhost:3000
 - MongoDB → localhost:27017 (db: `markethub`)
 
-**Local dev:**
+**Subsequent runs (no dependency or Dockerfile changes):**
 
 ```bash
-cd backend && npm run dev   # nodemon, requires Mongo on localhost:27017
-cd frontend && ng serve     # port 4200
+docker-compose up
+```
+
+**Stop:**
+
+```bash
+docker-compose down                # stops containers, keeps volumes (DB + node_modules persist)
+docker-compose down -v             # ⚠️ also wipes volumes — you'll lose MongoDB data
+```
+
+**After adding/removing a dependency in `backend/package.json` or `frontend/package.json`:**
+
+The anonymous `node_modules` volume is not refreshed by `--build` alone.
+You must either drop it or install inside the running container:
+
+```bash
+# Option A — recreate the node_modules volume cleanly (recommended)
+docker-compose down
+docker volume ls | grep _node_modules            # find the exact volume name
+docker volume rm <markethub_backend_node_modules>  # repeat for frontend if needed
+docker-compose up --build
+
+# Option B — install live in the running container (quick fix)
+docker-compose exec backend npm install
+docker-compose exec frontend npm install
+docker-compose restart backend frontend
+```
+
+**Rebuild a single service:**
+
+```bash
+docker-compose up --build backend
+docker-compose up --build frontend
+```
+
+**Logs and shell:**
+
+```bash
+docker-compose logs -f backend
+docker-compose exec backend sh
+docker-compose exec mongo mongosh markethub
+```
+
+**Reset the database only (keep node_modules):**
+
+```bash
+docker-compose down
+docker volume rm <markethub_mongo_data>
+docker-compose up
+```
+
+### Local dev (without Docker)
+
+```bash
+cd backend && npm install && npm run dev   # nodemon, requires Mongo on localhost:27017
+cd frontend && npm install && ng serve     # port 4200
 ```
 
 **Seeders:**
@@ -53,8 +115,28 @@ cd seeder && npm run orchestrate       # seeders, requires Mongo on localhost:27
 
 ## Environment variables
 
-Copy `.env.example` to `.env` and fill in values (JWT secrets, DB URI, etc.).
-The backend loads `.env` from the project root via dotenv.
+Copy `.env.example` to `.env` and fill in values. The backend loads `.env` from the
+project root via dotenv.
+
+Required variables:
+
+- `PORT`, `MONGO_URI`, `NODE_ENV`
+- `JWT_SECRET`, `JWT_REFRESH_SECRET`
+- `SUPERADMIN_*`, `MODERATOR_*` (used by seeders)
+
+Optional (Google OAuth — without these the `Continue with Google` button returns 503,
+but email/password login still works):
+
+- `FRONTEND_URL` (default `http://localhost:4200`)
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
+- `GOOGLE_CALLBACK_URL` (must match the redirect URI registered in Google Cloud
+  Console — typically `http://localhost:3000/api/v1/auth/google/callback`)
+
+After editing `.env`, restart the backend container so it picks up the new values:
+
+```bash
+docker-compose restart backend
+```
 
 ## API
 

@@ -34,6 +34,10 @@ export class LoginComponent implements OnInit {
     this.showPassword.update(v => !v);
   }
 
+  loginWithGoogle() {
+    this.auth.loginWithGoogle();
+  }
+
   submit() {
     this.error.set(null);
     this.sessionExpired.set(false);

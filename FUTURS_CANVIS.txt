@@ -1,5 +1,4 @@
 --- PRIORITAT ALTA ---
-Implementar el ticker dinàmic a sota del header i eliminar-lo de markets.
 
 --- PRIORITAT MITJA ---
 

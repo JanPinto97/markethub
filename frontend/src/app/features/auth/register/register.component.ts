@@ -24,6 +24,10 @@ export class RegisterComponent {
   error = signal<string | null>(null);
   loading = signal(false);
 
+  loginWithGoogle() {
+    this.auth.loginWithGoogle();
+  }
+
   togglePassword() {
     this.showPassword.update(v => !v);
   }

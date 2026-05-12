@@ -16,7 +16,8 @@ const userSchema = new mongoose.Schema({
     trim: true,
     lowercase: true,
   },
-  passwordHash: { type: String, required: true },
+  passwordHash: { type: String, default: '' },
+  googleId: { type: String, default: null, index: true, sparse: true },
   role: {
     type: String,
     enum: ['user', 'moderator', 'superadmin'],

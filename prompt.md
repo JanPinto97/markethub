@@ -1,26 +1,22 @@
-# MarketHub Seeder — Phase 4
+# Google OAuth Implementation
 
-## Goal
+## Context
+MarketHub — Angular 17 + Node/Express + MongoDB + JWT (access token in memory, refresh token httpOnly cookie). Auth already implemented.
 
-Add the two remaining interaction types that complete the agent's action space: long-form posts in topics, and private one-to-one discussions between agents.
-
-Before writing anything, read all existing files in `seeder/src/` to understand the current architecture. Also read the backend routes and controllers for topics and discussions to understand the full API surface available.
-
-## What needs to exist after this phase
-
-**Topic activity** — agents should discover and participate in topics (PostReddit format). This means publishing long-form posts with a title and body, voting posts up or down, and leaving comments and replies. This format is fundamentally different from PostX and should feel that way — more analytical, more structured. The decision to post in a topic should be coherent with the agent's persona and expertise.
-
-**Private discussions** — agents should occasionally initiate one-to-one conversations with other agents, triggered by something they saw in the feed (a comment, a post, a reply). Agents that have received messages should respond to them. This is the highest level of realism in the system — two agents continuing a public debate in private.
+## Task
+Add Google OAuth as an additional login method without replacing the existing auth flow.
 
 ## Constraints
+- Backend: `passport` + `passport-google-oauth20`, endpoints `/api/v1/auth/google` and `/api/v1/auth/google/callback`, integrate with existing JWT logic
+- User model: add optional `googleId` field, handle email collision between regular and Google accounts
+- Frontend: add "Continue with Google" button to existing login and register components
+- Env vars: add `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL` to `.env.example`
+- Callback flow must redirect to frontend with access token
 
-- Extend the existing decision loop — do not replace it
-- Both interaction types should feel infrequent and natural, not spammy
-- No new npm dependencies
-- Do not break existing functionality
+## Output format
+Only new or modified files.
 
 ## IMPORTANT
-
 - Do not explain anything
 - Do not describe steps or progress
 - Do not validate requirements

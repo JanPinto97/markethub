@@ -66,6 +66,10 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/register/register.component').then(m => m.RegisterComponent)
   },
   {
+    path: 'auth/google/success',
+    loadComponent: () => import('./features/auth/oauth-callback/oauth-callback.component').then(m => m.OAuthCallbackComponent)
+  },
+  {
     path: 'profile/:username',
     loadComponent: () => import('./features/profile/profile.component').then(m => m.ProfileComponent)
   },
