@@ -7,14 +7,14 @@ import { forkJoin, of, Subject, Subscription } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, timeout } from 'rxjs/operators';
 import { EconomicCalendarComponent } from './economic-calendar/economic-calendar.component';
 import { MarketNewsComponent } from './market-news/market-news.component';
-import { NewsArticleComponent } from './market-news/news-article/news-article';
+import { ChartsComponent } from './charts/charts.component';
 
 declare const TradingView: any;
 
 @Component({
   selector: 'app-markets',
   standalone: true,
-  imports: [CommonModule, FormsModule, DecimalPipe, CurrencyPipe, DatePipe, EconomicCalendarComponent, MarketNewsComponent, NewsArticleComponent],
+  imports: [CommonModule, FormsModule, DecimalPipe, CurrencyPipe, DatePipe, EconomicCalendarComponent, MarketNewsComponent, ChartsComponent],
   templateUrl: './markets.component.html',
   styleUrls: ['./markets.component.css']
 })
@@ -72,8 +72,18 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
   filteredEvents: any[] = [];
   marketNews: any[] = [];
   sentimentData: any = { value: 0, value_classification: '...' };
-  activeTab: 'overview' | 'calendar' | 'news' = 'overview';
-  selectedArticle: any = null;
+  activeTab: 'overview' | 'calendar' | 'news' | 'charts' = 'overview';
+  /** Se pasa una sola vez a News para abrir el detalle al venir desde Overview */
+  pendingNewsArticle: {
+    title: string;
+    snippet: string;
+    time: number;
+    source: string;
+    category: string;
+    image: string | null;
+    url: string;
+    isPro: boolean;
+  } | null = null;
   
   @ViewChild('newsSlider') newsSlider!: ElementRef;
 
@@ -96,51 +106,75 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
       const saved = localStorage.getItem('markethub_state');
       if (saved) {
         const { date, exhaustedMap, tickerPrices, lastPrice, lastCheck } = JSON.parse(saved);
-        if (date === new Date().toDateString()) {
-          this.sourceExhausted = { ...this.sourceExhausted, ...exhaustedMap };
-          this.lastExhaustedCheck = lastCheck || 0;
-          
-          if (tickerPrices) {
+          // 1. Hidratar Ticker (Escaneo profundo: busca por símbolo visual y por API)
+          if (tickerPrices && this.coins) {
             this.coins.forEach(coin => {
-              if (tickerPrices[coin.symbol]) {
-                coin.price = tickerPrices[coin.symbol].price;
-                coin.change = tickerPrices[coin.symbol].change;
+              // Intenta recuperar por clave de símbolo o clave de API (para mayor robustez)
+              const cached = tickerPrices[coin.symbol] || tickerPrices[coin.apiSymbol] || tickerPrices[coin.tech];
+              if (cached && cached.price > 0) {
+                coin.price = cached.price;
+                coin.change = cached.change;
               }
             });
           }
-          if (lastPrice && lastPrice.symbol === this.currentApiSymbol && lastPrice.data.c > 0) {
+
+          // 2. Hidratar Overview (Prioridad: Último visto -> Ticker -> Respaldo)
+          const currentMatch = this.coins ? this.coins.find(c => c.apiSymbol === this.currentApiSymbol || c.tech === this.currentApiSymbol) : null;
+          
+          if (lastPrice && (lastPrice.symbol === this.currentApiSymbol || lastPrice.symbol === this.currentSymbol) && lastPrice.data.c > 0) {
             this.currentPriceData = lastPrice.data;
-          } else {
-            // Fallback: Si el precio principal no está, intentamos sacarlo del ticker hidratado
-            const coinMatch = this.coins.find(c => c.apiSymbol === this.currentApiSymbol || c.tech === this.currentApiSymbol);
-            if (coinMatch && coinMatch.price > 0) {
-              this.currentPriceData = { c: coinMatch.price, dp: coinMatch.change };
-            }
+          } else if (currentMatch && currentMatch.price > 0) {
+            this.currentPriceData = { c: currentMatch.price, dp: currentMatch.change };
           }
-          console.log("Sistema hidratado y estados de API recuperados.");
+
+          // 3. Gestionar estados de API (Esto sí depende de la fecha)
+          if (date === new Date().toDateString()) {
+            this.sourceExhausted = { ...this.sourceExhausted, ...exhaustedMap };
+            this.lastExhaustedCheck = lastCheck || 0;
+          } else {
+            this.sourceExhausted = { 'twelvedata': false, 'polygon': false, 'tiingo': false };
+          }
+          
+          console.log("Memoria de Precios Hidratada al 100%.");
         }
+      } catch (e: any) {
+        console.error("Error en hidratación:", e);
       }
-    } catch (e) {}
-  }
+    }
 
   savePersistence() {
-    const tickerPrices: any = {};
-    this.coins.forEach(c => {
-      tickerPrices[c.symbol] = { price: c.price, change: c.change };
-    });
+    try {
+      const savedRaw = localStorage.getItem('markethub_state');
+      const currentState = savedRaw ? JSON.parse(savedRaw) : {};
+      
+      // Mantenemos lo que ya había (Merge inteligente)
+      const tickerPrices: any = currentState.tickerPrices || {};
 
-    // Solo guardamos el precio de cabecera si es válido (>0) para no sobreescribir la caché con "..."
-    const lastPriceToSave = (this.currentPriceData && this.currentPriceData.c > 0) 
-      ? { symbol: this.currentApiSymbol, data: this.currentPriceData }
-      : JSON.parse(localStorage.getItem('markethub_state') || '{}').lastPrice;
+      // Solo ACTUALIZAMOS si el precio es real (>0). Si es 0, mantenemos el antiguo.
+      if (this.coins) {
+        this.coins.forEach(c => {
+          if (c.price > 0) {
+            // Guardamos bajo múltiples claves para que la recuperación sea infalible ante cambios de nombre
+            tickerPrices[c.symbol] = { price: c.price, change: c.change };
+            tickerPrices[c.apiSymbol] = { price: c.price, change: c.change };
+          }
+        });
+      }
 
-    localStorage.setItem('markethub_state', JSON.stringify({
-      date: new Date().toDateString(),
-      exhaustedMap: this.sourceExhausted,
-      tickerPrices: tickerPrices,
-      lastPrice: lastPriceToSave,
-      lastCheck: this.lastExhaustedCheck
-    }));
+      // Lo mismo para el precio de la cabecera (Overview)
+      let lastPriceToSave = currentState.lastPrice;
+      if (this.currentPriceData && this.currentPriceData.c > 0) {
+        lastPriceToSave = { symbol: this.currentApiSymbol, data: this.currentPriceData };
+      }
+
+      localStorage.setItem('markethub_state', JSON.stringify({
+        date: new Date().toDateString(),
+        exhaustedMap: this.sourceExhausted,
+        tickerPrices: tickerPrices,
+        lastPrice: lastPriceToSave,
+        lastCheck: this.lastExhaustedCheck
+      }));
+    } catch (e: any) {}
   }
 
   ngOnInit() {
@@ -158,6 +192,11 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // Polling automático optimizado: Detecta agotamiento y cambia de fuente AL INSTANTE
     this.refreshInterval = setInterval(() => {
+      this.syncAllPrices();
+    }, 8000);
+  }
+
+  syncAllPrices() {
       const now = new Date().getTime();
       
       // Resetear estado de agotamiento al día siguiente
@@ -176,9 +215,8 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
         this.updatePrice(this.currentApiSymbol, this.currentSource);
       }
       
-      // 2. Ticker (Rotativo para no saturar limites de Polygon 5/min)
+      // 2. Ticker
       this.loadTickerPricesStaggered();
-    }, 8000); // Un poco más rápido para compensar el escalonado
   }
 
   // Actualiza los pares de TwelveData de forma inteligente
@@ -206,6 +244,7 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
                 }
               }
             });
+            this.savePersistence(); // Guardar ticker de TwelveData
             this.cdr.detectChanges();
           },
           error: () => { 
@@ -220,6 +259,7 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
       this.tickerPointer++;
       this.fetchPriceOnlyFallback(coin.apiSymbol, (price) => {
         coin.price = price;
+        this.savePersistence(); // Guardar fallback individual
         this.cdr.detectChanges();
       });
     }
@@ -253,6 +293,7 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
           const multiplier = coin.source === 'finnhub_synthetic_wti' ? 0.7146 : 1;
           coin.price = data.c * multiplier;
           coin.change = data.dp || 0;
+          this.savePersistence(); // Guardar ticker de Finnhub
           this.cdr.detectChanges();
         }
       });
@@ -310,9 +351,9 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
           // Actualizamos el precio de la cabecera SOLO si coincide exactamente
           if (trade.s === this.currentSymbol) {
             this.currentPriceData = { ...this.currentPriceData, c: trade.p };
-            this.cdr.detectChanges();
           }
         });
+        this.savePersistence(); // Guardar cambios de WS
         this.cdr.detectChanges();
       }
     });
@@ -338,8 +379,7 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
     
     this.loadNews();
     this.loadGlobalSentiment();
-    this.loadTickerPricesStaggered();
-    this.updatePrice(this.currentApiSymbol, this.currentSource);
+    this.syncAllPrices(); // Ejecución inmediata de la cadena de precios (incluye saltos de agotamiento)
     this.fetchCalendarData();
   }
 
@@ -427,9 +467,12 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
     const coinGeckoObs = this.http.get(`https://api.coingecko.com/api/v3/search?query=${query}&x_cg_demo_api_key=${this.coinGeckoApiKey}`)
       .pipe(catchError(() => of({ coins: [] })));
 
-    forkJoin([twelveDataObs, coinGeckoObs]).subscribe(([tdRes, cgRes]: [any, any]) => {
-        const tdResults = tdRes.data || [];
-        const cgResults = cgRes.coins || [];
+    forkJoin({
+      tdRes: twelveDataObs,
+      cgRes: coinGeckoObs
+    }).subscribe(({ tdRes, cgRes }) => {
+        const tdResults = (tdRes as any).data || [];
+        const cgResults = (cgRes as any).coins || [];
         
         // Mapa de activos populares: sobreescribe el símbolo TV y la API para activos conocidos
         const POPULAR_ASSET_MAP: { [key: string]: { tvSymbol: string; apiSymbol: string; source: string; coingeckoId?: string } } = {
@@ -1077,29 +1120,22 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   openArticle(news: any) {
-    this.selectedArticle = {
-      ...news,
+    this.pendingNewsArticle = {
       title: news.headline,
-      snippet: news.summary,
-      time: news.datetime * 1000
+      snippet: news.summary ?? '',
+      time: news.datetime * 1000,
+      source: news.source ?? '',
+      category: news.category ?? 'Economy',
+      image: news.image ?? null,
+      url: news.url ?? '',
+      isPro: !!news.isPro
     };
-    history.pushState({ view: 'article-overview' }, '');
+    this.activeTab = 'news';
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    this.cdr.detectChanges();
   }
 
-  @HostListener('window:popstate', ['$event'])
-  onPopState(event: any) {
-    if (this.selectedArticle) {
-      this.selectedArticle = null;
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }
-
-  backToList() {
-    this.selectedArticle = null;
-    if (history.state?.view === 'article-overview') {
-        history.back();
-    }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  clearPendingNewsArticle(): void {
+    this.pendingNewsArticle = null;
   }
 }

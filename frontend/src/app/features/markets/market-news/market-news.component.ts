@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, HostListener } from '@angular/core';
+import { Component, OnInit, OnChanges, SimpleChanges, ChangeDetectorRef, HostListener, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { forkJoin, of } from 'rxjs';
@@ -13,7 +13,7 @@ import { NewsArticleComponent } from './news-article/news-article';
   templateUrl: './market-news.component.html',
   styleUrls: ['./market-news.component.css']
 })
-export class MarketNewsComponent implements OnInit {
+export class MarketNewsComponent implements OnInit, OnChanges {
   // API Keys
   private finnhubKey = 'd7jo9s9r01qu1n4fg3pgd7jo9s9r01qu1n4fg3q0';
   private newsDataKey = 'pub_51b0bb5e9a054ff19dbd2272f643fef5';
@@ -31,7 +31,27 @@ export class MarketNewsComponent implements OnInit {
   isLoading: boolean = true;
   selectedArticle: any = null;
 
+  @Input() articleFromOverview: {
+    title: string;
+    snippet: string;
+    time: number;
+    source: string;
+    category: string;
+    image: string | null;
+    url: string;
+    isPro: boolean;
+  } | null = null;
+
+  @Output() articleFromOverviewConsumed = new EventEmitter<void>();
+
   constructor(private http: HttpClient, private cdr: ChangeDetectorRef) {}
+
+  ngOnChanges(changes: SimpleChanges): void {
+    const ch = changes['articleFromOverview'];
+    if (!ch?.currentValue) return;
+    this.openArticle(ch.currentValue);
+    queueMicrotask(() => this.articleFromOverviewConsumed.emit());
+  }
 
   ngOnInit() {
     this.checkPersistence();
