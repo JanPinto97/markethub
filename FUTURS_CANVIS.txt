@@ -1,5 +1,6 @@
 --- PRIORITAT ALTA ---
 
+-Treure espai entre TOP COMMUNITIES i TRENDING USERS
 -UI problem a l'hora de crear comunitat
 -Afegir pàgines de consentiment / privacitat
 
