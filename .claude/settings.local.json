@@ -43,7 +43,13 @@
       "Bash(git -C \"C:/JAN/INSTI/markethub/markethub/\" log --oneline -20)",
       "Bash(git *)",
       "Bash(mkdir -p C:/JAN/DAW/CODI/markethub/frontend/src/assets/images)",
-      "Bash(cp C:/JAN/DAW/CODI/markethub/logos/full_logo_negre_transparent.png C:/JAN/DAW/CODI/markethub/frontend/src/assets/images/full_logo.png)"
+      "Bash(cp C:/JAN/DAW/CODI/markethub/logos/full_logo_negre_transparent.png C:/JAN/DAW/CODI/markethub/frontend/src/assets/images/full_logo.png)",
+      "WebFetch(domain:api.anthropic.com)",
+      "Bash(dir \"C:\\\\JAN\\\\DAW\\\\CODI\\\\markethub\\\\.design_landing.html\")",
+      "Bash(xxd)",
+      "Bash(tar -xzf \"C:\\\\JAN\\\\DAW\\\\CODI\\\\markethub\\\\.design_landing.html\" -C \"C:\\\\JAN\\\\DAW\\\\CODI\\\\markethub\\\\.design_extract\")",
+      "Bash(npx --no-install tsc --noEmit -p tsconfig.app.json)",
+      "Bash(echo \"EXIT $?\")"
     ]
   }
 }

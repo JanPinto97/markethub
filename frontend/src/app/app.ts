@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component, computed, inject, signal } from '@angular/core';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { filter } from 'rxjs/operators';
 import { HeaderComponent } from './shared/components/header/header.component';
 import { TickerComponent } from './shared/components/ticker/ticker.component';
 import { ToastComponent } from './shared/components/toast/toast.component';
@@ -9,10 +10,26 @@ import { ToastComponent } from './shared/components/toast/toast.component';
   standalone: true,
   imports: [RouterOutlet, HeaderComponent, TickerComponent, ToastComponent],
   template: `
-    <app-header />
-    <app-ticker />
+    @if (showGlobalChrome()) {
+      <app-header />
+      <app-ticker />
+    }
     <router-outlet />
     <app-toast />
   `
 })
-export class App {}
+export class App {
+  private router = inject(Router);
+  private currentUrl = signal<string>(this.router.url);
+
+  showGlobalChrome = computed(() => {
+    const url = this.currentUrl().split('?')[0].split('#')[0];
+    return url !== '/' && url !== '';
+  });
+
+  constructor() {
+    this.router.events
+      .pipe(filter(e => e instanceof NavigationEnd))
+      .subscribe((e: any) => this.currentUrl.set(e.urlAfterRedirects || e.url));
+  }
+}

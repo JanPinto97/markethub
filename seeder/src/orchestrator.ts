@@ -9,6 +9,7 @@ interface Config {
   cycleSize: number;
   cycleDelayMs: number;
   perAgentDelayMs: number;
+  noRest: boolean;
 }
 
 function loadConfig(): Config {
@@ -17,6 +18,7 @@ function loadConfig(): Config {
     cycleSize: parseInt(process.env.SEEDER_CYCLE_SIZE ?? '5', 10),
     cycleDelayMs: parseInt(process.env.SEEDER_CYCLE_DELAY_MS ?? '60000', 10),
     perAgentDelayMs: parseInt(process.env.SEEDER_AGENT_DELAY_MS ?? '4000', 10),
+    noRest: (process.env.SEEDER_NO_REST ?? 'false').toLowerCase() === 'true',
   };
 }
 
@@ -48,7 +50,7 @@ async function runCycle(cfg: Config, cycleNo: number): Promise<void> {
       console.error(`[orchestrator] agent ${s.username} crashed: ${(err as Error).message}`);
     }
     if (stopping) return;
-    await sleep(cfg.perAgentDelayMs);
+    if (!cfg.noRest) await sleep(cfg.perAgentDelayMs);
   }
 }
 
@@ -56,13 +58,17 @@ async function main(): Promise<void> {
   const logPath = initFileLogger();
   const cfg = loadConfig();
   console.log(`[orchestrator] log file: ${logPath}`);
-  console.log(`[orchestrator] base=${cfg.baseUrl} cycleSize=${cfg.cycleSize} cycleDelay=${cfg.cycleDelayMs}ms perAgentDelay=${cfg.perAgentDelayMs}ms`);
+  console.log(`[orchestrator] base=${cfg.baseUrl} cycleSize=${cfg.cycleSize} cycleDelay=${cfg.cycleDelayMs}ms perAgentDelay=${cfg.perAgentDelayMs}ms noRest=${cfg.noRest}`);
   let cycleNo = 1;
   while (!stopping) {
     await runCycle(cfg, cycleNo);
     if (stopping) break;
-    console.log(`[orchestrator] cycle ${cycleNo} done, sleeping ${cfg.cycleDelayMs}ms`);
-    await sleep(cfg.cycleDelayMs);
+    if (cfg.noRest) {
+      console.log(`[orchestrator] cycle ${cycleNo} done, no-rest mode → next cycle immediately`);
+    } else {
+      console.log(`[orchestrator] cycle ${cycleNo} done, sleeping ${cfg.cycleDelayMs}ms`);
+      await sleep(cfg.cycleDelayMs);
+    }
     cycleNo += 1;
   }
   console.log('[orchestrator] stopped');

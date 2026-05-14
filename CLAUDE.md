@@ -117,7 +117,15 @@ CommunityPrivate, DiscussionTopic, Discussion, DiscussionMessage + User model up
 ✅ Economic Calendar component
 ⬜ Per-asset detail pages, watchlist, alerts
 
-⬜ Phase 5: AI assistant + Home polish
+🔄 Phase 5: AI assistant + Home polish
+✅ Landing page (`/`) — full editorial design from claude.ai/design bundle:
+  hero (emerald-liquid bg + glass quote card), LiveRoom teaser, Markets
+  gainers/laggards, Voices (asymmetric pull-quotes), AI block, Pricing,
+  FAQ accordion, FinalCTA. Owns its own header + footer; global
+  `<app-header />` and `<app-ticker />` are hidden on `/` via `app.ts`
+  `showGlobalChrome()` computed signal. Scroll-reveal via
+  IntersectionObserver. Assets in `frontend/src/assets/landing/`.
+⬜ AI assistant
 
 ## Rules
 

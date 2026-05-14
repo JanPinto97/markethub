@@ -91,6 +91,14 @@ docker-compose exec backend sh
 docker-compose exec mongo mongosh markethub
 ```
 
+**Seed discussion topics (required for the Community page topics):**
+
+```bash
+docker-compose exec backend npm run seed:topics
+```
+
+Run this once after the database is up. It populates the fixed list of discussion topics (Macro, Crypto, Trading, etc.) used by the Community section.
+
 **Reset the database only (keep node_modules):**
 
 ```bash
