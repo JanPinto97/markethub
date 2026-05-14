@@ -54,13 +54,21 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
   coins: any[] = [
     { symbol: 'BTC/USD', tech: 'BINANCE:BTCUSD', apiSymbol: 'BTC/USD', source: 'twelvedata', price: 0, change: 0 },
     { symbol: 'ETH/USD', tech: 'BINANCE:ETHUSD', apiSymbol: 'ETH/USD', source: 'twelvedata', price: 0, change: 0 },
+    { symbol: 'SOL/USD', tech: 'BINANCE:SOLUSD', apiSymbol: 'SOL/USD', source: 'twelvedata', price: 0, change: 0 },
     { symbol: 'EUR/USD', tech: 'FX:EURUSD', apiSymbol: 'EUR/USD', source: 'twelvedata', price: 0, change: 0 }, 
-    { symbol: 'S&P 500 (SPY)', tech: 'SPY', apiSymbol: 'SPY', source: 'finnhub', price: 0, change: 0 },       
+    { symbol: 'GBP/USD', tech: 'FX:GBPUSD', apiSymbol: 'GBP/USD', source: 'twelvedata', price: 0, change: 0 },
+    { symbol: 'USD/JPY', tech: 'FX:USDJPY', apiSymbol: 'USD/JPY', source: 'twelvedata', price: 0, change: 0 },
+    { symbol: 'S&P 500 (SPY)', tech: 'AMEX:SPY', apiSymbol: 'SPY', source: 'finnhub', price: 0, change: 0 },       
+    { symbol: 'NASDAQ 100 (QQQ)', tech: 'NASDAQ:QQQ', apiSymbol: 'QQQ', source: 'finnhub', price: 0, change: 0 },      
+    { symbol: 'DOW JONES (DIA)', tech: 'AMEX:DIA', apiSymbol: 'DIA', source: 'finnhub', price: 0, change: 0 },
+    { symbol: 'VIX', tech: 'CBOE:VIX', apiSymbol: '^VIX', source: 'finnhub', price: 0, change: 0 },
+    { symbol: 'DXY', tech: 'TVC:DXY', apiSymbol: 'DXY', source: 'finnhub', price: 0, change: 0 },
     { symbol: 'GOLD (XAU)', tech: 'OANDA:XAUUSD', apiSymbol: 'XAU/USD', source: 'twelvedata', price: 0, change: 0 }, 
-    { symbol: 'NASDAQ 100 (QQQ)', tech: 'QQQ', apiSymbol: 'QQQ', source: 'finnhub', price: 0, change: 0 },      
-    { symbol: 'AAPL', tech: 'AAPL', apiSymbol: 'AAPL', source: 'finnhub', price: 0, change: 0 },
-    { symbol: 'NVDA', tech: 'NVDA', apiSymbol: 'NVDA', source: 'finnhub', price: 0, change: 0 },
-    { symbol: 'TSLA', tech: 'TSLA', apiSymbol: 'TSLA', source: 'finnhub', price: 0, change: 0 },
+    { symbol: 'SILVER (XAG)', tech: 'OANDA:XAGUSD', apiSymbol: 'XAG/USD', source: 'twelvedata', price: 0, change: 0 },
+    { symbol: 'AAPL', tech: 'NASDAQ:AAPL', apiSymbol: 'AAPL', source: 'finnhub', price: 0, change: 0 },
+    { symbol: 'NVDA', tech: 'NASDAQ:NVDA', apiSymbol: 'NVDA', source: 'finnhub', price: 0, change: 0 },
+    { symbol: 'TSLA', tech: 'NASDAQ:TSLA', apiSymbol: 'TSLA', source: 'finnhub', price: 0, change: 0 },
+    { symbol: 'NFLX', tech: 'NASDAQ:NFLX', apiSymbol: 'NFLX', source: 'finnhub', price: 0, change: 0 },
     { symbol: 'CRUDE OIL (WTI)', tech: 'TVC:USOIL', apiSymbol: 'USO', source: 'finnhub_synthetic_wti', price: 0, change: 0 }
   ];
 
@@ -154,9 +162,10 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
       if (this.coins) {
         this.coins.forEach(c => {
           if (c.price > 0) {
-            // Guardamos bajo múltiples claves para que la recuperación sea infalible ante cambios de nombre
+            // Guardamos bajo múltiples claves para que la recuperación sea infalible en todo el sitio (Charts, News, etc.)
             tickerPrices[c.symbol] = { price: c.price, change: c.change };
             tickerPrices[c.apiSymbol] = { price: c.price, change: c.change };
+            tickerPrices[c.tech] = { price: c.price, change: c.change }; // Clave definitiva para Charts
           }
         });
       }
@@ -257,9 +266,10 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
       // Si ya sabemos que está agotado, rotamos de 1 en 1 para mantener el ritmo sin saturar
       const coin = tdCoins[this.tickerPointer % tdCoins.length];
       this.tickerPointer++;
-      this.fetchPriceOnlyFallback(coin.apiSymbol, (price) => {
+      this.fetchPriceAndChangeFallback(coin.apiSymbol, (price, change) => {
         coin.price = price;
-        this.savePersistence(); // Guardar fallback individual
+        coin.change = change;
+        this.savePersistence();
         this.cdr.detectChanges();
       });
     }
@@ -278,8 +288,9 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
     tdCoins.forEach((coin, index) => {
       // Stagger de 500ms entre llamadas para que Polygon no nos bloquee por "burst"
       setTimeout(() => {
-        this.fetchPriceOnlyFallback(coin.apiSymbol, (price) => {
+        this.fetchPriceAndChangeFallback(coin.apiSymbol, (price, change) => {
           coin.price = price;
+          coin.change = change;
           this.cdr.detectChanges();
         });
       }, index * 500);
@@ -847,6 +858,7 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
         this.currentPriceData = {
           ...this.currentPriceData,
           c: parseFloat(rate['5. Exchange Rate']),
+          dp: 0, // AlphaVantage free quote doesn't easily give daily change in this function
           timestamp: new Date().getTime()
         };
         this.savePersistence();
@@ -855,8 +867,8 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  // Versión ligera del fallback para el ticker (solo precio, con flujo estricto)
-  fetchPriceOnlyFallback(apiSymbol: string, callback: (price: number) => void) {
+  // Versión mejorada del fallback para el ticker (Precio + Cambio)
+  fetchPriceAndChangeFallback(apiSymbol: string, callback: (price: number, change: number) => void) {
     const cleanSymbol = apiSymbol.replace('/', '').toUpperCase();
     const [from, to] = apiSymbol.includes('/') ? apiSymbol.split('/') : [apiSymbol, 'USD'];
 
@@ -866,22 +878,26 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
+    // Para Crypto en Polygon se usa v2, para Forex v1. Ambos devuelven precio y cambio.
     const polygonUrl = apiSymbol.includes('/') 
       ? `https://api.polygon.io/v1/last/currencies/${from}/${to}?apiKey=${this.polygonApiKey}`
       : `https://api.polygon.io/v2/last/nbbo/${cleanSymbol}?apiKey=${this.polygonApiKey}`;
 
     this.http.get(polygonUrl).pipe(timeout(10000), catchError(() => of(null))).subscribe((data: any) => {
-      const price = data?.last?.price || data?.results?.p;
+      const price = data?.last?.price || data?.results?.p || data?.last?.bid;
+      // Polygon v1 last currency returns 'last.price'. v2 crypto returns 'results.p'
       if (price) {
-        callback(price);
+        // Intentar obtener cambio si está disponible, si no 0
+        const change = data?.last?.change || data?.results?.cp || 0;
+        callback(price, change);
       } else {
-        if (data?.status === 'ERROR') this.sourceExhausted['polygon'] = true;
+        if (data?.status === 'ERROR' || data?.error) this.sourceExhausted['polygon'] = true;
         this.fetchStep3Tiingo(apiSymbol, from, to, callback);
       }
     });
   }
 
-  private fetchStep3Tiingo(apiSymbol: string, from: string, to: string, callback: (price: number) => void) {
+  private fetchStep3Tiingo(apiSymbol: string, from: string, to: string, callback: (price: number, change: number) => void) {
     if (this.sourceExhausted['tiingo']) {
       this.fetchStep4AlphaVantage(from, to, callback);
       return;
@@ -893,9 +909,11 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
       : `https://api.tiingo.com/tiingo/crypto/prices?tickers=${tiingoTicker}&token=${this.tiingoApiKey}`;
     
     this.http.get(tiingoUrl).pipe(timeout(10000), catchError(() => of(null))).subscribe((tData: any) => {
-      const tPrice = tData && tData[0] ? (tData[0]?.midPrice || tData[0]?.lastPrice) : null;
+      const entry = tData && tData[0];
+      const tPrice = entry ? (entry.midPrice || entry.lastPrice) : null;
       if (tPrice) {
-        callback(tPrice);
+        // Calcular cambio aproximado si Tiingo no lo da directamente en este endpoint (o usar 0)
+        callback(tPrice, 0);
       } else {
         this.sourceExhausted['tiingo'] = true;
         this.savePersistence();
@@ -904,12 +922,12 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  private fetchStep4AlphaVantage(from: string, to: string, callback: (price: number) => void) {
+  private fetchStep4AlphaVantage(from: string, to: string, callback: (price: number, change: number) => void) {
     const avUrl = `https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=${from}&to_currency=${to}&apikey=${this.alphaVantageApiKey}`;
     this.http.get(avUrl).pipe(timeout(10000), catchError(() => of(null))).subscribe((avRes: any) => {
       const rate = avRes ? avRes['Realtime Currency Exchange Rate'] : null;
       if (rate && rate['5. Exchange Rate']) {
-        callback(parseFloat(rate['5. Exchange Rate']));
+        callback(parseFloat(rate['5. Exchange Rate']), 0);
       }
     });
   }
@@ -1097,15 +1115,26 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
       "style": "1",
       "locale": "en",
       "enable_publishing": false,
-      "allow_symbol_change": false, 
-      "header_widget_buttons": false,
-      "top_toolbar": false,
-      "details": false, 
+      "allow_symbol_change": false,
+      "hide_top_toolbar": true,
+      "hide_legend": false,
+      "save_image": false,
+      "details": false,
       "hotlist": false,
       "calendar": false,
-      "show_popup_button": true,
-      "popup_width": "1000",
-      "popup_height": "650"
+      "disabled_features": [
+        "header_widget",
+        "header_symbol_search",
+        "header_resolutions",
+        "header_chart_type",
+        "header_settings",
+        "header_indicators",
+        "header_compare",
+        "header_undo_redo",
+        "header_screenshot",
+        "header_fullscreen_button",
+        "header_saveload"
+      ]
     });
   }
 

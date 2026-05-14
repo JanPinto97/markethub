@@ -64,10 +64,31 @@ export class ChartsComponent implements OnInit, OnDestroy, AfterViewInit {
   private watchlistTimerSub: Subscription | null = null;
   private clockTimerSub: Subscription | null = null;
 
+  showIndicatorsMenu = false;
+  showScreenshotMenu = false;
+  activeStudies: string[] = [];
+
+  readonly indicatorsList = [
+    { group: 'Trend and Moving Averages', items: [
+      { id: 'MAExp@tv-basicstudies', label: 'Exponential Moving Average (EMA)' },
+      { id: 'MASimple@tv-basicstudies', label: 'Moving Average (SMA)' },
+      { id: 'StochasticRSI@tv-basicstudies', label: 'Stochastic RSI' },
+      { id: 'BollingerBands@tv-basicstudies', label: 'Bollinger Bands' }
+    ]},
+    { group: 'Oscillators and Momentum', items: [
+      { id: 'RSI@tv-basicstudies', label: 'Relative Strength Index (RSI)' },
+      { id: 'MACD@tv-basicstudies', label: 'MACD' },
+      { id: 'Stochastic@tv-basicstudies', label: 'Stochastic' }
+    ]},
+    { group: 'Volume', items: [
+      { id: 'Volume@tv-basicstudies', label: 'Volume' }
+    ]}
+  ];
+
   currentTvSymbol = 'BINANCE:BTCUSD';
   displaySymbol = 'BTC / USD';
   searchQuery = '';
-  searchResults: MarketsSymbolResult[] = [];
+  searchResults: any[] = [];
   showSearchModal = false;
   assetNotSupported = false;
 
@@ -82,26 +103,30 @@ export class ChartsComponent implements OnInit, OnDestroy, AfterViewInit {
     { id: '1', label: '1m' },
     { id: '5', label: '5m' },
     { id: '15', label: '15m' },
+    { id: '30', label: '30m' },
     { id: '60', label: '1h' },
     { id: '240', label: '4h' },
     { id: 'D', label: 'D' },
-    { id: 'W', label: 'S' },
+    { id: 'W', label: 'W' },
+    { id: '1M', label: '1M' },
+    { id: '3M', label: '3M' },
+    { id: '12M', label: '12M' },
   ];
 
   readonly chartStyles: { id: string; label: string; icon: string }[] = [
-    { id: '1', label: 'Velas', icon: 'candlestick_chart' },
-    { id: '2', label: 'Línea', icon: 'show_chart' },
-    { id: '0', label: 'Barras', icon: 'bar_chart' },
-    { id: '3', label: 'Área', icon: 'area_chart' },
+    { id: '1', label: 'Candlestick', icon: 'candlestick_chart' },
+    { id: '2', label: 'Line', icon: 'show_chart' },
+    { id: '0', label: 'Bar', icon: 'bar_chart' },
+    { id: '3', label: 'Area', icon: 'area_chart' },
   ];
 
   readonly timezones: { id: string; label: string }[] = [
     { id: 'Etc/UTC', label: 'UTC' },
     { id: 'Europe/Madrid', label: 'Madrid' },
-    { id: 'Europe/London', label: 'Londres' },
-    { id: 'America/New_York', label: 'Nueva York' },
-    { id: 'America/Los_Angeles', label: 'Los Ángeles' },
-    { id: 'Asia/Tokyo', label: 'Tokio' },
+    { id: 'Europe/London', label: 'London' },
+    { id: 'America/New_York', label: 'New York' },
+    { id: 'America/Los_Angeles', label: 'Los Angeles' },
+    { id: 'Asia/Tokyo', label: 'Tokyo' },
   ];
 
   watchlistGroups: WatchlistGroup[] = [];
@@ -110,13 +135,11 @@ export class ChartsComponent implements OnInit, OnDestroy, AfterViewInit {
     this.watchlistGroups = [
       {
         id: 'indices',
-        label: 'Índices',
+        label: 'Indices',
         rows: [
-          { tvSymbol: 'SP:SPX', label: 'SPX', quoteSymbol: '^GSPC', last: null, chgPct: null },
-          { tvSymbol: 'NASDAQ:NDX', label: 'NDX', quoteSymbol: '^IXIC', last: null, chgPct: null },
-          { tvSymbol: 'DJ:DJI', label: 'DJI', quoteSymbol: '^DJI', last: null, chgPct: null },
-          { tvSymbol: 'CBOE:VIX', label: 'VIX', quoteSymbol: '^VIX', last: null, chgPct: null },
-          { tvSymbol: 'TVC:DXY', label: 'DXY', quoteSymbol: 'DXY', last: null, chgPct: null },
+          { tvSymbol: 'AMEX:SPY', label: 'SPY', quoteSymbol: 'SPY', last: null, chgPct: null },
+          { tvSymbol: 'NASDAQ:QQQ', label: 'QQQ', quoteSymbol: 'QQQ', last: null, chgPct: null },
+          { tvSymbol: 'AMEX:DIA', label: 'DIA', quoteSymbol: 'DIA', last: null, chgPct: null },
         ],
       },
       {
@@ -130,7 +153,7 @@ export class ChartsComponent implements OnInit, OnDestroy, AfterViewInit {
       },
       {
         id: 'futures',
-        label: 'Futuros / Metales',
+        label: 'Futures / Metals',
         rows: [
           { tvSymbol: 'TVC:USOIL', label: 'USOIL', quoteSymbol: 'CL', last: null, chgPct: null },
           { tvSymbol: 'OANDA:XAUUSD', label: 'GOLD', quoteSymbol: 'OANDA:XAU_USD', last: null, chgPct: null },
@@ -148,7 +171,7 @@ export class ChartsComponent implements OnInit, OnDestroy, AfterViewInit {
       },
       {
         id: 'crypto',
-        label: 'Cripto',
+        label: 'Crypto',
         rows: [
           { tvSymbol: 'BINANCE:BTCUSD', label: 'BTCUSD', quoteSymbol: 'BINANCE:BTCUSDT', last: null, chgPct: null },
           { tvSymbol: 'BINANCE:ETHUSD', label: 'ETHUSD', quoteSymbol: 'BINANCE:ETHUSDT', last: null, chgPct: null },
@@ -160,6 +183,17 @@ export class ChartsComponent implements OnInit, OnDestroy, AfterViewInit {
     this.searchSub = this.searchSubject
       .pipe(debounceTime(300), distinctUntilChanged())
       .subscribe((q) => this.runSearch(q));
+
+    // Load saved studies from localStorage
+    try {
+      const saved = localStorage.getItem('markethub_charts_config');
+      if (saved) {
+        const config = JSON.parse(saved);
+        this.activeStudies = config.studies || [];
+      }
+    } catch (e) {
+      console.warn('Error loading chart config:', e);
+    }
 
     this.watchlistTimerSub = timer(0, 45_000).subscribe(() => this.refreshWatchlistPrices());
     this.clockTimerSub = timer(0, 1000).subscribe(() => this.tickClock());
@@ -184,6 +218,22 @@ export class ChartsComponent implements OnInit, OnDestroy, AfterViewInit {
       !this.searchWrap.nativeElement.contains(ev.target as Node)
     ) {
       this.showSearchModal = false;
+      this.cdr.markForCheck();
+    }
+
+    // Close indicators menu when clicking outside
+    const indBtn = document.querySelector('.charts-indicators-btn');
+    const indMenu = document.querySelector('.charts-indicators-dropdown');
+    if (this.showIndicatorsMenu && indBtn && indMenu && !indBtn.contains(ev.target as Node) && !indMenu.contains(ev.target as Node)) {
+      this.showIndicatorsMenu = false;
+      this.cdr.markForCheck();
+    }
+
+    // Close screenshot menu when clicking outside
+    const camBtn = document.querySelector('.charts-screenshot-btn');
+    const camMenu = document.querySelector('.charts-screenshot-dropdown');
+    if (this.showScreenshotMenu && camBtn && camMenu && !camBtn.contains(ev.target as Node) && !camMenu.contains(ev.target as Node)) {
+      this.showScreenshotMenu = false;
       this.cdr.markForCheck();
     }
   }
@@ -234,42 +284,40 @@ export class ChartsComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private refreshWatchlistPrices(): void {
-    const targets: { sym: string; rows: WatchRow[] }[] = [];
-    const map = new Map<string, WatchRow[]>();
-    for (const g of this.watchlistGroups) {
-      for (const r of g.rows) {
-        if (!r.quoteSymbol) continue;
-        const list = map.get(r.quoteSymbol) ?? [];
-        list.push(r);
-        map.set(r.quoteSymbol, list);
+    // Use price data from localStorage (shared with markets component) instead of making new API calls
+    try {
+      const saved = localStorage.getItem('markethub_state');
+      if (!saved) return;
+
+      const state = JSON.parse(saved);
+      const tickerPrices = state.tickerPrices || {};
+
+      for (const g of this.watchlistGroups) {
+        for (const r of g.rows) {
+          // Búsqueda multi-clave ULTRA-AGRESIVA para evitar el "-"
+          const cleanTvSymbol = r.tvSymbol.split(':').pop() || '';
+          const labelPart = r.label.includes('/') ? r.label : r.label.match(/[A-Z]+/g)?.join('/') || r.label;
+          
+          const priceData = 
+            tickerPrices[r.tvSymbol] || 
+            tickerPrices[r.quoteSymbol || ''] || 
+            tickerPrices[r.label] ||
+            tickerPrices[cleanTvSymbol] ||
+            tickerPrices[labelPart] ||
+            tickerPrices[r.label.replace('/', '')] ||
+            tickerPrices[r.label.replace(' / ', '/')];
+
+          if (priceData && priceData.price > 0) {
+            r.last = priceData.price;
+            r.chgPct = priceData.change || 0;
+          }
+        }
       }
-    }
-    for (const [sym, rows] of map) targets.push({ sym, rows });
 
-    if (!targets.length) return;
-
-    forkJoin(
-      targets.map((t) =>
-        this.http
-          .get(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(t.sym)}&token=${this.finnhubKey}`)
-          .pipe(catchError(() => of(null)))
-      )
-    ).subscribe((responses) => {
-      responses.forEach((data, i) => {
-        const rows = targets[i].rows;
-        if (!data || typeof data !== 'object') {
-          return;
-        }
-        const q = data as { c?: number; dp?: number; pc?: number };
-        let dp = q.dp ?? 0;
-        if (dp === 0 && q.pc && q.c) dp = ((q.c - q.pc) / q.pc) * 100;
-        for (const r of rows) {
-          r.last = typeof q.c === 'number' && q.c > 0 ? q.c : null;
-          r.chgPct = typeof dp === 'number' ? dp : null;
-        }
-      });
       this.cdr.markForCheck();
-    });
+    } catch (e) {
+      console.error('Error loading watchlist prices from localStorage:', e);
+    }
   }
 
   onSearchModelChange(raw: string): void {
@@ -282,6 +330,15 @@ export class ChartsComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   onSearchFocus(): void {
+    // Trigger TradingView's native symbol search dialog
+    if (this.tvWidget && typeof this.tvWidget.showSymbolSearchDialog === 'function') {
+      try {
+        this.tvWidget.showSymbolSearchDialog();
+        return;
+      } catch {
+        /* fallback to custom modal */
+      }
+    }
     this.showPopular();
   }
 
@@ -305,8 +362,9 @@ export class ChartsComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private runSearch(query: string): void {
+    const blacklist = ['BINANCE:DXYUSD', 'CBOE:VIX', 'TVC:DXY', 'DXY', 'VIX'];
     searchMarketsSymbols(this.http, query, this.coinGeckoApiKey).subscribe((res) => {
-      this.searchResults = res;
+      this.searchResults = res.filter(r => !blacklist.includes(r.symbol) && !blacklist.includes(r.apiSymbol));
       this.showSearchModal = true;
       this.cdr.markForCheck();
     });
@@ -446,18 +504,32 @@ export class ChartsComponent implements OnInit, OnDestroy, AfterViewInit {
       timezone: this.selectedTimezone,
       theme: 'light',
       style: this.selectedChartStyle,
-      locale: 'es',
+      locale: 'en',
       enable_publishing: false,
       allow_symbol_change: true,
-      hide_top_toolbar: false,
+      hide_top_toolbar: true,
       hide_side_toolbar: false,
       hide_legend: false,
-      save_image: true,
-      calendar: true,
-      details: true,
+      details: false,
+      calendar: false,
       hotlist: false,
       withdateranges: true,
-      header_widget_buttons: true,
+      disabled_features: [
+        "header_symbol_search",
+        "header_indicators",
+        "header_screenshot",
+        "header_compare",
+        "header_saveload",
+        "header_chart_type",
+        "header_interval_dialog_button",
+        "header_undo_redo",
+        "header_settings",
+        "header_fullscreen_button",
+        "volume_force_overlay",
+        "create_volume_indicator_by_default",
+        "header_widget"
+      ],
+      studies: this.activeStudies.length > 0 ? this.activeStudies : [], 
       studies_overrides: {},
       overrides: {
         'mainSeriesProperties.candleStyle.upColor': '#006c49',
@@ -468,7 +540,7 @@ export class ChartsComponent implements OnInit, OnDestroy, AfterViewInit {
         'mainSeriesProperties.candleStyle.wickDownColor': '#e11d48',
       },
       toolbar_bg: '#ffffff',
-      loading_screen: { backgroundColor: '#f7f9fb' },
+      loading_screen: { backgroundColor: '#ffffff', foregroundColor: '#006c49' },
     });
   }
 
@@ -478,12 +550,34 @@ export class ChartsComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   onTradeClick(): void {
-    this.toast.show('La ejecución de órdenes con bróker no está integrada en MarketHub.', 'info');
+    this.toast.show('Broker order execution is not integrated in MarketHub.', 'info');
   }
 
-  onPublishClick(): void {
-    this.toast.show('Lleva tu gráfico al foro: publica en Comunidad cuando quieras compartir el análisis.', 'info');
-    void this.router.navigate(['/community']);
+  openIndicators(): void {
+    this.showIndicatorsMenu = !this.showIndicatorsMenu;
+    this.cdr.markForCheck();
+  }
+
+  addIndicator(studyId: string): void {
+    if (this.tvWidget) {
+      try {
+        // Guardamos el estudio único
+        this.activeStudies = [studyId]; 
+        this.saveChartConfig();
+        
+        // Destrucción y creación síncrona con limpieza forzada
+        this.destroyTradingView();
+        
+        // El re-montaje síncrono suele ser más estable si el contenedor está en el DOM
+        this.mountTradingView();
+        this.toast.show(`Indicator applied: ${studyId.split('@')[0]}`, 'success');
+      } catch (e) {
+        console.error('Error applying indicator:', e);
+        this.mountTradingView();
+      }
+    }
+    this.showIndicatorsMenu = false;
+    this.cdr.markForCheck();
   }
 
   chgClass(v: number | null): string {
@@ -491,5 +585,11 @@ export class ChartsComponent implements OnInit, OnDestroy, AfterViewInit {
     if (v > 0) return 'chg-up';
     if (v < 0) return 'chg-down';
     return 'chg-neutral';
+  }
+
+  private saveChartConfig(): void {
+    localStorage.setItem('markethub_charts_config', JSON.stringify({
+      studies: this.activeStudies
+    }));
   }
 }
