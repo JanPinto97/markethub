@@ -85,5 +85,21 @@ export const routes: Routes = [
     path: 'settings',
     canActivate: [authGuard],
     loadComponent: () => import('./features/settings/settings.component').then(m => m.SettingsComponent)
+  },
+  {
+    path: 'legal/legal-notice',
+    loadComponent: () => import('./features/legal/legal-notice.component').then(m => m.LegalNoticeComponent)
+  },
+  {
+    path: 'legal/privacy',
+    loadComponent: () => import('./features/legal/privacy.component').then(m => m.PrivacyComponent)
+  },
+  {
+    path: 'legal/terms',
+    loadComponent: () => import('./features/legal/terms.component').then(m => m.TermsComponent)
+  },
+  {
+    path: 'legal/cookies',
+    loadComponent: () => import('./features/legal/cookies.component').then(m => m.CookiesComponent)
   }
 ];
