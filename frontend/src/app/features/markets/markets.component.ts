@@ -97,6 +97,12 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   constructor(private http: HttpClient, private cdr: ChangeDetectorRef, private el: ElementRef) {}
 
+  setActiveTab(tab: 'overview' | 'calendar' | 'news' | 'charts') {
+    this.activeTab = tab;
+    localStorage.setItem('markethub_active_tab', tab);
+    this.cdr.detectChanges();
+  }
+
   @HostListener('document:click', ['$event'])
   onClickOutside(event: Event) {
     if (this.showSearchModal && !this.searchContainer.nativeElement.contains(event.target)) {
@@ -187,9 +193,14 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit() {
+    const savedTab = localStorage.getItem('markethub_active_tab') as any;
+    if (savedTab && ['overview', 'calendar', 'news', 'charts'].includes(savedTab)) {
+      this.activeTab = savedTab;
+    }
+
     this.checkPersistence();
     this.initDashboard();
-    this.setupWebSocket();
+    // this.setupWebSocket(); // Disabled to stop price API calls
     this.startLiveClock();
 
     this.searchSubject.pipe(
@@ -199,10 +210,12 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
       this.performSearch(query);
     });
 
-    // Polling automático optimizado: Detecta agotamiento y cambia de fuente AL INSTANTE
+    // Polling automático optimizado: Disabled to stop price API calls
+    /*
     this.refreshInterval = setInterval(() => {
       this.syncAllPrices();
     }, 8000);
+    */
   }
 
   syncAllPrices() {
@@ -390,7 +403,7 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
     
     this.loadNews();
     this.loadGlobalSentiment();
-    this.syncAllPrices(); // Ejecución inmediata de la cadena de precios (incluye saltos de agotamiento)
+    // this.syncAllPrices(); // Disabled to stop price API calls
     this.fetchCalendarData();
   }
 
@@ -673,7 +686,7 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
     if (cachedCoin && cachedCoin.price > 0) {
       this.currentPriceData = { c: cachedCoin.price, dp: cachedCoin.change };
     } else {
-      this.updatePrice(this.currentApiSymbol, this.currentSource);
+      // this.updatePrice(this.currentApiSymbol, this.currentSource); // Disabled to stop price API calls
     }
 
     this.loadTradingViewWidget(this.currentSymbol);

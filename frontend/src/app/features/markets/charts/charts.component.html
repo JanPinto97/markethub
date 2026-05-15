@@ -143,15 +143,6 @@
           <span class="charts-bottombar__tag">Quick ranges on chart</span>
           <span class="charts-bottombar__muted">Use the widget bottom bar (1D, 5D, 1M, YTD…)</span>
         </div>
-        <div class="charts-bottombar__right">
-          <span
-            class="charts-market-dot"
-            [class.charts-market-dot--open]="marketOpen"
-            [class.charts-market-dot--closed]="!marketOpen"
-            [attr.aria-label]="marketOpen ? 'US Session Open' : 'US Session Closed'"
-          ></span>
-          <span class="charts-clock">{{ nowLabel }} · {{ selectedTimezone }}</span>
-        </div>
       </footer>
     </section>
 

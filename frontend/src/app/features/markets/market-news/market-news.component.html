@@ -1,22 +1,5 @@
 <div class="news-container max-w-[1440px] mx-auto font-sans text-[#191c1e]">
     <ng-container *ngIf="!selectedArticle">
-        <!-- Header Section (Floating Card) -->
-        <header class="card-premium p-8 mb-8 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <h1 class="text-3xl font-black tracking-tight uppercase">Financial News</h1>
-                <div class="group relative flex items-center justify-center">
-                    <img src="assets/images/info-light.png" alt="Info" 
-                         class="w-4 h-4 opacity-50 hover:opacity-100 cursor-pointer transition-opacity">
-                    <div class="absolute left-0 top-full mt-2 w-[300px] p-4 bg-slate-800 text-white text-[11px] leading-relaxed rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 normal-case font-medium">
-                      Recent updates on international currency, natural resource, and stock markets, along with the latest financial reports. In addition, more comprehensive coverage will be offered on natural resources, stocks, interest rates, and various other economic indicators.
-                    </div>
-                </div>
-            </div>
-            <div class="hidden lg:flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                Live Market Updates
-            </div>
-        </header>
 
         <!-- Categories Tabs (Floating Card) -->
         <nav class="card-premium mb-10 flex overflow-x-auto no-scrollbar">

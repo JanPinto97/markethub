@@ -45,8 +45,8 @@ export class TickerComponent implements OnInit {
 
   ngOnInit(): void {
     this.hydrateFromCache();
-    this.refreshAll();
-    this.pollId = setInterval(() => this.refreshAll(), 8000);
+    // this.refreshAll(); // Disabled to stop price API calls
+    // this.pollId = setInterval(() => this.refreshAll(), 8000); // Disabled to stop price API calls
     this.destroyRef.onDestroy(() => {
       if (this.pollId) clearInterval(this.pollId);
     });

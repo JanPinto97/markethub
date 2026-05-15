@@ -8,16 +8,16 @@
       <section class="hidden md:flex gap-6">
         <a class="font-bold pb-1 cursor-pointer"
           [ngClass]="activeTab === 'overview' ? 'text-[#006c49] border-b-2 border-[#006c49]' : 'text-slate-500 hover:text-slate-900 transition-colors'"
-          (click)="activeTab = 'overview'">Overview</a>
+          (click)="setActiveTab('overview')">Overview</a>
         <a class="font-bold pb-1 cursor-pointer"
           [ngClass]="activeTab === 'calendar' ? 'text-[#006c49] border-b-2 border-[#006c49]' : 'text-slate-500 hover:text-slate-900 transition-colors'"
-          (click)="activeTab = 'calendar'">Economic Calendar</a>
+          (click)="setActiveTab('calendar')">Economic Calendar</a>
         <a class="font-bold pb-1 cursor-pointer"
            [ngClass]="activeTab === 'news' ? 'text-[#006c49] border-b-2 border-[#006c49]' : 'text-slate-500 hover:text-slate-900 transition-colors'"
-           (click)="activeTab = 'news'">News</a>
+           (click)="setActiveTab('news')">News</a>
         <a class="font-bold pb-1 cursor-pointer"
            [ngClass]="activeTab === 'charts' ? 'text-[#006c49] border-b-2 border-[#006c49]' : 'text-slate-500 hover:text-slate-900 transition-colors'"
-           (click)="activeTab = 'charts'">Charts</a>
+           (click)="setActiveTab('charts')">Charts</a>
       </section>
     </div>
     <div class="flex items-center gap-4">
