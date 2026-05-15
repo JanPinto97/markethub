@@ -258,7 +258,6 @@ exports.createPostComment = async (req, res, next) => {
       text: text.trim(),
       postId: post._id,
       postType: 'PostReddit',
-      parentComment: null,
     });
 
     post.commentCount += 1;

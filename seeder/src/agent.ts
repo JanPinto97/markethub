@@ -6,12 +6,10 @@ import {
   type TopicSummary,
   type PostRedditItem,
 } from './api-client.js';
-import { generateText } from './llm.js';
 import { getPersonaById, buildSystemPrompt, type Persona } from './personas.js';
 import {
   generatePostText,
   generateCommentText,
-  generateReplyText,
   generateCommunity,
   generateCommunityPostText,
   generateJoinRequestMessage,
@@ -35,9 +33,7 @@ export type ActionType =
   | 'post'
   | 'comment'
   | 'like'
-  | 'reply'
   | 'follow'
-  | 'nothing'
   | 'community_post'
   | 'community_engage'
   | 'join_community'
@@ -84,7 +80,6 @@ export class Agent {
 
   private rollAction(): ActionType {
     const b = this.persona.behavior;
-    if (Math.random() < b.silenceRate) return 'nothing';
 
     const inCommunities = this.state.communities.length > 0;
     const ownsPrivate = this.state.communities.some(
@@ -108,8 +103,7 @@ export class Agent {
     if (Math.random() < b.socialRate) {
       const s = Math.random();
       if (s < 0.55) return 'like';
-      if (s < 0.78) return 'comment';
-      if (s < 0.9) return 'reply';
+      if (s < 0.87) return 'comment';
       if (s < 0.97) return 'follow';
       return 'post';
     }
@@ -117,58 +111,8 @@ export class Agent {
     return 'like';
   }
 
-  private describeCommunities(): string {
-    if (this.state.communities.length === 0) return '(none)';
-    return this.state.communities
-      .map((c) => `${c.name} [${c.type}${c.role ? `, role=${c.role}` : ''}]`)
-      .join('; ');
-  }
-
-  private async pickActionViaLLM(feedSummary: string): Promise<Decision> {
-    const b = this.persona.behavior;
-    const heuristic = this.rollAction();
-    const prompt = [
-      `You are acting on MarketHub as ${this.persona.name}.`,
-      `Behavior knobs: postRate=${b.postRate}, socialRate=${b.socialRate}, contrarianness=${b.contrarianness}, followRate=${b.followRate}, silenceRate=${b.silenceRate}.`,
-      `Available actions: post, comment, like, reply, follow, nothing, community_post, community_engage, join_community, create_community, handle_requests, topic_post, topic_vote, topic_comment, start_discussion, reply_discussion.`,
-      `On a real social network, LIKES are the most common action by far. Most engagement turns should be a "like", not a "comment" or "post". Only pick "post" when you genuinely have something to say.`,
-      `Where to post: if you belong to a community whose theme matches what you want to say, prefer "community_post" over a generic "post". Otherwise stick to "post".`,
-      `Community actions are valid but RARE: prefer them when the heuristic suggests one, otherwise leave them alone. "community_engage" means liking or commenting on a post INSIDE one of your communities — only pick it if you actually belong to communities. "create_community" should be very occasional. "handle_requests" only makes sense if you are leader or moderator of a private community.`,
-      `Topic actions live in long-form discussion topics (Reddit-style). "topic_post" is a structured analytical post with a title — only pick it if you actually have a thesis. "topic_vote" is upvote/downvote, the cheapest action. "topic_comment" is a comment on someone else's topic post.`,
-      `Discussion actions are private 1-to-1 chats. "start_discussion" turns one of YOUR comments into a private follow-up with whoever you were debating — pick rarely, only if there is a public exchange worth taking off-feed. "reply_discussion" continues an existing private chat where someone is waiting on you.`,
-      `Your current communities: ${this.describeCommunities()}.`,
-      `Heuristic suggestion (lean toward this unless it clearly doesn't fit): ${heuristic}.`,
-      `Feed snapshot:`,
-      feedSummary || '(empty feed)',
-      ``,
-      `Pick ONE action. Return strict JSON: {"action": "...", "reason": "..."}.`,
-      `Keep reason under 12 words.`,
-    ].join('\n');
-
-    try {
-      const raw = await generateText(prompt, { system: this.system, maxTokens: 80, json: true });
-      const parsed = JSON.parse(raw) as Decision;
-      const valid: ActionType[] = [
-        'post', 'comment', 'like', 'reply', 'follow', 'nothing',
-        'community_post', 'community_engage', 'join_community', 'create_community', 'handle_requests',
-        'topic_post', 'topic_vote', 'topic_comment', 'start_discussion', 'reply_discussion',
-      ];
-      if (valid.includes(parsed.action)) return parsed;
-    } catch {
-      // fall through
-    }
-    return { action: heuristic, reason: 'heuristic fallback' };
-  }
-
-  private summarizeFeed(posts: PostXItem[]): string {
-    const lines: string[] = [];
-    for (let i = 0; i < Math.min(8, posts.length); i++) {
-      const p = posts[i]!;
-      const handle = getAuthorUsername(p) ?? 'someone';
-      const text = (p.text ?? '').slice(0, 120).replace(/\s+/g, ' ');
-      lines.push(`${i + 1}. @${handle}: ${text}`);
-    }
-    return lines.join('\n');
+  private pickAction(): Decision {
+    return { action: this.rollAction(), reason: 'heuristic' };
   }
 
   async act(): Promise<{ action: ActionType; reason?: string }> {
@@ -176,8 +120,7 @@ export class Agent {
     await this.syncCommunities();
 
     const feed = await this.client.getFeed({ mode: 'trending', limit: 30 });
-    const summary = this.summarizeFeed(feed.posts);
-    const decision = await this.pickActionViaLLM(summary);
+    const decision = this.pickAction();
 
     console.log(`[${this.state.username}] decision=${decision.action} reason="${decision.reason ?? ''}"`);
 
@@ -186,7 +129,6 @@ export class Agent {
         case 'post':            await this.doPost(); break;
         case 'comment':         await this.doComment(feed.posts); break;
         case 'like':            await this.doLike(feed.posts); break;
-        case 'reply':           await this.doReply(feed.posts); break;
         case 'follow':          await this.doFollow(feed.posts); break;
         case 'community_post':  await this.doCommunityPost(); break;
         case 'community_engage':await this.doCommunityEngage(); break;
@@ -198,7 +140,6 @@ export class Agent {
         case 'reply_discussion':await this.doReplyDiscussion(); break;
         case 'create_community':await this.doCreateCommunity(); break;
         case 'handle_requests': await this.doHandleRequests(); break;
-        case 'nothing':         break;
       }
     } catch (err) {
       console.warn(`[${this.state.username}] action=${decision.action} failed: ${(err as Error).message}`);
@@ -271,35 +212,8 @@ export class Agent {
     const picked = weightedPick(shuffle(candidates).slice(0, 12));
     if (!picked) return;
     const res = await this.client.likePost(picked.id);
-    if (res.liked) this.state.likedPostIds.push(picked.id);
+    if (!this.state.likedPostIds.includes(picked.id)) this.state.likedPostIds.push(picked.id);
     console.log(`[${this.state.username}] liked post=${picked.id} liked=${res.liked}`);
-  }
-
-  private async doReply(posts: PostXItem[]): Promise<void> {
-    const candidates = posts.filter((p) => getAuthorId(p) !== this.state.userId);
-    const targets = shuffle(candidates).slice(0, 6);
-    for (const post of targets) {
-      let comments: PostCommentItem[] = [];
-      try {
-        const res = await this.client.getPostComments(post.id);
-        comments = res.comments ?? [];
-      } catch {
-        continue;
-      }
-      const replyable = comments.filter((c) => {
-        const aid = typeof c.author === 'string' ? c.author : c.author?._id ?? c.author?.id;
-        return aid !== this.state.userId && !this.state.repliedCommentIds.includes(c.id);
-      });
-      if (replyable.length === 0) continue;
-      const target = weightedPick(replyable.slice(0, 8));
-      if (!target) continue;
-      const text = await generateReplyText(this.persona, this.system, target.text ?? '', this.persona.behavior.contrarianness);
-      const res = await this.client.replyToComment(post.id, target.id, { text });
-      this.state.repliedCommentIds.push(target.id);
-      if (res.comment?.id) this.state.authoredCommentIds.push(res.comment.id);
-      console.log(`[${this.state.username}] replied comment=${target.id} reply=${res.comment.id}`);
-      return;
-    }
   }
 
   private async doFollow(posts: PostXItem[]): Promise<void> {
@@ -449,7 +363,7 @@ export class Agent {
       const target = weightedPick(shuffle(likeCandidates).slice(0, 10));
       if (!target) continue;
       const res = await this.client.likePost(target.id);
-      if (res.liked && !this.state.likedPostIds.includes(target.id)) this.state.likedPostIds.push(target.id);
+      if (!this.state.likedPostIds.includes(target.id)) this.state.likedPostIds.push(target.id);
       console.log(`[${this.state.username}] community_engage liked in="${community.name}" post=${target.id} liked=${res.liked}`);
       return;
     }

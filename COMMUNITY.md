@@ -224,8 +224,7 @@ Scalping, Algorithmic Trading, Quant Trading, High Frequency Trading
 
 ### Structure
 
-- Comments support one level of nesting only.
-- A reply to a comment shows the label "replying to @username's comment".
+- Comments are flat (no nesting, no replies).
 - Comments cannot be edited. Authors can delete their own comments.
 - Moderators and leaders can delete any comment inside their community.
 - Superadmins can delete any comment anywhere.

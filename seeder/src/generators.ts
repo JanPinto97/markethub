@@ -323,11 +323,3 @@ export async function generateDiscussionReply(
   return trim(strip(raw), 280);
 }
 
-export async function generateReplyText(
-  persona: Persona,
-  system: string,
-  parentText: string,
-  contrarianness: number,
-): Promise<string> {
-  return generateCommentText(persona, system, parentText, contrarianness);
-}

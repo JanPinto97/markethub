@@ -5,7 +5,6 @@ const PostReddit = require('../models/PostReddit');
 const Comment = require('../models/Comment');
 const User = require('../models/User');
 const CommunityPrivate = require('../models/CommunityPrivate');
-const buildCommentTree = require('../utils/buildCommentTree');
 
 async function findAnyPost(id) {
   const px = await PostX.findById(id);
@@ -138,30 +137,18 @@ exports.getComments = async (req, res, next) => {
     const found = await findAnyPost(req.params.id);
     if (!found) return fail(res, 404, 'Post not found');
 
-    const topLevel = await Comment.find({ postId: req.params.id, postType: found.postType, parentComment: null })
+    const docs = await Comment.find({ postId: req.params.id, postType: found.postType })
       .sort({ createdAt: 1 })
-      .populate('author', 'username avatar')
-      .populate('replyingTo', 'username');
+      .populate('author', 'username avatar');
 
-    const topIds = topLevel.map(c => c._id);
-    const replyMap = await buildCommentTree(topIds, 0, 3);
-
-    const comments = topLevel.map(c => {
-      const cid = c._id.toString();
-      return {
-        ...c.toPublicJSON(),
-        replies: replyMap[cid] || [],
-        hasMoreReplies: false,
-      };
-    });
-
+    const comments = docs.map(c => c.toPublicJSON());
     res.json({ success: true, comments });
   } catch (err) { next(err); }
 };
 
 exports.createComment = async (req, res, next) => {
   try {
-    const { text, parentCommentId } = req.body || {};
+    const { text } = req.body || {};
     if (!text) return fail(res, 400, 'Text is required');
     if (text.length > 400) return fail(res, 400, 'Text max 400 characters');
 
@@ -169,40 +156,13 @@ exports.createComment = async (req, res, next) => {
     if (!found) return fail(res, 404, 'Post not found');
     const { post, postType } = found;
 
-    const data = { author: req.user.id, text, postId: post._id, postType };
-
-    if (parentCommentId) {
-      const parent = await Comment.findById(parentCommentId);
-      if (!parent) return fail(res, 404, 'Parent comment not found');
-      data.parentComment = parentCommentId;
-      data.replyingTo = parent.author;
-    }
-
-    const comment = await Comment.create(data);
+    const comment = await Comment.create({ author: req.user.id, text, postId: post._id, postType });
     post.commentCount += 1;
     if (postType === 'PostX') post.trendingScore = PostX.calculateTrendingScore(post);
     await post.save();
 
     await comment.populate('author', 'username avatar role');
     res.status(201).json({ success: true, comment: comment.toPublicJSON() });
-  } catch (err) { next(err); }
-};
-
-exports.getCommentThread = async (req, res, next) => {
-  try {
-    const comment = await Comment.findById(req.params.commentId)
-      .populate('author', 'username avatar')
-      .populate('replyingTo', 'username');
-    if (!comment) return fail(res, 404, 'Comment not found');
-
-    const replyMap = await buildCommentTree([comment._id], 0, 3);
-    const node = {
-      ...comment.toPublicJSON(),
-      replies: replyMap[comment._id.toString()] || [],
-      hasMoreReplies: false,
-    };
-
-    res.json({ success: true, comment: node });
   } catch (err) { next(err); }
 };
 
@@ -222,25 +182,6 @@ exports.likeComment = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-exports.likeReply = async (req, res, next) => {
-  try {
-    const reply = await Comment.findById(req.params.replyId);
-    if (!reply) return fail(res, 404, 'Reply not found');
-    if (reply.postType !== 'PostX') return fail(res, 400, 'Likes not supported for this comment type');
-    if (!reply.parentComment || reply.parentComment.toString() !== req.params.commentId) {
-      return fail(res, 400, 'Reply does not belong to this comment');
-    }
-
-    const idx = reply.likes.indexOf(req.user.id);
-    const liked = idx === -1;
-    if (liked) reply.likes.push(req.user.id);
-    else reply.likes.splice(idx, 1);
-    await reply.save();
-
-    res.json({ success: true, liked, likesCount: reply.likes.length });
-  } catch (err) { next(err); }
-};
-
 exports.deleteComment = async (req, res, next) => {
   try {
     const comment = await Comment.findById(req.params.commentId);
@@ -250,40 +191,14 @@ exports.deleteComment = async (req, res, next) => {
     const isPlatformMod = req.user.role === 'moderator' || req.user.role === 'superadmin';
     if (!isAuthor && !isPlatformMod) return fail(res, 403, 'Not authorized');
 
-    const replyCount = await Comment.countDocuments({ parentComment: comment._id });
-    await Comment.deleteMany({ parentComment: comment._id });
     await comment.deleteOne();
 
     const found = await findAnyPost(comment.postId);
-    if (found) {
-      found.post.commentCount = Math.max(0, found.post.commentCount - (1 + replyCount));
-      await found.post.save();
-    }
-
-    res.json({ success: true, message: 'Comment deleted' });
-  } catch (err) { next(err); }
-};
-
-exports.deleteReply = async (req, res, next) => {
-  try {
-    const reply = await Comment.findById(req.params.replyId);
-    if (!reply) return fail(res, 404, 'Reply not found');
-    if (!reply.parentComment || reply.parentComment.toString() !== req.params.commentId) {
-      return fail(res, 400, 'Reply does not belong to this comment');
-    }
-
-    const isAuthor = reply.author.toString() === req.user.id;
-    const isPlatformMod = req.user.role === 'moderator' || req.user.role === 'superadmin';
-    if (!isAuthor && !isPlatformMod) return fail(res, 403, 'Not authorized');
-
-    await reply.deleteOne();
-
-    const found = await findAnyPost(reply.postId);
     if (found) {
       found.post.commentCount = Math.max(0, found.post.commentCount - 1);
       await found.post.save();
     }
 
-    res.json({ success: true, message: 'Reply deleted' });
+    res.json({ success: true, message: 'Comment deleted' });
   } catch (err) { next(err); }
 };

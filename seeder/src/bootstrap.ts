@@ -54,7 +54,6 @@ async function createOne(baseUrl: string): Promise<AgentState | null> {
     postedPostIds: [],
     likedPostIds: [],
     commentedPostIds: [],
-    repliedCommentIds: [],
     followedUsernames: [],
     communities: [],
     requestedPrivateCommunityIds: [],

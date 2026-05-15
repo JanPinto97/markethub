@@ -110,13 +110,13 @@ The backend loads `.env` from the project root via `dotenv`.
 ### PostX (Twitter/X-style)
 - Used in: general feed, public communities, private communities.
 - Fields: `text` (max 400), `mediaUrl`, `mediaType`, `origin` (`general`|`public_community`|`private_community`), `community`, `communityType`, `likes`, `commentCount`, `trendingScore`, `isPinned`.
-- Likes (toggle). Comments with 1 nesting level. Likes on comments.
+- Likes (toggle). Comments are flat (no nesting). Likes on comments.
 
 ### PostReddit (Reddit-style)
 - **Exclusively** in discussion topics (`/community/t/:slug`).
 - Fields: `title` (max 300), `text` (max 2000), `mediaUrl`, `mediaType`, `upvotes`, `downvotes`, `topic`.
 - Score = `upvotes - downvotes`. Voting the opposite removes the previous vote.
-- Comments with 1 nesting level. **No likes on comments.**
+- Comments are flat (no nesting). **No likes on comments.**
 
 **Fundamental rule:** PostX and PostReddit NEVER mix in any feed, search or profile.
 
@@ -239,11 +239,11 @@ Three independent sections (Profile / Account / Password) each with its own Reac
 
 **Auth:** `POST register|login|logout|refresh`, `GET me` (protected).
 **Profile:** `PUT /profile` (username, email, avatar, coverImage, bio), `PUT /profile/password`.
-**Posts (PostX):** `POST /posts`, `GET /posts/feed?mode=trending|following`, `GET /posts/:id`, `POST /posts/:id/like`, `DELETE /posts/:id`, comments and replies with likes (`POST .../comments`, `POST .../comments/:id/like`, `POST .../comments/:id/reply`, `POST .../replies/:rid/like`, `DELETE`).
+**Posts (PostX):** `POST /posts`, `GET /posts/feed?mode=trending|following`, `GET /posts/:id`, `POST /posts/:id/like`, `DELETE /posts/:id`, flat comments with likes (`POST .../comments`, `POST .../comments/:id/like`, `DELETE .../comments/:id`).
 **Public communities:** CRUD + `POST :id/join|leave`, `GET :id/feed`, `POST :id/posts`.
 **Private communities:** CRUD + `POST :id/request`, `POST :id/requests/:rid` (accept/reject), `DELETE :id/members/:uid`, `PUT :id/members/:uid/role`, `POST :id/leave`, `DELETE :id`, `GET/POST :id/feed|posts`, `POST :id/posts/:pid/pin`.
 **My / Discover:** `GET /communities/my`, `GET /communities/discover` (search/sort/type/page/limit, optionalAuth).
-**Topics + PostReddit:** `GET /topics`, `GET /topics/:slug`, `GET /topics/:slug/feed?sort=recent|top`, `POST /topics/:slug/posts`, `POST .../vote {vote: up|down|none}`, `DELETE`, comments and replies (no likes).
+**Topics + PostReddit:** `GET /topics`, `GET /topics/:slug`, `GET /topics/:slug/feed?sort=recent|top`, `POST /topics/:slug/posts`, `POST .../vote {vote: up|down|none}`, `DELETE`, flat comments (no nesting, no likes).
 **Users:** `GET /users/:username`, `GET /users/:username/posts|followers|following`, `POST /users/:username/follow` (toggle).
 **Search:** `GET /search?q&type&page&limit`.
 **Discussions:** `GET/POST /discussions/comment/:commentId`, `GET /discussions/:id`, `GET/POST /discussions/:id/messages` (cursor).

@@ -71,7 +71,6 @@ export interface PostCommentItem {
   author: string | PostAuthor;
   text: string;
   createdAt?: string;
-  replies?: PostCommentItem[];
   [k: string]: unknown;
 }
 
@@ -288,18 +287,6 @@ export class MarketHubClient {
     return this.request<LikeResponse>(`/posts/${postId}/like`, {
       method: 'POST',
       auth: true,
-    });
-  }
-
-  async replyToComment(
-    postId: string,
-    commentId: string,
-    payload: CommentPayload,
-  ): Promise<CommentResponse> {
-    return this.request<CommentResponse>(`/posts/${postId}/comments/${commentId}/reply`, {
-      method: 'POST',
-      auth: true,
-      body: JSON.stringify(payload),
     });
   }
 

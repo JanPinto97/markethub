@@ -107,7 +107,7 @@ CommunityPrivate, DiscussionTopic, Discussion, DiscussionMessage + User model up
 ✅ Frontend: Community page (feed, create-post, emoji, media, skeletons, retry, toast)
 ✅ Frontend: Public user profile (`/profile/:username`)
 ✅ Frontend: Public + Private community detail pages
-✅ Frontend: Topic detail + PostReddit detail + Reddit comments (one-level nesting)
+✅ Frontend: Topic detail + PostReddit detail + Reddit comments (flat, no nesting)
 ✅ Frontend: Discover communities popup (sort/type filters, debounced search)
 ✅ Frontend: Comment-thread discussion page (real-time chat-style UI)
 ✅ Frontend: Search bar (header dropdown) + full search page

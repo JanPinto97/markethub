@@ -49,7 +49,9 @@
       "Bash(xxd)",
       "Bash(tar -xzf \"C:\\\\JAN\\\\DAW\\\\CODI\\\\markethub\\\\.design_landing.html\" -C \"C:\\\\JAN\\\\DAW\\\\CODI\\\\markethub\\\\.design_extract\")",
       "Bash(npx --no-install tsc --noEmit -p tsconfig.app.json)",
-      "Bash(echo \"EXIT $?\")"
+      "Bash(echo \"EXIT $?\")",
+      "Bash(grep -rn \"addReply\\\\|likeReply\\\\|deleteReply\\\\|replies\\\\[\\\\|\\\\\\\\.replies\\\\|replyId\" C:/JAN/INSTI/markethub/markethub/frontend/src)",
+      "Bash(grep -rn \"parentComment\\\\|replyingTo\\\\|\\\\\\\\.replies\\\\|hasMoreReplies\" C:/JAN/INSTI/markethub/markethub/frontend/src)"
     ]
   }
 }

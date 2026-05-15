@@ -1,9 +1,9 @@
 export interface PersonaBehavior {
   /** Probability the persona writes an original post on a given turn (0..1). */
   postRate: number;
-  /** Probability of taking some social action (like/comment/reply/follow) on a turn. */
+  /** Probability of taking some social action (like/comment/follow) on a turn. */
   socialRate: number;
-  /** How contrarian their replies tend to be (0 = always agree, 1 = always pushback). */
+  /** How contrarian their comments tend to be (0 = always agree, 1 = always pushback). */
   contrarianness: number;
   /** Probability of following another user when one looks aligned with their niche. */
   followRate: number;

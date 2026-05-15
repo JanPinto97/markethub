@@ -56,10 +56,7 @@ server.js            → Entry point: loads env, connects DB, starts Express
 - GET  /api/v1/posts/:id/comments (public)
 - POST /api/v1/posts/:id/comments (protected)
 - POST /api/v1/posts/:postId/comments/:commentId/like (protected)
-- POST /api/v1/posts/:postId/comments/:commentId/reply (protected)
-- POST /api/v1/posts/:postId/comments/:commentId/replies/:replyId/like (protected)
 - DELETE /api/v1/posts/:postId/comments/:commentId (protected)
-- DELETE /api/v1/posts/:postId/comments/:commentId/replies/:replyId (protected)
 
 - GET    /api/v1/communities/public (public, supports ?search&page&limit)
 - POST   /api/v1/communities/public (protected, multipart)
@@ -94,11 +91,9 @@ server.js            → Entry point: loads env, connects DB, starts Express
 - GET    /api/v1/topics/:slug/posts/:postId (public)
 - POST   /api/v1/topics/:slug/posts/:postId/vote (protected, body: {vote: "up"|"down"|"none"})
 - DELETE /api/v1/topics/:slug/posts/:postId (protected)
-- GET    /api/v1/topics/:slug/posts/:postId/comments (public, ?page&limit, returns root comments + populated replies, sorted createdAt desc)
+- GET    /api/v1/topics/:slug/posts/:postId/comments (public, ?page&limit, flat comments sorted createdAt desc)
 - POST   /api/v1/topics/:slug/posts/:postId/comments (protected, body: {text})
-- POST   /api/v1/topics/:slug/posts/:postId/comments/:commentId/reply (protected, body: {text}, single nesting level)
-- DELETE /api/v1/topics/:slug/posts/:postId/comments/:commentId (protected, author/mod/superadmin, deletes replies too)
-- DELETE /api/v1/topics/:slug/posts/:postId/comments/:commentId/replies/:replyId (protected, author/mod/superadmin)
+- DELETE /api/v1/topics/:slug/posts/:postId/comments/:commentId (protected, author/mod/superadmin)
 
 - GET    /api/v1/users/:username (public, optionalAuth for isFollowing)
 - GET    /api/v1/users/:username/posts (public, supports ?page&limit)
@@ -136,7 +131,7 @@ server.js            → Entry point: loads env, connects DB, starts Express
 - User: updated with following, followers, coverImage. `toPublicJSON()` omits email; `toPrivateJSON()` adds email for own-data endpoints (auth/me, register, login, profile update)
 - PostX: Twitter/X style post for general feed and communities (max 400 chars)
 - PostReddit: Reddit style post for discussion topics only (title + text + votes)
-- Comment: shared by both post types, supports one nesting level, likes only on PostX comments
+- Comment: shared by both post types, flat (no nesting), likes only on PostX comments
 - CommunityPublic: no roles, auto-delete when empty
 - CommunityPrivate: roles (leader, moderator, little_whale, member), join requests (max 150 chars), auto-delete when empty, leader succession logic
 - DiscussionTopic: fixed topics, hardcoded via seed, never change

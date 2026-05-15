@@ -38,7 +38,6 @@ export interface AgentState {
   postedPostIds: string[];
   likedPostIds: string[];
   commentedPostIds: string[];
-  repliedCommentIds: string[];
   followedUsernames: string[];
   communities: AgentCommunityMembership[];
   requestedPrivateCommunityIds: string[];

@@ -246,11 +246,6 @@ const POSTREDDIT_COMMENTS = [
   { author: 'eve_scalper', text: 'Disagree with both takes. BTC is its own asset class now. Trying to fit it into existing categories misses the point.' },
 ];
 
-const POSTREDDIT_REPLIES = [
-  { commentIndex: 0, author: 'bob_crypto', text: 'Agreed. The ETF flows changed the dynamics completely. Institutional behavior dominates now.' },
-  { commentIndex: 1, author: 'bob_crypto', text: 'Fair point about track record, but the scarcity mechanics are mathematically guaranteed unlike gold mining supply.' },
-];
-
 function daysAgo(days) {
   return new Date(NOW.getTime() - days * 24 * 60 * 60 * 1000);
 }
@@ -567,7 +562,7 @@ async function seedPostReddit(users) {
         postType: 'PostReddit',
       });
       if (!existingComment) {
-        const comment = await Comment.create({
+        await Comment.create({
           author: users[cData.author]._id,
           text: cData.text,
           postId: firstCryptoPost._id,
@@ -575,27 +570,6 @@ async function seedPostReddit(users) {
         });
         firstCryptoPost.commentCount = (firstCryptoPost.commentCount || 0) + 1;
         stats.commentsPostReddit++;
-
-        const replies = POSTREDDIT_REPLIES.filter(r => r.commentIndex === i);
-        for (const reply of replies) {
-          const existingReply = await Comment.findOne({
-            text: reply.text,
-            postId: firstCryptoPost._id,
-            parentComment: comment._id,
-          });
-          if (!existingReply) {
-            await Comment.create({
-              author: users[reply.author]._id,
-              text: reply.text,
-              postId: firstCryptoPost._id,
-              postType: 'PostReddit',
-              parentComment: comment._id,
-              replyingTo: users[cData.author]._id,
-            });
-            firstCryptoPost.commentCount = (firstCryptoPost.commentCount || 0) + 1;
-            stats.commentsPostReddit++;
-          }
-        }
       }
     }
     await firstCryptoPost.save();

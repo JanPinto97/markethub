@@ -5,8 +5,6 @@ const commentSchema = new mongoose.Schema({
   text: { type: String, required: true, maxLength: 400 },
   postId: { type: mongoose.Schema.Types.ObjectId, required: true },
   postType: { type: String, enum: ['PostX', 'PostReddit'], required: true },
-  parentComment: { type: mongoose.Schema.Types.ObjectId, ref: 'Comment', default: null },
-  replyingTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   createdAt: { type: Date, default: Date.now },
 });
@@ -21,8 +19,6 @@ commentSchema.methods.toPublicJSON = function (currentUserId = null) {
     text: this.text,
     postId: this.postId,
     postType: this.postType,
-    parentComment: this.parentComment,
-    replyingTo: this.replyingTo,
     likesCount: this.likes ? this.likes.length : 0,
     liked,
     createdAt: this.createdAt,

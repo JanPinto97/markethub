@@ -55,13 +55,9 @@ export interface PostComment {
   text: string;
   postId: string;
   postType: string;
-  parentComment: string | null;
-  replyingTo: { _id: string; username: string } | null;
   liked: boolean;
   likesCount: number;
   createdAt: string;
-  replies?: PostComment[];
-  hasMoreReplies?: boolean;
 }
 
 export interface CommunityPublic {
@@ -304,31 +300,14 @@ export class CommunityService {
       .pipe(map(res => res.comment));
   }
 
-  addReply(postId: string, commentId: string, text: string, replyingToUserId?: string): Observable<PostComment> {
-    return this.api.post<{ success: boolean; comment: PostComment }>(
-      `/posts/${postId}/comments/${commentId}/reply`, { text, replyingToUserId }
-    ).pipe(map(res => res.comment));
-  }
-
   likeComment(postId: string, commentId: string): Observable<{ liked: boolean; likesCount: number }> {
     return this.api.post<{ success: boolean; liked: boolean; likesCount: number }>(
       `/posts/${postId}/comments/${commentId}/like`, {}
     ).pipe(map(res => ({ liked: res.liked, likesCount: res.likesCount })));
   }
 
-  likeReply(postId: string, commentId: string, replyId: string): Observable<{ liked: boolean; likesCount: number }> {
-    return this.api.post<{ success: boolean; liked: boolean; likesCount: number }>(
-      `/posts/${postId}/comments/${commentId}/replies/${replyId}/like`, {}
-    ).pipe(map(res => ({ liked: res.liked, likesCount: res.likesCount })));
-  }
-
   deleteComment(postId: string, commentId: string): Observable<void> {
     return this.http.delete<{ success: boolean }>(`${this.baseUrl}/posts/${postId}/comments/${commentId}`)
-      .pipe(map(() => undefined));
-  }
-
-  deleteReply(postId: string, commentId: string, replyId: string): Observable<void> {
-    return this.http.delete<{ success: boolean }>(`${this.baseUrl}/posts/${postId}/comments/${commentId}/replies/${replyId}`)
       .pipe(map(() => undefined));
   }
 
