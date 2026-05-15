@@ -306,8 +306,14 @@
 
 .pc-comment-top {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: var(--spacing-2);
+  min-height: 20px;
+}
+
+.pc-comment-top .pc-comment-author,
+.pc-comment-top .pc-comment-time {
+  line-height: 1.2;
 }
 
 .pc-comment-author {
@@ -332,6 +338,8 @@ a.pc-comment-author:hover {
 }
 
 .pc-comment-menu-wrap .pc-menu-btn {
+  width: 20px;
+  height: 20px;
   padding: 2px;
 }
 
