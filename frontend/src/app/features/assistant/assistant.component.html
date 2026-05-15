@@ -1,0 +1,134 @@
+<div class="assistant-page">
+  <aside class="assistant-sidebar">
+    <div class="sidebar-top">
+      <button type="button" class="new-chat-btn" (click)="newChat()" [disabled]="!hasMessages()">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        New chat
+      </button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Recent</div>
+      <div class="sidebar-empty">
+        No conversations yet.
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-hint">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="16" x2="12" y2="12"/>
+          <line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>
+        Powered by MarketHub AI
+      </div>
+    </div>
+  </aside>
+
+  <main class="assistant-main">
+    <header class="assistant-header">
+      <div class="assistant-header-inner">
+        <div class="assistant-title">
+          <span class="assistant-avatar" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/>
+              <path d="M19 14l.7 1.7 1.7.7-1.7.7-.7 1.7-.7-1.7-1.7-.7 1.7-.7z"/>
+            </svg>
+          </span>
+          <div class="assistant-title-text">
+            <span class="assistant-name">Assistant</span>
+            <span class="assistant-sub">MarketHub AI</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="assistant-scroll" #scrollContainer>
+      <div class="assistant-content">
+        @if (!hasMessages()) {
+          <div class="welcome">
+            <div class="welcome-mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/>
+                <path d="M19 14l.7 1.7 1.7.7-1.7.7-.7 1.7-.7-1.7-1.7-.7 1.7-.7z"/>
+              </svg>
+            </div>
+            <h1 class="welcome-title">How can I help with the markets today?</h1>
+            <p class="welcome-sub">Ask about an asset, a news article, an economic release, or anything happening in the community.</p>
+
+            <div class="suggestions">
+              @for (s of suggestions; track s.title) {
+                <button type="button" class="suggestion" (click)="pickSuggestion(s.title)">
+                  <span class="suggestion-title">{{ s.title }}</span>
+                  <span class="suggestion-sub">{{ s.subtitle }}</span>
+                </button>
+              }
+            </div>
+          </div>
+        } @else {
+          <div class="messages">
+            @for (m of messages(); track m.id) {
+              <div class="message" [class.is-user]="m.role === 'user'" [class.is-assistant]="m.role === 'assistant'">
+                <div class="message-avatar" aria-hidden="true">
+                  @if (m.role === 'assistant') {
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/>
+                    </svg>
+                  } @else {
+                    {{ (auth.currentUser()?.username || '?')[0].toUpperCase() }}
+                  }
+                </div>
+                <div class="message-body">
+                  <div class="message-author">{{ m.role === 'assistant' ? 'Assistant' : (auth.currentUser()?.username || 'You') }}</div>
+                  <div class="message-text">{{ m.text }}</div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="composer-wrap">
+      <div class="composer">
+        @if (!auth.isAuthenticated()) {
+          <div class="composer-locked">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <span>Sign in to chat with the assistant.</span>
+            <a routerLink="/login" class="composer-locked-cta">Sign in</a>
+          </div>
+        } @else {
+          <div class="composer-input">
+            <textarea
+              #inputArea
+              class="composer-textarea"
+              rows="1"
+              [value]="draft()"
+              (input)="onInput($event)"
+              (keydown)="onKeydown($event)"
+              placeholder="Ask anything about markets, news, posts, or releases…"
+              [maxLength]="maxChars"
+            ></textarea>
+            <div class="composer-actions">
+              <span class="composer-count" [class.warn]="remaining() < 200">{{ remaining() }}</span>
+              <button type="button" class="send-btn" (click)="send()" [disabled]="!canSend()" aria-label="Send message">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="22" y1="2" x2="11" y2="13"/>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+      <div class="composer-hint">Assistant may produce inaccurate information. Verify critical data before trading.</div>
+    </div>
+  </main>
+</div>

@@ -25,14 +25,14 @@
           </svg>
           <span>Markets</span>
         </a>
-        <span class="nav-tab nav-tab-disabled" aria-disabled="true">
+        <a routerLink="/assistant" routerLinkActive="active" class="nav-tab">
           <svg class="nav-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/>
             <path d="M19 14l.7 1.7 1.7.7-1.7.7-.7 1.7-.7-1.7-1.7-.7 1.7-.7z"/>
             <path d="M5 3l.5 1.2L6.7 4.7 5.5 5.2 5 6.4 4.5 5.2 3.3 4.7 4.5 4.2z"/>
           </svg>
-          <span>IA</span>
-        </span>
+          <span>Assistant</span>
+        </a>
       </nav>
     </div>
 
@@ -140,14 +140,14 @@
           </svg>
           <span>Markets</span>
         </a>
-        <span class="mobile-nav-link mobile-nav-disabled" aria-disabled="true">
+        <a routerLink="/assistant" routerLinkActive="active" class="mobile-nav-link">
           <svg class="nav-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/>
             <path d="M19 14l.7 1.7 1.7.7-1.7.7-.7 1.7-.7-1.7-1.7-.7 1.7-.7z"/>
             <path d="M5 3l.5 1.2L6.7 4.7 5.5 5.2 5 6.4 4.5 5.2 3.3 4.7 4.5 4.2z"/>
           </svg>
-          <span>IA</span>
-        </span>
+          <span>Assistant</span>
+        </a>
       </nav>
 
       <button type="button" class="mobile-menu-btn" (click)="toggleMobileMenu($event)" [attr.aria-expanded]="mobileMenuOpen()" aria-label="Menu">
