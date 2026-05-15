@@ -190,6 +190,22 @@ export class Agent {
     console.log(`[${this.state.username}] posted id=${created.post.id}`);
   }
 
+  private async maybeFollowAuthorOf(post: PostXItem): Promise<void> {
+    if (Math.random() >= 0.1) return;
+    const username = getAuthorUsername(post);
+    if (!username || username === this.state.username) return;
+    if (this.state.followedUsernames.includes(username)) return;
+    try {
+      const res = await this.client.followUser(username);
+      if (res.following && !this.state.followedUsernames.includes(username)) {
+        this.state.followedUsernames.push(username);
+      }
+      console.log(`[${this.state.username}] auto-follow @${username} following=${res.following}`);
+    } catch (err) {
+      console.warn(`[${this.state.username}] auto-follow @${username} failed: ${(err as Error).message}`);
+    }
+  }
+
   private async doComment(posts: PostXItem[]): Promise<void> {
     const candidates = posts.filter(
       (p) => getAuthorId(p) !== this.state.userId && !this.state.commentedPostIds.includes(p.id),
@@ -202,6 +218,7 @@ export class Agent {
     this.state.commentedPostIds.push(picked.post.id);
     if (cmt.comment?.id) this.state.authoredCommentIds.push(cmt.comment.id);
     console.log(`[${this.state.username}] commented post=${picked.post.id} comment=${cmt.comment.id}`);
+    await this.maybeFollowAuthorOf(picked.post);
   }
 
   private async doLike(posts: PostXItem[]): Promise<void> {
@@ -214,6 +231,7 @@ export class Agent {
     const res = await this.client.likePost(picked.id);
     if (!this.state.likedPostIds.includes(picked.id)) this.state.likedPostIds.push(picked.id);
     console.log(`[${this.state.username}] liked post=${picked.id} liked=${res.liked}`);
+    await this.maybeFollowAuthorOf(picked);
   }
 
   private async doFollow(posts: PostXItem[]): Promise<void> {
@@ -355,6 +373,7 @@ export class Agent {
         if (!this.state.commentedPostIds.includes(picked.post.id)) this.state.commentedPostIds.push(picked.post.id);
         if (cmt.comment?.id) this.state.authoredCommentIds.push(cmt.comment.id);
         console.log(`[${this.state.username}] community_engage commented in="${community.name}" post=${picked.post.id} comment=${cmt.comment.id}`);
+        await this.maybeFollowAuthorOf(picked.post);
         return;
       }
 
@@ -365,6 +384,7 @@ export class Agent {
       const res = await this.client.likePost(target.id);
       if (!this.state.likedPostIds.includes(target.id)) this.state.likedPostIds.push(target.id);
       console.log(`[${this.state.username}] community_engage liked in="${community.name}" post=${target.id} liked=${res.liked}`);
+      await this.maybeFollowAuthorOf(target);
       return;
     }
   }
