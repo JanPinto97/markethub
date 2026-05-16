@@ -84,7 +84,17 @@
                 </div>
                 <div class="message-body">
                   <div class="message-author">{{ m.role === 'assistant' ? 'Assistant' : (auth.currentUser()?.username || 'You') }}</div>
-                  <div class="message-text">{{ m.text }}</div>
+                  <div class="message-text" [class.is-error]="m.error">
+                    {{ m.text }}
+                    @if (m.streaming && !m.text) {
+                      <span class="typing-dots" aria-label="Assistant is typing">
+                        <span></span><span></span><span></span>
+                      </span>
+                    }
+                    @if (m.streaming && m.text) {
+                      <span class="typing-cursor" aria-hidden="true">▍</span>
+                    }
+                  </div>
                 </div>
               </div>
             }

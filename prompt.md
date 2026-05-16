@@ -1,3 +1,23 @@
-Llegeix claude.md i context.md per entendre el contexte del projecte. Ara faras el disseny complert de la landing page, utilitzant un disseny existent que ha generat claude design. Exclou el header general de la pàgina de landing page, utilitzarà el header que proporciona la landing page. Exclou també el footer general si n'hi ha.
+# Assistant — Frontend/Backend Connection
 
-Fetch this design file, read its readme, and implement the relevant aspects of the design. https://api.anthropic.com/v1/design/h/C3BltiAlprFLySxjqBXipg?open_file=Landing+Page.html
+## Context
+MarketHub — Angular 17 standalone components. Backend endpoint `POST /api/v1/assistant/chat` already exists with SSE streaming. Existing `AssistantComponent` at `/assistant` has static UI.
+
+## Task
+Connect the assistant frontend to the backend endpoint. The chat must be functional with real responses.
+
+## Constraints
+- Use existing `ApiService` for HTTP calls
+- Handle SSE streaming to render text progressively as it arrives
+- Manage loading, error, and empty states in the UI
+- Send the full conversation history on each request
+
+## Output format
+Only new or modified files.
+
+## IMPORTANT
+- Do not explain anything
+- Do not describe steps or progress
+- Do not validate requirements
+- Return only final output
+- Do not repeat unchanged code

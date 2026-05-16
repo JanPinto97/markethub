@@ -51,7 +51,12 @@
       "Bash(npx --no-install tsc --noEmit -p tsconfig.app.json)",
       "Bash(echo \"EXIT $?\")",
       "Bash(grep -rn \"addReply\\\\|likeReply\\\\|deleteReply\\\\|replies\\\\[\\\\|\\\\\\\\.replies\\\\|replyId\" C:/JAN/INSTI/markethub/markethub/frontend/src)",
-      "Bash(grep -rn \"parentComment\\\\|replyingTo\\\\|\\\\\\\\.replies\\\\|hasMoreReplies\" C:/JAN/INSTI/markethub/markethub/frontend/src)"
+      "Bash(grep -rn \"parentComment\\\\|replyingTo\\\\|\\\\\\\\.replies\\\\|hasMoreReplies\" C:/JAN/INSTI/markethub/markethub/frontend/src)",
+      "Bash(awk '{print $2}')",
+      "Bash(grep -oE 'failed:.{0,80}')",
+      "Bash(awk -F'auto-follow @' '{print $2}')",
+      "Bash(awk '{print $1}')",
+      "Bash(awk -F'[][]' '{print $2}')"
     ]
   }
 }
