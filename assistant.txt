@@ -1,0 +1,18 @@
+Chatbot d’IA només per usuaris registrats. Aquest chatbot utilitzarà informació de la pròpia pàgina per respondre preguntes de l’usuari. Tindrà accés a fer peticions per llegir la base de dades (NO MODIFICAR),  i retornarà respostes completes amb enllaços dins de la pròpia pàgina.
+
+Tindrà un fitxer de contexte sobre tot el funcionament de la pàgina, com funciona cada interacció, que pot descobrir l’usuari en la pàgina, que pot fer, que volen dir certes seccions de market i que aporten… També tindrà un fitxer de context sobre ella mateixa (nom, rol, tó, etc…)
+
+Els enllaços “hotlinks d’IA” seràn els seguents:
+-Enllaç en detall de releases
+-Enllaç en detall de notícies
+-Enllaç en detall de PostReddit
+
+Hi haurà enllaços dins la pàgina (hotlinks d’IA) que tindran el seu prompt predeterminat, que s’enviarà directament a la IA. Per exemple, al costat dels releases economics, o en el seu detall, hi haurà un botó que, si el cliques, obre el chat popup i escriu un missatge predeterminat a la ia que fiqui “Que és CPI, i que s’espera d’aquest release en concret?”. Per darrere també se li enviarà tot el context del release, per exemple: (“CPI”, “USD”,”previous:1,2%”,expected:0.8”,etc) i més informació del que estem preguntant. Es veurà el release en format attatched a sobre del input.
+
+Un altre enllaç estarà en el detall d’una notícia (article). Se li donarà la notícia completa, o l’enllaç d’aquesta a la IA. El missatge predeterminat  que s’et ficarà al xat serà algo com “Explica’m resumidament que ha passat en aquesta notícia, i l’impacte que pot tenir”. Es veurà el títol attatched.
+
+L’últim enllaç estarà en el detall de cada post tipus Reddit. Quan cliques aquest enllaç, s’obrirà el xat amb el post attatched, no es mostrarà el post sencer, sinò que només part del títol, i no es mostrarà en el input, sinó que una mica més amunt, com quan s’enganxa un fitxer en el xat de claude. Tots els continguts attatched seràn així.
+La ia tindrà el contingut del post com a referència, i tindrà el contexte que si l’usuari li pregunta qualsevol cosa, es referent a aquell contingut. Tindrà el cotext també que aquell contingut que te és el contingut d’un post de topics.
+
+Utilitzarà la API de gemini 2.0 Flash.
+

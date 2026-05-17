@@ -1,10 +1,11 @@
-import { Component, OnInit, OnChanges, SimpleChanges, ChangeDetectorRef, HostListener, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, OnChanges, SimpleChanges, ChangeDetectorRef, HostListener, Input, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
 import { NewsArticleComponent } from './news-article/news-article';
+import { MarketsContextService } from '../../../core/services/markets-context.service';
 
 @Component({
   selector: 'app-market-news',
@@ -44,6 +45,8 @@ export class MarketNewsComponent implements OnInit, OnChanges {
 
   @Output() articleFromOverviewConsumed = new EventEmitter<void>();
 
+  private marketsContext = inject(MarketsContextService);
+
   constructor(private http: HttpClient, private cdr: ChangeDetectorRef) {}
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -66,6 +69,7 @@ export class MarketNewsComponent implements OnInit, OnChanges {
         if (date === new Date().toDateString() && Array.isArray(news) && news.length > 0) {
           this.fullNews = news;
           this.filterNews();
+          this.marketsContext.setNews(this.fullNews);
           this.isLoading = false;
           this.cdr.detectChanges();
         }
@@ -277,6 +281,7 @@ export class MarketNewsComponent implements OnInit, OnChanges {
       
       this.savePersistence();
       this.filterNews();
+      this.marketsContext.setNews(this.fullNews);
       this.isLoading = false;
       this.cdr.detectChanges();
     });
