@@ -1,5 +1,6 @@
-import { Component, Input, Output, EventEmitter, OnInit, AfterViewInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, AfterViewInit, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
+import { AssistantPopupService } from '../../../../core/services/assistant-popup.service';
 
 declare const TradingView: any;
 
@@ -50,6 +51,13 @@ declare const TradingView: any;
 
             <!-- Social/Reading Tools -->
             <div class="flex items-center gap-3">
+              <button type="button" (click)="askWarren()"
+                class="ask-warren-btn group flex items-center gap-2 pl-3 pr-4 py-2 rounded-full border border-[#006c49]/30 bg-emerald-50/60 text-[#006c49] hover:bg-[#006c49] hover:text-white hover:border-[#006c49] transition-all">
+                <span class="w-6 h-6 rounded-full bg-[#006c49] text-white flex items-center justify-center group-hover:bg-white group-hover:text-[#006c49] transition-colors">
+                  <span class="material-symbols-outlined text-[14px]">auto_awesome</span>
+                </span>
+                <span class="text-[10px] font-black uppercase tracking-widest">Ask Warren</span>
+              </button>
               <button (click)="shareX()" class="w-10 h-10 rounded-full border border-slate-100 flex items-center justify-center text-slate-400 hover:bg-black hover:text-white hover:border-black transition-all">
                 <i class="fa-brands fa-x-twitter text-sm"></i>
               </button>
@@ -196,6 +204,8 @@ export class NewsArticleComponent implements OnInit, AfterViewInit {
   @Input() backLabel: string = 'Back to News';
   @Output() back = new EventEmitter<void>();
 
+  private assistantPopup = inject(AssistantPopupService);
+
   fontSize: number = 18;
   math = Math;
   isRestricted = false;
@@ -335,5 +345,36 @@ export class NewsArticleComponent implements OnInit, AfterViewInit {
 
   printArticle() {
     window.print();
+  }
+
+  askWarren() {
+    const a = this.article || {};
+    const title = (a.title || 'this article') as string;
+    const publishedStr = a.time ? new Date(a.time).toLocaleString() : '—';
+    const fields = [
+      { label: 'Source', value: a.source || '—' },
+      { label: 'Category', value: a.category || '—' },
+      { label: 'Published', value: publishedStr },
+    ];
+    this.assistantPopup.open({
+      initialMessage: 'Summarise what happened in this article and what impact it could have on the markets',
+      attachedContext: {
+        title,
+        subtitle: 'News article',
+        fields,
+        data: {
+          kind: 'news_article',
+          title: a.title,
+          source: a.source,
+          category: a.category,
+          time: a.time,
+          url: a.url,
+          image: a.image,
+          description: a.description,
+          snippet: a.snippet,
+          content: a.content,
+        },
+      },
+    });
   }
 }
