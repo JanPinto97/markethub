@@ -4,11 +4,12 @@ import { filter } from 'rxjs/operators';
 import { HeaderComponent } from './shared/components/header/header.component';
 import { TickerComponent } from './shared/components/ticker/ticker.component';
 import { ToastComponent } from './shared/components/toast/toast.component';
+import { AssistantPopupComponent } from './features/assistant/popup/assistant-popup.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, HeaderComponent, TickerComponent, ToastComponent],
+  imports: [RouterOutlet, HeaderComponent, TickerComponent, ToastComponent, AssistantPopupComponent],
   template: `
     @if (showGlobalChrome()) {
       <app-header />
@@ -16,6 +17,7 @@ import { ToastComponent } from './shared/components/toast/toast.component';
     }
     <router-outlet />
     <app-toast />
+    <app-assistant-popup />
   `
 })
 export class App {
