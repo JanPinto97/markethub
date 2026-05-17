@@ -8,6 +8,7 @@ import {
   HostListener,
   ElementRef,
   ViewChild,
+  DestroyRef
 } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
@@ -15,6 +16,8 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subject, Subscription, forkJoin, of, timer } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { SmartMarketService } from '../services/smart-market.service';
 import { ToastService } from '../../../core/services/toast.service';
 import {
   searchMarketsSymbols,
@@ -52,6 +55,8 @@ export class ChartsComponent implements OnInit, OnDestroy, AfterViewInit {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly smartMarket = inject(SmartMarketService);
+  private readonly destroyRef = inject(DestroyRef);
 
   private readonly finnhubKey = 'd7jo9s9r01qu1n4fg3pgd7jo9s9r01qu1n4fg3q0';
   private readonly coinGeckoApiKey = 'CG-T7BjzNAbWJhwFMvvbj4sM8Mp';
@@ -61,7 +66,6 @@ export class ChartsComponent implements OnInit, OnDestroy, AfterViewInit {
   private tvWidget: any = null;
   private searchSub: Subscription | null = null;
   private searchSubject = new Subject<string>();
-  private watchlistTimerSub: Subscription | null = null;
   private clockTimerSub: Subscription | null = null;
 
   showIndicatorsMenu = false;
@@ -130,7 +134,7 @@ export class ChartsComponent implements OnInit, OnDestroy, AfterViewInit {
   ];
 
   watchlistGroups: WatchlistGroup[] = [];
-
+  
   ngOnInit(): void {
     this.watchlistGroups = [
       {
@@ -155,48 +159,123 @@ export class ChartsComponent implements OnInit, OnDestroy, AfterViewInit {
         id: 'futures',
         label: 'Futures / Metals',
         rows: [
-          { tvSymbol: 'TVC:USOIL', label: 'USOIL', quoteSymbol: 'CL', last: null, chgPct: null },
-          { tvSymbol: 'OANDA:XAUUSD', label: 'GOLD', quoteSymbol: 'OANDA:XAU_USD', last: null, chgPct: null },
-          { tvSymbol: 'OANDA:XAGUSD', label: 'SILVER', quoteSymbol: 'OANDA:XAG_USD', last: null, chgPct: null },
+          { tvSymbol: 'TVC:USOIL', label: 'USOIL', quoteSymbol: 'USO', last: null, chgPct: null },
+          { tvSymbol: 'OANDA:XAUUSD', label: 'GOLD', quoteSymbol: 'XAU/USD', last: null, chgPct: null },
         ],
       },
       {
         id: 'forex',
         label: 'Forex',
         rows: [
-          { tvSymbol: 'FX:EURUSD', label: 'EURUSD', quoteSymbol: 'OANDA:EUR_USD', last: null, chgPct: null },
-          { tvSymbol: 'FX:GBPUSD', label: 'GBPUSD', quoteSymbol: 'OANDA:GBP_USD', last: null, chgPct: null },
-          { tvSymbol: 'FX:USDJPY', label: 'USDJPY', quoteSymbol: 'OANDA:USD_JPY', last: null, chgPct: null },
+          { tvSymbol: 'FX:EURUSD', label: 'EURUSD', quoteSymbol: 'EUR/USD', last: null, chgPct: null },
+          { tvSymbol: 'FX:GBPUSD', label: 'GBPUSD', quoteSymbol: 'GBP/USD', last: null, chgPct: null },
+          { tvSymbol: 'FX:USDJPY', label: 'USDJPY', quoteSymbol: 'USD/JPY', last: null, chgPct: null },
         ],
       },
       {
         id: 'crypto',
         label: 'Crypto',
         rows: [
-          { tvSymbol: 'BINANCE:BTCUSD', label: 'BTCUSD', quoteSymbol: 'BINANCE:BTCUSDT', last: null, chgPct: null },
-          { tvSymbol: 'BINANCE:ETHUSD', label: 'ETHUSD', quoteSymbol: 'BINANCE:ETHUSDT', last: null, chgPct: null },
-          { tvSymbol: 'BINANCE:SOLUSD', label: 'SOLUSD', quoteSymbol: 'BINANCE:SOLUSDT', last: null, chgPct: null },
+          { tvSymbol: 'BINANCE:BTCUSD', label: 'BTCUSD', quoteSymbol: 'bitcoin', last: null, chgPct: null },
+          { tvSymbol: 'BINANCE:ETHUSD', label: 'ETHUSD', quoteSymbol: 'ethereum', last: null, chgPct: null },
+          { tvSymbol: 'BINANCE:SOLUSD', label: 'SOLUSD', quoteSymbol: 'solana', last: null, chgPct: null },
         ],
       },
     ];
+
+    // Hidratar Watchlist desde LocalStorage (Zero-Layout-Shift)
+    this.watchlistGroups.forEach(group => {
+      group.rows.forEach(row => {
+        if (row.quoteSymbol) {
+          const cached = this.smartMarket.getCachedPrice(row.quoteSymbol);
+          if (cached && cached.c > 0) {
+            row.last = cached.c;
+            row.chgPct = cached.dp;
+          }
+        }
+      });
+    });
 
     this.searchSub = this.searchSubject
       .pipe(debounceTime(300), distinctUntilChanged())
       .subscribe((q) => this.runSearch(q));
 
-    // Load saved studies from localStorage
+    // Load saved studies and chart preferences from localStorage
     try {
       const saved = localStorage.getItem('markethub_charts_config');
       if (saved) {
         const config = JSON.parse(saved);
         this.activeStudies = config.studies || [];
+        this.selectedInterval = config.interval || 'D';
+        this.selectedChartStyle = config.chartStyle || '1';
+        this.selectedTimezone = config.timezone || 'Etc/UTC';
       }
     } catch (e) {
       console.warn('Error loading chart config:', e);
     }
 
-    this.watchlistTimerSub = timer(0, 45_000).subscribe(() => this.refreshWatchlistPrices());
+    // Sincronizar de forma reactiva con el activo activo global (Overview)
+    this.smartMarket.selectedAsset$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(asset => {
+      if (asset && asset.symbol && this.currentTvSymbol !== asset.symbol) {
+        this.currentTvSymbol = asset.symbol;
+        this.displaySymbol = asset.displaySymbol;
+        this.pushSymbolToChart();
+      }
+    });
+
+    this.initWatchlistStreams();
     this.clockTimerSub = timer(0, 1000).subscribe(() => this.tickClock());
+  }
+
+  private initWatchlistStreams(): void {
+    // 1. Forex and Metals (Master TwelveData)
+    this.smartMarket.getForexPricesBatch([])
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(data => {
+        if (!data) return;
+        this.updateRowsFromBatch(data, ['forex', 'futures']);
+      });
+
+    // 2. Indices and Stocks (Master Finnhub)
+    this.smartMarket.getStocksPricesBatch()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(data => {
+        if (!data) return;
+        this.updateRowsFromBatch(data, ['indices', 'stocks', 'futures']); // 'futures' contains USO which is handled by Finnhub now
+      });
+
+    // 3. Crypto (Master CoinGecko)
+    this.smartMarket.getCryptoPrices([])
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(data => {
+        if (!data) return;
+        const cryptoGroup = this.watchlistGroups.find(g => g.id === 'crypto');
+        if (cryptoGroup) {
+          cryptoGroup.rows.forEach(row => {
+            const info = data[row.quoteSymbol!];
+            if (info) {
+              row.last = info.usd;
+              row.chgPct = info.usd_24h_change;
+            }
+          });
+          this.cdr.detectChanges();
+        }
+      });
+  }
+
+  private updateRowsFromBatch(data: any, groupIds: string[]): void {
+    this.watchlistGroups.forEach(group => {
+      if (groupIds.includes(group.id)) {
+        group.rows.forEach(row => {
+          const quote = data[row.quoteSymbol!] || data;
+          if (quote && quote.close) {
+             row.last = parseFloat(quote.close);
+             row.chgPct = parseFloat(quote.percent_change || 0);
+          }
+        });
+      }
+    });
+    this.cdr.detectChanges();
   }
 
   ngAfterViewInit(): void {
@@ -206,7 +285,6 @@ export class ChartsComponent implements OnInit, OnDestroy, AfterViewInit {
   ngOnDestroy(): void {
     this.destroyTradingView();
     this.searchSub?.unsubscribe();
-    this.watchlistTimerSub?.unsubscribe();
     this.clockTimerSub?.unsubscribe();
   }
 
@@ -417,6 +495,22 @@ export class ChartsComponent implements OnInit, OnDestroy, AfterViewInit {
     this.showSearchModal = false;
     this.searchQuery = '';
     this.pushSymbolToChart();
+    
+    // Sincronizar con el estado global (Header)
+    let source = 'finnhub';
+    let cgId = '';
+    if (r.symbol.includes('BINANCE') || r.symbol.includes('CRYPTO') || r.type?.toLowerCase() === 'crypto') {
+      source = 'coingecko';
+      cgId = r.apiSymbol?.toLowerCase() || ''; 
+    }
+    this.smartMarket.setActiveAsset({
+      symbol: r.symbol,
+      apiSymbol: r.apiSymbol || r.symbol,
+      displaySymbol: this.displaySymbol,
+      source: source,
+      coingeckoId: cgId
+    });
+
     this.cdr.markForCheck();
   }
 
@@ -430,22 +524,44 @@ export class ChartsComponent implements OnInit, OnDestroy, AfterViewInit {
     this.currentTvSymbol = row.tvSymbol;
     this.displaySymbol = row.label;
     this.pushSymbolToChart();
+    
+    // Sincronizar con el estado global (Header)
+    let source = 'finnhub';
+    let cgId = '';
+    if (['BTCUSD', 'ETHUSD', 'SOLUSD'].includes(row.label)) {
+      source = 'coingecko';
+      cgId = row.quoteSymbol!;
+    } else if (['EURUSD', 'GBPUSD', 'USDJPY', 'GOLD'].includes(row.label)) {
+      source = 'twelvedata';
+    }
+
+    this.smartMarket.setActiveAsset({
+      symbol: row.tvSymbol,
+      apiSymbol: row.quoteSymbol || row.label,
+      displaySymbol: row.label,
+      source: source,
+      coingeckoId: cgId
+    });
+
     this.cdr.markForCheck();
   }
 
   setInterval(iv: string): void {
     this.selectedInterval = iv;
+    this.saveChartConfig();
     this.pushSymbolToChart();
   }
 
   setChartStyle(id: string): void {
     if (this.selectedChartStyle === id) return;
     this.selectedChartStyle = id;
+    this.saveChartConfig();
     this.mountTradingView();
   }
 
   onTimezoneChange(tz: string): void {
     this.selectedTimezone = tz;
+    this.saveChartConfig();
     this.mountTradingView();
   }
 
@@ -589,7 +705,10 @@ export class ChartsComponent implements OnInit, OnDestroy, AfterViewInit {
 
   private saveChartConfig(): void {
     localStorage.setItem('markethub_charts_config', JSON.stringify({
-      studies: this.activeStudies
+      studies: this.activeStudies,
+      interval: this.selectedInterval,
+      chartStyle: this.selectedChartStyle,
+      timezone: this.selectedTimezone
     }));
   }
 }

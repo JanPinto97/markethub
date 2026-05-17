@@ -1,37 +1,32 @@
 <div class="min-h-screen bg-[#f7f9fb] font-body antialiased pb-12">
 
-  <!-- Top Navigation -->
-  <nav
-    class="w-full h-16 bg-white flex justify-between items-center px-6 md:px-12 max-w-[1920px] mx-auto font-manrope shadow-sm border-b border-slate-50">
-    <div class="flex items-center gap-8">
-      <span class="text-xl font-black text-slate-900 tracking-tighter italic">MarketHub</span>
-      <section class="hidden md:flex gap-6">
-        <a class="font-bold pb-1 cursor-pointer"
-          [ngClass]="activeTab === 'overview' ? 'text-[#006c49] border-b-2 border-[#006c49]' : 'text-slate-500 hover:text-slate-900 transition-colors'"
-          (click)="setActiveTab('overview')">Overview</a>
-        <a class="font-bold pb-1 cursor-pointer"
-          [ngClass]="activeTab === 'calendar' ? 'text-[#006c49] border-b-2 border-[#006c49]' : 'text-slate-500 hover:text-slate-900 transition-colors'"
-          (click)="setActiveTab('calendar')">Economic Calendar</a>
-        <a class="font-bold pb-1 cursor-pointer"
-           [ngClass]="activeTab === 'news' ? 'text-[#006c49] border-b-2 border-[#006c49]' : 'text-slate-500 hover:text-slate-900 transition-colors'"
-           (click)="setActiveTab('news')">News</a>
-        <a class="font-bold pb-1 cursor-pointer"
-           [ngClass]="activeTab === 'charts' ? 'text-[#006c49] border-b-2 border-[#006c49]' : 'text-slate-500 hover:text-slate-900 transition-colors'"
-           (click)="setActiveTab('charts')">Charts</a>
-      </section>
-    </div>
-    <div class="flex items-center gap-4">
-      <button class="p-2 hover:bg-slate-200/50 rounded-lg transition-all">
-        <span class="material-symbols-outlined text-[#191c1e]">notifications</span>
-      </button>
-      <div class="h-8 w-8 rounded-full bg-slate-200 overflow-hidden border-2 border-white shadow-sm">
-        <img alt="User Profile" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Jason"
-          class="w-full h-full object-cover">
-      </div>
-    </div>
-  </nav>
+  <!-- Floating Top Navigation -->
+  <div class="w-full flex justify-center pt-8 pb-4 font-manrope">
+    <nav class="flex items-center gap-8 md:gap-12">
+      <a class="flex items-center gap-1 font-bold text-[15px] pb-1 cursor-pointer transition-colors relative"
+        [ngClass]="activeTab === 'overview' ? 'text-[#006c49] border-b-[3px] border-[#006c49]' : 'text-slate-500 hover:text-slate-900'"
+        (click)="setActiveTab('overview')">
+        Overview
+      </a>
+      <a class="flex items-center gap-1 font-bold text-[15px] pb-1 cursor-pointer transition-colors relative"
+        [ngClass]="activeTab === 'calendar' ? 'text-[#006c49] border-b-[3px] border-[#006c49]' : 'text-slate-500 hover:text-slate-900'"
+        (click)="setActiveTab('calendar')">
+        Economic Calendar
+      </a>
+      <a class="flex items-center gap-1 font-bold text-[15px] pb-1 cursor-pointer transition-colors relative"
+         [ngClass]="activeTab === 'news' ? 'text-[#006c49] border-b-[3px] border-[#006c49]' : 'text-slate-500 hover:text-slate-900'"
+         (click)="setActiveTab('news')">
+         News
+      </a>
+      <a class="flex items-center gap-1 font-bold text-[15px] pb-1 cursor-pointer transition-colors relative"
+         [ngClass]="activeTab === 'charts' ? 'text-[#006c49] border-b-[3px] border-[#006c49]' : 'text-slate-500 hover:text-slate-900'"
+         (click)="setActiveTab('charts')">
+         Charts
+      </a>
+    </nav>
+  </div>
 
-  <main class="max-w-[1440px] mx-auto p-10 grid-cols-12 gap-8" [ngClass]="activeTab === 'overview' ? 'grid' : 'hidden'">
+  <main class="overview-main max-w-[1920px] mx-auto grid-cols-12 gap-8" [ngClass]="activeTab === 'overview' ? 'grid' : 'hidden'">
 
     <!-- LEFT SECTION (8 Columns): Search, Chart & News Impact -->
     <section class="col-span-12 lg:col-span-8 flex flex-col gap-8">
@@ -42,7 +37,7 @@
           <span class="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-slate-300">search</span>
           <input #symbolInput [value]="searchQuery" (input)="onSearchInput(symbolInput.value)" (focus)="onSearchFocus()"
             (keyup.enter)="onEnterSearch(symbolInput.value); symbolInput.value=''"
-            class="w-full bg-white shadow-sm border-none rounded-2xl pl-14 pr-6 py-5 focus:ring-2 focus:ring-[#006c49]/10 transition-all text-xs font-bold uppercase tracking-widest"
+            class="overview-card w-full bg-white shadow-sm border-none rounded-2xl pl-14 pr-6 py-5 focus:ring-2 focus:ring-[#006c49]/10 transition-all text-xs font-bold uppercase tracking-widest"
             placeholder="Search Assets (BTC, AAPL, EURUSD)...">
 
           <!-- TradingView-Style Results Modal (Glassmorphism) -->
@@ -88,7 +83,7 @@
       </div>
 
       <!-- Advanced Charting Workspace -->
-      <div class="bg-white rounded-xl shadow-sm p-8">
+      <div class="overview-card bg-white rounded-xl shadow-sm p-8">
         <header class="flex justify-between items-center mb-8">
           <div class="flex items-center gap-3">
             <div class="flex flex-col">
@@ -119,6 +114,11 @@
                 <span class="animate-pulse text-slate-200">...</span>
               </ng-template>
             </div>
+            <button (click)="setActiveTab('charts')"
+              class="px-3 py-1.5 bg-[#006c49] text-white text-[9px] font-black uppercase rounded-lg hover:bg-[#005237] transition-all ml-2 flex items-center gap-1.5 justify-center">
+              <span>Open in Charts</span>
+              <span class="material-symbols-outlined text-[10px] font-black leading-none">north_east</span>
+            </button>
           </div>
         </header>
         <div class="relative w-full h-[600px] bg-[#f7f9fb] rounded-2xl overflow-hidden border border-slate-50">
@@ -137,8 +137,110 @@
         </div>
       </div>
 
-      <!-- Market News Impact (Editorial Style) -->
-      <div class="bg-white p-8 rounded-xl shadow-sm border border-slate-100">
+    </section>
+
+    <!-- RIGHT SECTION (4 Columns): Sentiment & Calendar -->
+    <section class="col-span-12 lg:col-span-4 flex flex-col gap-8">
+
+      <!-- Global Sentiment (Relocated here) -->
+      <div class="overview-card bg-white p-8 rounded-xl shadow-sm">
+        <div class="flex justify-between items-start mb-6">
+          <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Global Sentiment</h3>
+          <span class="text-[9px] font-mono text-slate-400 italic">{{ lastSentimentUpdate }}</span>
+        </div>
+        <article class="flex flex-col items-center justify-center pt-2">
+          <!-- Circular Progress Gauge (CoinMarketCap style) -->
+          <div class="relative w-[144px] h-[78px] flex justify-center items-end" data-role="progressbar-wrapper">
+            <svg width="144" height="78" viewBox="0 0 144 78" class="overflow-visible">
+              <!-- Segmento 1: Extreme Fear -->
+              <path d="M 13 68 A 59 59 0 0 1 20.7 38.8" stroke="#EA3943" stroke-width="6" stroke-linecap="round" fill="none"></path>
+              <!-- Segmento 2: Fear -->
+              <path d="M 25.3 32 A 59 59 0 0 1 49.1 13.6" stroke="#EA8C00" stroke-width="6" stroke-linecap="round" fill="none"></path>
+              <!-- Segmento 3: Neutral -->
+              <path d="M 56.9 11 A 59 59 0 0 1 87.1 11" stroke="#F3D42F" stroke-width="6" stroke-linecap="round" fill="none"></path>
+              <!-- Segmento 4: Greed -->
+              <path d="M 94.9 13.6 A 59 59 0 0 1 118.7 32" stroke="#93D900" stroke-width="6" stroke-linecap="round" fill="none"></path>
+              <!-- Segmento 5: Extreme Greed -->
+              <path d="M 123.3 38.8 A 59 59 0 0 1 131 68" stroke="#16C784" stroke-width="6" stroke-linecap="round" fill="none"></path>
+
+              <!-- Dynamic Position Indicator Dot -->
+              <circle [attr.cx]="getSentimentIndicatorCoords().x" 
+                      [attr.cy]="getSentimentIndicatorCoords().y" 
+                      r="7" fill="none" stroke="#cbd5e1" stroke-width="4"></circle>
+              <circle [attr.cx]="getSentimentIndicatorCoords().x" 
+                      [attr.cy]="getSentimentIndicatorCoords().y" 
+                      r="5" fill="white"></circle>
+            </svg>
+            
+            <!-- Centered Values inside SVG Arc -->
+            <div class="absolute bottom-[2px] left-0 w-full text-center flex flex-col items-center">
+              <span class="text-3xl font-black text-[#191c1e] tracking-tighter leading-none">
+                {{ sentimentData?.value || '0' }}
+              </span>
+              <span class="text-[9px] font-black uppercase tracking-[0.12em] mt-1" [style.color]="getSentimentColor()">
+                {{ sentimentData?.value_classification || 'Loading' }}
+              </span>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <!-- Economic Calendar (Editorial Style) -->
+      <div class="overview-card bg-white rounded-xl shadow-sm overflow-hidden flex flex-col lg:flex-1 lg:min-h-0">
+        <header class="p-6 bg-[#f2f4f6] flex justify-between items-center shrink-0">
+          <div class="flex items-center gap-3">
+            <button (click)="changeDate(-1)"
+              class="w-7 h-7 rounded-full flex items-center justify-center hover:bg-white transition-all shadow-sm">◀</button>
+            <span class="text-[10px] font-black uppercase tracking-widest text-[#191c1e]">{{ selectedDate | date:'dd MMM' }}</span>
+            <button (click)="changeDate(1)"
+              class="w-7 h-7 rounded-full flex items-center justify-center hover:bg-white transition-all shadow-sm">▶</button>
+          </div>
+          <div class="flex items-center gap-2">
+            <button (click)="goToday()"
+              class="text-[9px] font-black px-3 py-1.5 bg-[#191c1e] text-white rounded-lg hover:bg-slate-700 transition-colors uppercase">Today</button>
+            <button (click)="setActiveTab('calendar')"
+              class="text-[9px] font-black px-3 py-1.5 bg-[#006c49] text-white rounded-lg hover:bg-[#005237] transition-colors uppercase flex items-center gap-1.5 justify-center">
+              <span>Open in Calendar</span>
+              <span class="material-symbols-outlined text-[10px] font-black leading-none">north_east</span>
+            </button>
+          </div>
+        </header>
+
+        <div class="divide-y divide-[#f2f4f6] max-h-[400px] lg:max-h-none overflow-y-auto no-scrollbar lg:flex-1 lg:min-h-0">
+          <div *ngFor="let event of filteredEvents"
+            class="px-6 py-4 flex flex-col gap-2 hover:bg-[#f7f9fb] transition-colors group">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <span class="text-[9px] font-mono text-slate-400">{{ event.localTime }}</span>
+                <span class="text-[9px] font-black text-slate-900 uppercase px-1.5 py-0.5 bg-slate-100 rounded">{{ event.country }}</span>
+              </div>
+              <div class="flex">
+                <span class="material-symbols-outlined text-[18px]"
+                  [ngClass]="{
+                    'text-impact-high': event.impact >= 3,
+                    'text-impact-medium': event.impact === 2,
+                    'text-impact-low': event.impact === 1,
+                    'text-impact-none': event.impact === 0
+                  }">folder</span>
+              </div>
+            </div>
+            <span class="text-[11px] font-bold text-[#44474d] group-hover:text-[#191c1e] transition-colors leading-tight">{{ event.event }}</span>
+            <div class="flex justify-between items-center mt-1">
+              <span class="text-[9px] font-mono text-slate-400 uppercase">Actual: <b class="text-slate-900">{{ event.actual || '--' }}</b></span>
+              <span class="text-[9px] font-mono text-slate-400 uppercase">Prev: {{ event.prev || '--' }}</span>
+            </div>
+          </div>
+          <div *ngIf="filteredEvents.length === 0" class="p-10 text-center italic text-slate-400 text-[10px]">
+            No major events for this region.
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- FULL WIDTH ROW (12 Columns): Market News Impact (Editorial Style) -->
+    <div class="col-span-12">
+      <div class="overview-card bg-white p-8 rounded-xl shadow-sm border border-slate-100">
         <div class="flex items-center justify-between mb-10">
           <div class="flex items-center gap-2">
             <h2 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Market News Impact</h2>
@@ -150,7 +252,14 @@
               </div>
             </div>
           </div>
-          <span class="text-[8px] bg-emerald-50 text-[#006c49] px-2.5 py-1 rounded-full font-black tracking-widest uppercase animate-pulse">Realtime Feed</span>
+          <div class="flex items-center gap-3">
+            <span class="text-[8px] bg-emerald-50 text-[#006c49] px-2.5 py-1 rounded-full font-black tracking-widest uppercase animate-pulse">Realtime Feed</span>
+            <button (click)="setActiveTab('news')"
+              class="text-[9px] font-black px-3 py-1.5 bg-[#006c49] text-white rounded-lg hover:bg-[#005237] transition-colors uppercase flex items-center gap-1.5 justify-center">
+              <span>Go to all News</span>
+              <span class="material-symbols-outlined text-[10px] font-black leading-none">north_east</span>
+            </button>
+          </div>
         </div>
 
         <!-- HERO NEWS (Investing.com Style) -->
@@ -192,16 +301,23 @@
             <span class="material-symbols-outlined text-sm">arrow_forward_ios</span>
           </button>
 
-          <div class="flex gap-6 overflow-x-auto pb-6 no-scrollbar snap-x scroll-smooth" #newsSlider>
+          <div class="flex gap-6 overflow-x-auto pb-6 no-scrollbar snap-x cursor-grab active:cursor-grabbing select-none" #newsSlider
+               (mousedown)="onDragStart($event, newsSlider)"
+               (mouseleave)="onDragEnd(newsSlider)"
+               (mouseup)="onDragEnd(newsSlider)"
+               (mousemove)="onDragMove($event, newsSlider)"
+               (dragstart)="$event.preventDefault()">
             <div *ngFor="let news of marketNews | slice:1:10" 
                  class="min-w-[280px] max-w-[280px] snap-start group cursor-pointer"
-                 (click)="openArticle(news)">
-              <div class="aspect-video rounded-lg overflow-hidden bg-slate-100 mb-4">
+                 draggable="false"
+                 (click)="onNewsClick(news, $event)">
+              <div class="aspect-video rounded-lg overflow-hidden bg-slate-100 mb-4" draggable="false">
                 <img [src]="news.image || 'assets/images/news-placeholder.png'" 
                      #overviewSliderImg
                      (error)="overviewSliderImg.src='assets/images/news-placeholder.png'"
                      class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                     alt="News">
+                     alt="News"
+                     draggable="false">
               </div>
               <div class="flex items-center gap-2 mb-2">
                 <span class="text-[8px] font-black text-secondary uppercase tracking-wider">{{ news.source }}</span>
@@ -214,83 +330,13 @@
           </div>
         </div>
       </div>
-    </section>
-
-    <!-- RIGHT SECTION (4 Columns): Sentiment & Calendar -->
-    <section class="col-span-12 lg:col-span-4 flex flex-col gap-8">
-
-      <!-- Global Sentiment (Relocated here) -->
-      <div class="bg-white p-8 rounded-xl shadow-sm">
-        <div class="flex justify-between items-start mb-6">
-          <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Global Sentiment</h3>
-          <span class="text-[9px] font-mono text-slate-400 italic">{{ lastSentimentUpdate }}</span>
-        </div>
-        <article class="flex flex-col items-center">
-          <div class="text-6xl font-black text-[#191c1e] mb-1 tracking-tighter leading-none">{{ sentimentData?.value }}
-          </div>
-          <div class="text-xs font-bold uppercase tracking-[0.1em]"
-            [style.color]="sentimentData?.value > 50 ? '#006c49' : '#cf352e'">
-            {{ sentimentData?.value_classification }}
-          </div>
-          <div class="w-full h-2 bg-[#f2f4f6] rounded-full mt-8 overflow-hidden">
-            <div class="h-full transition-all duration-1000" [style.width.%]="sentimentData?.value"
-              [style.background]="'linear-gradient(90deg, #0d1c32, #006c49)'"></div>
-          </div>
-        </article>
-      </div>
-
-      <!-- Economic Calendar (Editorial Style) -->
-      <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-        <header class="p-6 bg-[#f2f4f6] flex justify-between items-center">
-          <div class="flex items-center gap-3">
-            <button (click)="changeDate(-1)"
-              class="w-7 h-7 rounded-full flex items-center justify-center hover:bg-white transition-all shadow-sm">◀</button>
-            <span class="text-[10px] font-black uppercase tracking-widest text-[#191c1e]">{{ selectedDate | date:'dd MMM' }}</span>
-            <button (click)="changeDate(1)"
-              class="w-7 h-7 rounded-full flex items-center justify-center hover:bg-white transition-all shadow-sm">▶</button>
-          </div>
-          <button (click)="goToday()"
-            class="text-[9px] font-black px-3 py-1.5 bg-[#191c1e] text-white rounded-lg hover:bg-slate-700 transition-colors uppercase">Today</button>
-        </header>
-
-        <div class="divide-y divide-[#f2f4f6] max-h-[1100px] overflow-y-auto no-scrollbar">
-          <div *ngFor="let event of filteredEvents"
-            class="px-6 py-4 flex flex-col gap-2 hover:bg-[#f7f9fb] transition-colors group">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-3">
-                <span class="text-[9px] font-mono text-slate-400">{{ event.localTime }}</span>
-                <span class="text-[9px] font-black text-slate-900 uppercase px-1.5 py-0.5 bg-slate-100 rounded">{{ event.country }}</span>
-              </div>
-              <div class="flex">
-                <span class="material-symbols-outlined text-[18px]"
-                  [ngClass]="{
-                    'text-impact-high': event.impact >= 3,
-                    'text-impact-medium': event.impact === 2,
-                    'text-impact-low': event.impact === 1,
-                    'text-impact-none': event.impact === 0
-                  }">folder</span>
-              </div>
-            </div>
-            <span class="text-[11px] font-bold text-[#44474d] group-hover:text-[#191c1e] transition-colors leading-tight">{{ event.event }}</span>
-            <div class="flex justify-between items-center mt-1">
-              <span class="text-[9px] font-mono text-slate-400 uppercase">Actual: <b class="text-slate-900">{{ event.actual || '--' }}</b></span>
-              <span class="text-[9px] font-mono text-slate-400 uppercase">Prev: {{ event.prev || '--' }}</span>
-            </div>
-          </div>
-          <div *ngIf="filteredEvents.length === 0" class="p-10 text-center italic text-slate-400 text-[10px]">
-            No major events for this region.
-          </div>
-        </div>
-      </div>
-
-    </section>
+    </div>
   </main>
 
   <!-- Economic Calendar Tab -->
   <app-economic-calendar [style.display]="activeTab === 'calendar' ? 'block' : 'none'"></app-economic-calendar>
 
-  <!-- News (montado siempre para poder abrir detalle desde Overview con el mismo layout) -->
-  <div [style.display]="activeTab === 'news' ? 'block' : 'none'" class="p-10">
+  <div [style.display]="activeTab === 'news' ? 'block' : 'none'" class="news-tab-wrapper">
     <app-market-news
       [articleFromOverview]="pendingNewsArticle"
       (articleFromOverviewConsumed)="clearPendingNewsArticle()"
