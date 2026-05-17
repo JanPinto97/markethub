@@ -1,51 +1,14 @@
 <div class="assistant-page">
-  <aside class="assistant-sidebar">
-    <div class="sidebar-top">
-      <button type="button" class="new-chat-btn" (click)="newChat()" [disabled]="!hasMessages()">
+  <main class="assistant-main">
+    @if (hasMessages()) {
+      <button type="button" class="new-chat-floating" (click)="newChat()" aria-label="Start a new chat">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <line x1="12" y1="5" x2="12" y2="19"/>
           <line x1="5" y1="12" x2="19" y2="12"/>
         </svg>
         New chat
       </button>
-    </div>
-
-    <div class="sidebar-section">
-      <div class="sidebar-label">Recent</div>
-      <div class="sidebar-empty">
-        No conversations yet.
-      </div>
-    </div>
-
-    <div class="sidebar-footer">
-      <div class="sidebar-hint">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="10"/>
-          <line x1="12" y1="16" x2="12" y2="12"/>
-          <line x1="12" y1="8" x2="12.01" y2="8"/>
-        </svg>
-        Powered by MarketHub AI
-      </div>
-    </div>
-  </aside>
-
-  <main class="assistant-main">
-    <header class="assistant-header">
-      <div class="assistant-header-inner">
-        <div class="assistant-title">
-          <span class="assistant-avatar" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/>
-              <path d="M19 14l.7 1.7 1.7.7-1.7.7-.7 1.7-.7-1.7-1.7-.7 1.7-.7z"/>
-            </svg>
-          </span>
-          <div class="assistant-title-text">
-            <span class="assistant-name">Assistant</span>
-            <span class="assistant-sub">MarketHub AI</span>
-          </div>
-        </div>
-      </div>
-    </header>
+    }
 
     <div class="assistant-scroll" #scrollContainer>
       <div class="assistant-content">
