@@ -1,9 +1,10 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
+import { MarketsContextService } from '../../../core/services/markets-context.service';
 
 @Component({
   selector: 'app-economic-calendar',
@@ -42,6 +43,8 @@ export class EconomicCalendarComponent implements OnInit {
   };
 
   loading = true;
+
+  private marketsContext = inject(MarketsContextService);
 
   constructor(private http: HttpClient, private cdr: ChangeDetectorRef) {}
 
@@ -84,6 +87,7 @@ export class EconomicCalendarComponent implements OnInit {
 
         this.applyFilters();
         this.updateNextEvent();
+        this.marketsContext.setCalendar(this.events);
         this.loading = false;
         this.cdr.detectChanges();
 

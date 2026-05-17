@@ -128,7 +128,7 @@ exports.chat = async (req, res) => {
       return res.status(500).json({ success: false, message: 'Gemini API key not configured', code: 500 });
     }
 
-    const { messages } = req.body || {};
+    const { messages, marketContext } = req.body || {};
     if (!Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ success: false, message: 'messages array is required', code: 400 });
     }
@@ -142,9 +142,25 @@ exports.chat = async (req, res) => {
       return res.status(400).json({ success: false, message: 'last message must be from user', code: 400 });
     }
 
+    let effectiveSystemPrompt = systemPrompt;
+    if (marketContext && typeof marketContext === 'object') {
+      const parts = [];
+      if (marketContext.calendar && Array.isArray(marketContext.calendar.items) && marketContext.calendar.items.length) {
+        const items = marketContext.calendar.items.slice(0, 60);
+        parts.push(`Economic calendar already loaded in the user's browser (captured ${new Date(marketContext.calendar.capturedAt).toISOString()}):\n${JSON.stringify(items)}`);
+      }
+      if (marketContext.news && Array.isArray(marketContext.news.items) && marketContext.news.items.length) {
+        const items = marketContext.news.items.slice(0, 25);
+        parts.push(`Financial news already loaded in the user's browser (captured ${new Date(marketContext.news.capturedAt).toISOString()}):\n${JSON.stringify(items)}`);
+      }
+      if (parts.length) {
+        effectiveSystemPrompt = `${systemPrompt}\n\n---\n\nCurrent user session snapshot — prefer using this data over calling getCalendar/getLatestNews tools when the user asks about news or upcoming economic events covered here:\n\n${parts.join('\n\n')}`;
+      }
+    }
+
     const model = genAI.getGenerativeModel({
       model: 'gemini-2.5-flash',
-      systemInstruction: systemPrompt,
+      systemInstruction: effectiveSystemPrompt,
       tools: [{ functionDeclarations }],
     });
 

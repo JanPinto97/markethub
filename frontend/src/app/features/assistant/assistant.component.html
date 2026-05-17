@@ -84,17 +84,13 @@
                 </div>
                 <div class="message-body">
                   <div class="message-author">{{ m.role === 'assistant' ? 'Assistant' : (auth.currentUser()?.username || 'You') }}</div>
-                  <div class="message-text" [class.is-error]="m.error">
-                    {{ m.text }}
-                    @if (m.streaming && !m.text) {
-                      <span class="typing-dots" aria-label="Assistant is typing">
-                        <span></span><span></span><span></span>
-                      </span>
-                    }
-                    @if (m.streaming && m.text) {
-                      <span class="typing-cursor" aria-hidden="true">▍</span>
-                    }
-                  </div>
+                  @if (m.role === 'assistant') {
+                    <div class="message-text markdown-body" [class.is-error]="m.error" (click)="onMessageClick($event)">
+                      <span [innerHTML]="renderMarkdown(m.text)"></span>@if (m.streaming && !m.text) {<span class="typing-dots" aria-label="Assistant is typing"><span></span><span></span><span></span></span>}@if (m.streaming && m.text) {<span class="typing-cursor" aria-hidden="true">▍</span>}
+                    </div>
+                  } @else {
+                    <div class="message-text" [class.is-error]="m.error">{{ m.text }}</div>
+                  }
                 </div>
               </div>
             }

@@ -6,6 +6,20 @@ const DiscussionTopic = require('../models/DiscussionTopic');
 const PostReddit = require('../models/PostReddit');
 const PostX = require('../models/PostX');
 
+const cache = new Map();
+const getCached = (key) => {
+  const entry = cache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    cache.delete(key);
+    return null;
+  }
+  return entry.value;
+};
+const setCached = (key, value, ttlMs) => {
+  cache.set(key, { value, expiresAt: Date.now() + ttlMs });
+};
+
 const trimUser = (u) => ({
   username: u.username,
   bio: u.bio || '',
@@ -58,13 +72,14 @@ const trimPostReddit = (p, slug) => ({
 const searchCommunities = async ({ q = '', type } = {}) => {
   if (!q || String(q).length < 1) return { items: [] };
   const regex = { $regex: String(q), $options: 'i' };
+  const filter = { $or: [{ name: regex }, { description: regex }] };
   const items = [];
   if (!type || type === 'public' || type === 'all') {
-    const pubs = await CommunityPublic.find({ name: regex }).limit(10);
+    const pubs = await CommunityPublic.find(filter).limit(10);
     items.push(...pubs.map(trimCommunityPublic));
   }
   if (!type || type === 'private' || type === 'all') {
-    const privs = await CommunityPrivate.find({ name: regex }).limit(10);
+    const privs = await CommunityPrivate.find(filter).limit(10);
     items.push(...privs.map(trimCommunityPrivate));
   }
   return { items };
@@ -134,23 +149,32 @@ const getTopicPosts = async ({ slug, limit = 10 } = {}) => {
   return { topic: trimTopic(topic), items: posts.map((p) => trimPostReddit(p, slug)) };
 };
 
+const NEWS_TTL_MS = 2 * 60 * 1000;
+const CALENDAR_TTL_MS = 5 * 60 * 1000;
+
 const getLatestNews = async ({ limit = 10 } = {}) => {
   const key = process.env.FINNHUB_API_KEY;
   if (!key) return { error: 'News service not configured' };
-  try {
-    const { data } = await axios.get(`https://finnhub.io/api/v1/news?category=general&token=${key}`);
-    const max = Math.min(Number(limit) || 10, 25);
-    const items = (data || []).slice(0, max).map((n) => ({
-      headline: n.headline,
-      summary: (n.summary || '').slice(0, 400),
-      source: n.source,
-      datetime: n.datetime,
-      url: n.url,
-    }));
-    return { items };
-  } catch {
-    return { error: 'Failed to fetch news' };
+  const max = Math.min(Number(limit) || 10, 25);
+  const cacheKey = 'news:general';
+  let data = getCached(cacheKey);
+  if (!data) {
+    try {
+      const resp = await axios.get(`https://finnhub.io/api/v1/news?category=general&token=${key}`);
+      data = resp.data || [];
+      setCached(cacheKey, data, NEWS_TTL_MS);
+    } catch {
+      return { error: 'Failed to fetch news' };
+    }
   }
+  const items = data.slice(0, max).map((n) => ({
+    headline: n.headline,
+    summary: (n.summary || '').slice(0, 400),
+    source: n.source,
+    datetime: n.datetime,
+    url: n.url,
+  }));
+  return { items };
 };
 
 const getCalendar = async ({ from, to } = {}) => {
@@ -165,9 +189,15 @@ const getCalendar = async ({ from, to } = {}) => {
     };
     const f = from || offset(today, 0);
     const t = to || offset(today, 7);
-    const { data } = await axios.get(
-      `https://finnhub.io/api/v1/calendar/economic?from=${f}&to=${t}&token=${key}`
-    );
+    const cacheKey = `calendar:${f}:${t}`;
+    let data = getCached(cacheKey);
+    if (!data) {
+      const resp = await axios.get(
+        `https://finnhub.io/api/v1/calendar/economic?from=${f}&to=${t}&token=${key}`
+      );
+      data = resp.data || {};
+      setCached(cacheKey, data, CALENDAR_TTL_MS);
+    }
     const items = (data.economicCalendar || []).slice(0, 50).map((e) => ({
       event: e.event,
       country: e.country,
