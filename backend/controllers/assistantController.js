@@ -128,7 +128,7 @@ exports.chat = async (req, res) => {
       return res.status(500).json({ success: false, message: 'Gemini API key not configured', code: 500 });
     }
 
-    const { messages, marketContext } = req.body || {};
+    const { messages, marketContext, attachedContext } = req.body || {};
     if (!Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ success: false, message: 'messages array is required', code: 400 });
     }
@@ -156,6 +156,16 @@ exports.chat = async (req, res) => {
       if (parts.length) {
         effectiveSystemPrompt = `${systemPrompt}\n\n---\n\nCurrent user session snapshot — prefer using this data over calling getCalendar/getLatestNews tools when the user asks about news or upcoming economic events covered here:\n\n${parts.join('\n\n')}`;
       }
+    }
+
+    if (attachedContext && typeof attachedContext === 'object') {
+      const safe = {
+        title: attachedContext.title,
+        subtitle: attachedContext.subtitle,
+        fields: Array.isArray(attachedContext.fields) ? attachedContext.fields : [],
+        data: attachedContext.data,
+      };
+      effectiveSystemPrompt = `${effectiveSystemPrompt}\n\n---\n\nRelease context attached by the user (use this as the primary reference for their question — do not re-query tools for the same release):\n\n${JSON.stringify(safe)}`;
     }
 
     const model = genAI.getGenerativeModel({

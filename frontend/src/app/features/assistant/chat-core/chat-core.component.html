@@ -1,0 +1,116 @@
+<div class="chat-core">
+  <div class="chat-scroll" #scrollContainer>
+    <div class="chat-content">
+      @if (!hasMessages() && showWelcome) {
+        <div class="welcome">
+          <div class="welcome-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/>
+              <path d="M19 14l.7 1.7 1.7.7-1.7.7-.7 1.7-.7-1.7-1.7-.7 1.7-.7z"/>
+            </svg>
+          </div>
+          <h1 class="welcome-title">{{ welcomeTitle }}</h1>
+          <p class="welcome-sub">{{ welcomeSubtitle }}</p>
+
+          @if (showSuggestions) {
+            <div class="suggestions">
+              @for (s of suggestions; track s.title) {
+                <button type="button" class="suggestion" (click)="pickSuggestion(s.title)">
+                  <span class="suggestion-title">{{ s.title }}</span>
+                  <span class="suggestion-sub">{{ s.subtitle }}</span>
+                </button>
+              }
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="messages">
+          @for (m of messages(); track m.id) {
+            <div class="message" [class.is-user]="m.role === 'user'" [class.is-assistant]="m.role === 'assistant'">
+              <div class="message-avatar" aria-hidden="true">
+                @if (m.role === 'assistant') {
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/>
+                  </svg>
+                } @else {
+                  {{ (auth.currentUser()?.username || '?')[0].toUpperCase() }}
+                }
+              </div>
+              <div class="message-body">
+                <div class="message-author">{{ m.role === 'assistant' ? 'Warren' : (auth.currentUser()?.username || 'You') }}</div>
+                @if (m.role === 'assistant') {
+                  <div class="message-text markdown-body" [class.is-error]="m.error" (click)="onMessageClick($event)">
+                    <span [innerHTML]="renderMarkdown(m.text)"></span>@if (m.streaming && !m.text) {<span class="typing-dots" aria-label="Assistant is typing"><span></span><span></span><span></span></span>}@if (m.streaming && m.text) {<span class="typing-cursor" aria-hidden="true">▍</span>}
+                  </div>
+                } @else {
+                  <div class="message-text" [class.is-error]="m.error">{{ m.text }}</div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="composer-wrap">
+    <div class="composer">
+      @if (attachedContext) {
+        <div class="attached-chip" role="group" aria-label="Attached context">
+          <div class="attached-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+            </svg>
+          </div>
+          <div class="attached-body">
+            <div class="attached-title">{{ attachedContext.title }}</div>
+            @if (attachedContext.subtitle) {
+              <div class="attached-sub">{{ attachedContext.subtitle }}</div>
+            }
+            <div class="attached-fields">
+              @for (f of attachedContext.fields; track f.label) {
+                <span class="attached-field"><span class="attached-field-label">{{ f.label }}</span>: <span class="attached-field-value">{{ f.value }}</span></span>
+              }
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (!auth.isAuthenticated()) {
+        <div class="composer-locked">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <span>Sign in to chat with the assistant.</span>
+          <a routerLink="/login" class="composer-locked-cta">Sign in</a>
+        </div>
+      } @else {
+        <div class="composer-input">
+          <textarea
+            #inputArea
+            class="composer-textarea"
+            rows="1"
+            [value]="draft()"
+            (input)="onInput($event)"
+            (keydown)="onKeydown($event)"
+            [placeholder]="placeholder"
+            [maxLength]="maxChars"
+          ></textarea>
+          <div class="composer-actions">
+            <span class="composer-count" [class.warn]="remaining() < 200">{{ remaining() }}</span>
+            <button type="button" class="send-btn" (click)="send()" [disabled]="!canSend()" aria-label="Send message">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="22" y1="2" x2="11" y2="13"/>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+    @if (showHint) {
+      <div class="composer-hint">Assistant may produce inaccurate information. Verify critical data before trading.</div>
+    }
+  </div>
+</div>

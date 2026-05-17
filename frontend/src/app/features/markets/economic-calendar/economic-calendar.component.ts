@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { MarketsContextService } from '../../../core/services/markets-context.service';
+import { AssistantPopupService } from '../../../core/services/assistant-popup.service';
 
 @Component({
   selector: 'app-economic-calendar',
@@ -45,6 +46,38 @@ export class EconomicCalendarComponent implements OnInit {
   loading = true;
 
   private marketsContext = inject(MarketsContextService);
+  private assistantPopup = inject(AssistantPopupService);
+
+  askWarren(event: any) {
+    const eventName = event?.event || 'this release';
+    const currency = this.getCurrencyFromCountry(event?.country);
+    const dateStr = event?.time ? new Date(event.time).toLocaleString() : '';
+    const fields = [
+      { label: 'Currency', value: currency || '—' },
+      { label: 'Previous', value: event?.prev != null ? String(event.prev) : '—' },
+      { label: 'Expected', value: event?.estimate != null ? String(event.estimate) : '—' },
+      { label: 'Date', value: dateStr },
+    ];
+    this.assistantPopup.open({
+      initialMessage: `What is ${eventName} and what can we expect from this upcoming release?`,
+      attachedContext: {
+        title: eventName,
+        subtitle: 'Economic release',
+        fields,
+        data: {
+          event: event?.event,
+          country: event?.country,
+          currency,
+          time: event?.time,
+          impactLevel: event?.impactLevel,
+          actual: event?.actual,
+          estimate: event?.estimate,
+          prev: event?.prev,
+          unit: event?.unit,
+        },
+      },
+    });
+  }
 
   constructor(private http: HttpClient, private cdr: ChangeDetectorRef) {}
 

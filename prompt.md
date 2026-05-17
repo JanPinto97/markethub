@@ -1,35 +1,35 @@
-# Assistant — Function Calling (Tools)
+# Assistant Hotlink — Economic Release Popup
 
 ## Context
-MarketHub — Node/Express backend, Mongoose models, JWT auth, routes prefixed `/api/v1`. Endpoint `POST /api/v1/assistant/chat` already streams responses from Gemini 2.5 Flash. Two context files exist at project root: `context-platform.md` and `context-assistant.md` — these must be loaded by the assistant service as the system prompt (currently not wired up).
+MarketHub — Angular 17 standalone components. `/assistant` page has a working chat UI (no sidebar, no history) connected to `POST /api/v1/assistant/chat` with SSE streaming. The economic calendar component is at `frontend/src/app/features/markets/economic-calendar`.
 
 ## Task
-Wire up the two context files as the system prompt, and add function calling so Warren can query the database via Gemini tools.
+Add a Warren hotlink to each economic release/event detail, opening a floating chat popup at the bottom-right of the screen.
 
 ## Constraints
 
-### Context files
-- Move both `context-platform.md` and `context-assistant.md` from project root to `backend/context/`
-- Load both at server startup, concatenate, and inject as the system instruction on every Gemini request
-- Replace any existing placeholder context loading
+### Shared chat component
+- Extract the chat UI logic from `AssistantComponent` into a new reusable standalone component (e.g. `ChatCoreComponent`)
+- Both `/assistant` and the popup must use this shared component
+- The shared component accepts an optional `initialMessage` and `attachedContext` as inputs
 
-### Tools — 8 read-only endpoints under `/api/v1/assistant/tools/`
-All endpoints reuse existing controllers/models where possible and return **trimmed payloads** (only fields useful to an LLM, omit avatars, full timestamps, internal IDs unless needed for links):
+### Popup
+- Floating panel, bottom-right corner, fixed position, does not navigate away from the page
+- Opens when the user clicks the Warren button inside the release detail (the expandable detail section of a calendar event)
+- Has a close button
+- Same chat UI as `/assistant`: messages area + input bar + SSE streaming
+- Popup state (open/closed) managed via a singleton `AssistantPopupService`
 
-1. `GET /communities/search?q=&type=` — search public/private communities by name
-2. `GET /communities/:id` — community details + recent activity summary
-3. `GET /users/search?q=` — search users by username
-4. `GET /users/:username` — user profile summary
-5. `GET /topics/search?q=` — search discussion topics
-6. `GET /topics/:slug/posts?limit=` — recent PostReddit entries in a topic
-7. `GET /news/latest?limit=` — most recent financial news
-8. `GET /calendar?from=&to=` — economic calendar releases in date range
+### Hotlink button
+- Located inside the expanded detail view of each economic release/event
+- Icon or small button labeled "Ask Warren" or similar
+- On click: opens the popup and sends a pre-built first message automatically
 
-### Gemini integration
-- Register the 8 endpoints as Gemini tools using `functionDeclarations` with proper JSON Schema parameters
-- Implement the function-calling loop: when Gemini returns a `functionCall`, execute it, send the result back, continue until a final text response
-- Keep SSE streaming to the client — only stream the final assistant text, not intermediate tool calls
-- All tool endpoints require authentication (same JWT middleware as the chat endpoint)
+### Pre-built message and context
+On open, the popup receives:
+- **Visible attached card** (shown above the input, not inside it) with: event name, currency, previous value, expected value, date. Style it like a file attachment chip (similar to how Claude shows attached files)
+- **Pre-filled user message** (sent automatically, not typed): `"What is [event name] and what can we expect from this upcoming release?"`
+- The full release data object is sent as additional context in the API request (not shown to the user), so Warren has all details to answer accurately
 
 ## Output format
 Only new or modified files.
