@@ -285,8 +285,56 @@
 
 .prd-retry-btn:hover { background-color: var(--surface-container-highest); }
 
+/* ── Ask Warren ── */
+.prd-top-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.prd-ask-warren {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: 6px 12px 6px 6px;
+  border-radius: var(--radius-full);
+  background: var(--surface-container-lowest);
+  border: 1px solid var(--outline-variant);
+  color: var(--on-surface);
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease, transform 0.05s ease;
+}
+
+.prd-ask-warren:hover {
+  border-color: var(--secondary);
+  background: var(--secondary-container);
+  color: var(--on-secondary-container);
+}
+
+.prd-ask-warren:active { transform: translateY(1px); }
+
+.prd-ask-warren-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gradient-primary);
+  color: var(--on-primary);
+}
+
+.prd-ask-warren-label {
+  letter-spacing: 0.02em;
+}
+
 @media (max-width: 767px) {
   .prd-post { padding: var(--spacing-4); gap: var(--spacing-3); }
   .prd-title { font-size: var(--text-display-sm); }
   .prd-vote-btn { min-height: 44px; min-width: 44px; }
+  .prd-ask-warren-label { display: none; }
+  .prd-ask-warren { padding: 6px; }
 }

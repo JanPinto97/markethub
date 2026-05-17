@@ -27,6 +27,7 @@ interface ChatMessage {
   createdAt: number;
   streaming?: boolean;
   error?: boolean;
+  pending?: string;
 }
 
 export interface ChatSuggestion {
@@ -84,6 +85,12 @@ export class ChatCoreComponent implements AfterViewChecked, OnInit, OnChanges {
   private shouldScroll = false;
   private abortCtrl?: AbortController;
   private autoSentForSession: string | null = null;
+  private typingRafId: number | null = null;
+  private typingMsgId: string | null = null;
+  private streamDone = false;
+  private lastTypingTs = 0;
+  private typingCarry = 0;
+  private readonly charsPerSecond = 115;
 
   ngOnInit() {
     this.maybeAutoSend();
@@ -102,7 +109,16 @@ export class ChatCoreComponent implements AfterViewChecked, OnInit, OnChanges {
     this.autoSentForSession = this.sessionId;
     this.messages.set([]);
     this.draft.set(this.initialMessage);
-    setTimeout(() => this.send(), 0);
+    setTimeout(() => {
+      const ta = this.inputArea?.nativeElement;
+      if (ta) {
+        ta.focus();
+        const len = ta.value.length;
+        try { ta.setSelectionRange(len, len); } catch {}
+        ta.style.height = 'auto';
+        ta.style.height = Math.min(ta.scrollHeight, 220) + 'px';
+      }
+    }, 0);
   }
 
   renderMarkdown(text: string): SafeHtml {
@@ -263,6 +279,7 @@ export class ChatCoreComponent implements AfterViewChecked, OnInit, OnChanges {
       text: '',
       createdAt: Date.now(),
       streaming: true,
+      pending: '',
     };
     this.messages.update(arr => [...arr, userMsg, assistantMsg]);
     this.draft.set('');
@@ -277,6 +294,7 @@ export class ChatCoreComponent implements AfterViewChecked, OnInit, OnChanges {
       .map(m => ({ role: m.role, content: m.text }));
 
     this.abortCtrl = new AbortController();
+    this.startTyping(assistantMsg.id);
 
     try {
       const marketContext = this.marketsContext.hasAny() ? this.marketsContext.snapshot() : undefined;
@@ -296,22 +314,28 @@ export class ChatCoreComponent implements AfterViewChecked, OnInit, OnChanges {
           signal: this.abortCtrl.signal,
           onChunk: (chunk) => {
             this.messages.update(arr =>
-              arr.map(m => (m.id === assistantMsg.id ? { ...m, text: m.text + chunk } : m))
+              arr.map(m =>
+                m.id === assistantMsg.id ? { ...m, pending: (m.pending || '') + chunk } : m
+              )
             );
-            this.shouldScroll = true;
           },
         }
       );
-      this.messages.update(arr =>
-        arr.map(m => (m.id === assistantMsg.id ? { ...m, streaming: false } : m))
-      );
+      this.streamDone = true;
     } catch (err: any) {
       const message = err?.message || 'Failed to reach the assistant. Please try again.';
       this.errorMsg.set(message);
+      this.stopTyping();
       this.messages.update(arr =>
         arr.map(m =>
           m.id === assistantMsg.id
-            ? { ...m, streaming: false, error: true, text: m.text || message }
+            ? {
+                ...m,
+                text: (m.text || '') + (m.pending || '') || message,
+                pending: '',
+                streaming: false,
+                error: true,
+              }
             : m
         )
       );
@@ -321,8 +345,73 @@ export class ChatCoreComponent implements AfterViewChecked, OnInit, OnChanges {
     }
   }
 
+  private startTyping(messageId: string) {
+    this.stopTyping();
+    this.typingMsgId = messageId;
+    this.streamDone = false;
+    this.lastTypingTs = 0;
+    this.typingCarry = 0;
+    const tick = (ts: number) => {
+      if (this.typingMsgId !== messageId) return;
+      if (!this.lastTypingTs) this.lastTypingTs = ts;
+      const dt = ts - this.lastTypingTs;
+      this.lastTypingTs = ts;
+
+      // Fractional accumulator: real chars-per-second regardless of frame rate.
+      this.typingCarry += (dt / 1000) * this.charsPerSecond;
+      let baseCount = Math.floor(this.typingCarry);
+      if (baseCount > 0) this.typingCarry -= baseCount;
+
+      let finished = false;
+      this.messages.update(arr =>
+        arr.map(m => {
+          if (m.id !== messageId) return m;
+          const pending = m.pending || '';
+          if (!pending.length) {
+            if (this.streamDone) {
+              finished = true;
+              return { ...m, streaming: false, pending: '' };
+            }
+            return m;
+          }
+          // Mild catch-up only if we're falling far behind, capped at 2× speed.
+          const maxStep = Math.ceil((dt / 1000) * this.charsPerSecond * 2);
+          let take = baseCount;
+          if (pending.length > 400) take = Math.min(maxStep, Math.max(baseCount, 2));
+          take = Math.min(pending.length, take);
+          if (take <= 0) return m;
+          const next = m.text + pending.slice(0, take);
+          const rest = pending.slice(take);
+          if (this.streamDone && !rest.length) {
+            finished = true;
+            return { ...m, text: next, pending: '', streaming: false };
+          }
+          return { ...m, text: next, pending: rest };
+        })
+      );
+      this.shouldScroll = true;
+      if (finished) {
+        this.stopTyping();
+        return;
+      }
+      this.typingRafId = requestAnimationFrame(tick);
+    };
+    this.typingRafId = requestAnimationFrame(tick);
+  }
+
+  private stopTyping() {
+    if (this.typingRafId !== null) {
+      cancelAnimationFrame(this.typingRafId);
+      this.typingRafId = null;
+    }
+    this.typingMsgId = null;
+    this.typingCarry = 0;
+  }
+
   newChat() {
     if (this.loading()) this.abortCtrl?.abort();
+    this.stopTyping();
+    this.streamDone = false;
     this.messages.set([]);
     this.draft.set('');
     this.errorMsg.set(null);

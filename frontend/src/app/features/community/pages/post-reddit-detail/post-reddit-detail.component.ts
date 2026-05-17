@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal, HostListener } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../../core/services/auth.service';
 import { ToastService } from '../../../../core/services/toast.service';
+import { AssistantPopupService } from '../../../../core/services/assistant-popup.service';
 import { CommunityService, DiscussionTopicFull, PostReddit } from '../../services/community.service';
 import { PostRedditCommentSectionComponent } from '../../components/post-reddit-comment-section/post-reddit-comment-section.component';
 import { getUsernameColor, getInitial } from '../../../../shared/utils/color.utils';
@@ -19,6 +20,7 @@ export class PostRedditDetailComponent implements OnInit {
   private router = inject(Router);
   private svc = inject(CommunityService);
   private toast = inject(ToastService);
+  private assistantPopup = inject(AssistantPopupService);
 
   slug = '';
   postId = '';
@@ -191,5 +193,39 @@ export class PostRedditDetailComponent implements OnInit {
     const p = this.post();
     if (!p) return;
     this.post.set({ ...p, commentCount: next });
+  }
+
+  askWarren() {
+    const p = this.post();
+    if (!p) return;
+    const t = this.topic();
+    const full = p.title || '';
+    const truncated = full.length > 80 ? full.slice(0, 77).trimEnd() + '…' : full;
+    this.assistantPopup.open({
+      initialMessage: 'Explain to me the point this user is giving',
+      attachedContext: {
+        title: truncated,
+        subtitle: t?.name ? `Post from ${t.name}` : 'Discussion topic post',
+        fields: [],
+        data: {
+          kind: 'topic_post',
+          source: 'discussion_topic',
+          topic: { slug: this.slug, name: t?.name, category: (t as any)?.category },
+          post: {
+            id: p.id,
+            title: p.title,
+            text: p.text,
+            author: p.author?.username,
+            createdAt: p.createdAt,
+            upvotes: p.upvotes,
+            downvotes: p.downvotes,
+            voteScore: p.voteScore,
+            commentCount: p.commentCount,
+            mediaUrl: p.mediaUrl,
+            mediaType: p.mediaType,
+          },
+        },
+      },
+    });
   }
 }
