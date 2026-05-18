@@ -28,7 +28,7 @@
           </div>
           <div class="mh-hero__proof">
             <div><span class="mh-num">100K+</span><span>Financial assets, one watchlist</span></div>
-            <div><span class="mh-num">&lt;1s</span><span>Latency, real-time prices</span></div>
+            <div><span class="mh-num">100%</span><span>Real-time data and Great Latency</span></div>
             <div><span class="mh-num">100+</span><span>Countries in the macro calendar</span></div>
           </div>
         </div>
@@ -154,8 +154,8 @@
               @for (r of gainers; track r.sym) {
                 <tr>
                   <td class="mh-mk__sym">
-                    <span class="mh-mk__pill">{{ r.sym }}</span>
-                    <span class="mh-mk__name">{{ r.name }}</span>
+                    <span class="mh-mk__pill cursor-pointer hover:opacity-80 transition-opacity" (click)="openAssetInMarkets(r)">{{ r.sym }}</span>
+                    <span class="mh-mk__name cursor-pointer hover:underline" (click)="openAssetInMarkets(r)">{{ r.name }}</span>
                   </td>
                   <td class="mh-mk__spark">
                     <svg width="84" height="22" viewBox="0 0 84 22" fill="none">
@@ -163,8 +163,8 @@
                     </svg>
                   </td>
                   <td class="mh-mk__num">{{ r.px }}</td>
-                  <td class="mh-mk__num mh-mk__chg t-up">{{ r.chg }}</td>
-                  <td class="mh-mk__pct"><span class="mh-pill mh-pill--up">↑ {{ r.pct.replace('+', '') }}</span></td>
+                  <td class="mh-mk__num mh-mk__chg" [class.t-up]="r.isUp" [class.t-down]="!r.isUp">{{ r.chg }}</td>
+                  <td class="mh-mk__pct"><span class="mh-pill" [class.mh-pill--up]="r.isUp" [class.mh-pill--down]="!r.isUp">{{ r.pct }}</span></td>
                 </tr>
               }
             </tbody>
@@ -183,8 +183,8 @@
               @for (r of losers; track r.sym) {
                 <tr>
                   <td class="mh-mk__sym">
-                    <span class="mh-mk__pill">{{ r.sym }}</span>
-                    <span class="mh-mk__name">{{ r.name }}</span>
+                    <span class="mh-mk__pill cursor-pointer hover:opacity-80 transition-opacity" (click)="openAssetInMarkets(r)">{{ r.sym }}</span>
+                    <span class="mh-mk__name cursor-pointer hover:underline" (click)="openAssetInMarkets(r)">{{ r.name }}</span>
                   </td>
                   <td class="mh-mk__spark">
                     <svg width="84" height="22" viewBox="0 0 84 22" fill="none">
@@ -192,8 +192,8 @@
                     </svg>
                   </td>
                   <td class="mh-mk__num">{{ r.px }}</td>
-                  <td class="mh-mk__num mh-mk__chg t-down">{{ r.chg }}</td>
-                  <td class="mh-mk__pct"><span class="mh-pill mh-pill--down">↓ {{ r.pct.replace('−', '') }}</span></td>
+                  <td class="mh-mk__num mh-mk__chg" [class.t-up]="r.isUp" [class.t-down]="!r.isUp">{{ r.chg }}</td>
+                  <td class="mh-mk__pct"><span class="mh-pill" [class.mh-pill--up]="r.isUp" [class.mh-pill--down]="!r.isUp">{{ r.pct }}</span></td>
                 </tr>
               }
             </tbody>

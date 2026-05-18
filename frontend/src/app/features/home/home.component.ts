@@ -3,17 +3,26 @@ import {
   Component,
   ElementRef,
   OnDestroy,
+  OnInit,
   inject,
   signal,
+  ChangeDetectorRef
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { SmartMarketService } from '../markets/services/smart-market.service';
 
 interface MarketRow {
   sym: string;
+  apiSym: string;
   name: string;
   px: string;
   chg: string;
   pct: string;
+  isUp: boolean;
+  tvSymbol: string;
+  source: string;
+  coingeckoId?: string;
 }
 
 interface Voice {
@@ -44,12 +53,16 @@ interface FaqItem { q: string; a: string; }
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, CommonModule],
   templateUrl: './home.component.html',
   styleUrl: './home.component.css',
 })
-export class HomeComponent implements AfterViewInit, OnDestroy {
+export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   private host: ElementRef<HTMLElement> = inject(ElementRef);
+  private smartMarket = inject(SmartMarketService);
+  private router = inject(Router);
+  private cdr = inject(ChangeDetectorRef);
+  private priceInterval: any;
 
   openFaq = signal(0);
 
@@ -59,19 +72,93 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
 
   private io?: IntersectionObserver;
 
-  gainers: MarketRow[] = [
-    { sym: 'NVDA',    name: 'NVIDIA · Stock',          px: '227.13',   chg: '+6.36',   pct: '+2.88%' },
-    { sym: 'TSLA',    name: 'Tesla · Stock',           px: '449.59',   chg: '+16.13',  pct: '+3.72%' },
-    { sym: 'S&P 500', name: 'S&P 500 · Index',         px: '5,847.20', chg: '+18.12',  pct: '+0.31%' },
-    { sym: 'XAU',     name: 'Gold spot · Commodity',   px: '2,418.50', chg: '+10.10',  pct: '+0.42%' },
+  assetPool = [
+    { sym: 'NVDA',    apiSym: 'NVDA',    name: 'NVIDIA · Stock',          tvSymbol: 'NVDA',           source: 'finnhub' },
+    { sym: 'TSLA',    apiSym: 'TSLA',    name: 'Tesla · Stock',           tvSymbol: 'TSLA',           source: 'finnhub' },
+    { sym: 'S&P 500', apiSym: 'SPY',     name: 'S&P 500 · Index',         tvSymbol: 'SPY',            source: 'finnhub' },
+    { sym: 'XAU',     apiSym: 'XAU/USD', name: 'Gold spot · Commodity',   tvSymbol: 'OANDA:XAUUSD',   source: 'twelvedata' },
+    { sym: 'BTC',     apiSym: 'BTC/USD', name: 'Bitcoin · Crypto',        tvSymbol: 'BINANCE:BTCUSD', source: 'coingecko', coingeckoId: 'bitcoin' },
+    { sym: 'WTI',     apiSym: 'USO',     name: 'Crude Oil · Commodity',   tvSymbol: 'TVC:USOIL',      source: 'finnhub_synthetic_wti' },
+    { sym: 'ETH',     apiSym: 'ETH/USD', name: 'Ethereum · Crypto',       tvSymbol: 'BINANCE:ETHUSD', source: 'coingecko', coingeckoId: 'ethereum' },
+    { sym: 'EURUSD',  apiSym: 'EUR/USD', name: 'Euro / US Dollar · Forex',tvSymbol: 'FX:EURUSD',      source: 'twelvedata' },
+    { sym: 'AAPL',    apiSym: 'AAPL',    name: 'Apple · Stock',           tvSymbol: 'AAPL',           source: 'finnhub' },
+    { sym: 'MSFT',    apiSym: 'MSFT',    name: 'Microsoft · Stock',       tvSymbol: 'MSFT',           source: 'finnhub' },
+    { sym: 'QQQ',     apiSym: 'QQQ',     name: 'NASDAQ 100 · Index',      tvSymbol: 'QQQ',            source: 'finnhub' },
+    { sym: 'GBPUSD',  apiSym: 'GBP/USD', name: 'GBP / USD · Forex',       tvSymbol: 'FX:GBPUSD',      source: 'twelvedata' },
+    { sym: 'SOL',     apiSym: 'SOL/USD', name: 'Solana · Crypto',         tvSymbol: 'BINANCE:SOLUSD', source: 'coingecko', coingeckoId: 'solana' },
+    { sym: 'XAG',     apiSym: 'XAG/USD', name: 'Silver spot · Commodity', tvSymbol: 'OANDA:XAGUSD',   source: 'twelvedata' },
+    { sym: 'AMZN',    apiSym: 'AMZN',    name: 'Amazon · Stock',          tvSymbol: 'AMZN',           source: 'finnhub' }
   ];
 
-  losers: MarketRow[] = [
-    { sym: 'BTC',    name: 'Bitcoin · Crypto',             px: '79,179',   chg: '−1,304',  pct: '−1.62%' },
-    { sym: 'WTI',    name: 'Crude Oil · Commodity',        px: '102.12',   chg: '−1.00',   pct: '−0.97%' },
-    { sym: 'ETH',    name: 'Ethereum · Crypto',            px: '2,253.90', chg: '−20.30',  pct: '−0.89%' },
-    { sym: 'EURUSD', name: 'Euro / US Dollar · Forex',     px: '1.1710',   chg: '−0.0031', pct: '−0.26%' },
-  ];
+  gainers: MarketRow[] = [];
+  losers: MarketRow[] = [];
+
+  ngOnInit() {
+    this.hydratePrices();
+    this.priceInterval = setInterval(() => {
+      this.hydratePrices();
+      this.cdr.detectChanges();
+    }, 2000);
+  }
+
+  openAssetInMarkets(row: MarketRow) {
+    this.smartMarket.setActiveAsset({
+      symbol: row.tvSymbol,
+      apiSymbol: row.apiSym,
+      displaySymbol: row.sym,
+      source: row.source,
+      coingeckoId: row.coingeckoId
+    });
+    this.router.navigate(['/markets']);
+  }
+
+  hydratePrices() {
+    const updatedAssets: (MarketRow & { rawPct: number })[] = [];
+
+    this.assetPool.forEach(asset => {
+      const cached = this.smartMarket.getCachedPrice(asset.apiSym);
+      if (cached && cached.c > 0) {
+        const rawPct = cached.dp;
+        const isUp = rawPct >= 0;
+        
+        // Truncado matemático estricto a 2 decimales
+        const truncPx = Math.trunc(cached.c * 100) / 100;
+        const pxStr = truncPx.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        
+        const rawChg = cached.c - (cached.c / (1 + (rawPct / 100)));
+        const truncChg = Math.trunc(Math.abs(rawChg) * 100) / 100;
+        const chgStr = (isUp ? '+' : '−') + truncChg.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        
+        const truncPct = Math.trunc(Math.abs(rawPct) * 100) / 100;
+        const pctStr = (isUp ? '+' : '−') + truncPct.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
+        
+        updatedAssets.push({
+          sym: asset.sym,
+          apiSym: asset.apiSym,
+          name: asset.name,
+          px: pxStr,
+          chg: chgStr,
+          pct: pctStr,
+          isUp,
+          rawPct,
+          tvSymbol: asset.tvSymbol,
+          source: asset.source,
+          coingeckoId: asset.coingeckoId
+        });
+      }
+    });
+
+    if (updatedAssets.length > 0) {
+      // Ordenar por rendimiento de mayor a menor
+      updatedAssets.sort((a, b) => b.rawPct - a.rawPct);
+      
+      // Top 4 ganadores (mayor porcentaje)
+      this.gainers = updatedAssets.slice(0, 4);
+      
+      // Top 4 perdedores (menor porcentaje, invertimos para ver el peor de todos primero)
+      this.losers = updatedAssets.slice(-4).reverse();
+    }
+  }
 
   voices: Voice[] = [
     {
@@ -196,5 +283,8 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
 
   ngOnDestroy() {
     this.io?.disconnect();
+    if (this.priceInterval) {
+      clearInterval(this.priceInterval);
+    }
   }
 }

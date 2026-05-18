@@ -136,6 +136,9 @@ export class ChartsComponent implements OnInit, OnDestroy, AfterViewInit {
   watchlistGroups: WatchlistGroup[] = [];
   
   ngOnInit(): void {
+    // Forzar scroll al top al montar el componente de gráficos
+    window.scrollTo(0, 0);
+
     this.watchlistGroups = [
       {
         id: 'indices',

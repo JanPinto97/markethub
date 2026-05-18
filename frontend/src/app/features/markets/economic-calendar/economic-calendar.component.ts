@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { MarketsContextService } from '../../../core/services/markets-context.service';
+import { environment } from '../../../../environments/environment';
 import { AssistantPopupService } from '../../../core/services/assistant-popup.service';
 
 @Component({
@@ -15,8 +16,8 @@ import { AssistantPopupService } from '../../../core/services/assistant-popup.se
   styleUrls: ['./economic-calendar.component.css']
 })
 export class EconomicCalendarComponent implements OnInit {
-  private finnhubApiKey = 'd7jo9s9r01qu1n4fg3pgd7jo9s9r01qu1n4fg3q0';
-  private apiNinjasKey = 'dDJhqHqeiQtIIxOwHBvm6doiauv9b5mwefPH2wyS';
+  private finnhubApiKey = environment.finnhubKey;
+  private apiNinjasKey = environment.apiNinjasKey;
 
   events: any[] = [];
   filteredEvents: any[] = [];

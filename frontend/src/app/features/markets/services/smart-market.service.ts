@@ -2,6 +2,7 @@ import { Injectable, OnDestroy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, timer, of, Subject, BehaviorSubject, forkJoin } from 'rxjs';
 import { switchMap, catchError, shareReplay, takeUntil, map, tap } from 'rxjs/operators';
+import { environment } from '../../../../environments/environment';
 
 export interface ActiveAsset {
   symbol: string;
@@ -16,14 +17,10 @@ export interface ActiveAsset {
 })
 export class SmartMarketService implements OnDestroy {
   // API Keys consolidadas
-  private readonly FINNHUB_KEY = 'd7jo9s9r01qu1n4fg3pgd7jo9s9r01qu1n4fg3q0';
-  private readonly TWELVEDATA_KEYS = [
-    'b21b5589fbce4aada1a45a82a7bbbbf0', 
-    '894fcb51c6274447ae25f43bcfce5683', 
-    '344cbf1c7d404b52acf8cd66db092454'
-  ];
+  private readonly FINNHUB_KEY = environment.finnhubKey;
+  private readonly TWELVEDATA_KEYS = environment.twelveDataKeys;
   private currentTwelveDataKeyIndex = 0;
-  private readonly COINGECKO_KEY = 'CG-T7BjzNAbWJhwFMvvbj4sM8Mp';
+  private readonly COINGECKO_KEY = environment.coingeckoKey;
 
   private getNextTwelveDataKey(): string {
     const key = this.TWELVEDATA_KEYS[this.currentTwelveDataKeyIndex];
