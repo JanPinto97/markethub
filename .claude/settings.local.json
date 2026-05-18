@@ -56,7 +56,15 @@
       "Bash(grep -oE 'failed:.{0,80}')",
       "Bash(awk -F'auto-follow @' '{print $2}')",
       "Bash(awk '{print $1}')",
-      "Bash(awk -F'[][]' '{print $2}')"
+      "Bash(awk -F'[][]' '{print $2}')",
+      "Bash(awk 'NR>=180 && NR<=191' \"C:/JAN/INSTI/markethub/markethub/Landing.html\")",
+      "Bash(awk NR>=185 && NR<=190 { print NR\": \"length\\($0\\)\" chars\" } *)",
+      "Bash(awk 'NR==189' \"C:/JAN/INSTI/markethub/markethub/Landing.html\")",
+      "Read(//tmp/**)",
+      "Bash(node -e \"const fs=require\\('fs'\\);const t=fs.readFileSync\\('/tmp/template.json','utf8'\\);const html=JSON.parse\\(t\\);fs.writeFileSync\\('/tmp/landing.html', html\\);console.log\\('Length:', html.length\\);\")",
+      "Read(//c/Users/telem/AppData/Local/Temp/**)",
+      "Bash(node *)",
+      "Bash(awk NR>=181 && NR<=183 { print NR\": \"length\\($0\\)\" chars\" } *)"
     ]
   }
 }

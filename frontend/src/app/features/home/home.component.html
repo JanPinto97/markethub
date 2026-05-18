@@ -1,35 +1,5 @@
 <div class="mh-doc">
 
-  <!-- ---------- HEADER (landing-only) ---------- -->
-  <header class="mh-header" [class.is-scrolled]="scrolled()">
-    <div class="mh-header__inner">
-      <div class="mh-header__left">
-        <a routerLink="/" class="mh-logo">
-          <img src="assets/landing/logo-mark-black.png" alt="" />
-          <span>MarketHub</span>
-        </a>
-        <nav class="mh-nav">
-          <a routerLink="/community" class="mh-nav__link is-active">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            Community
-          </a>
-          <a routerLink="/markets" class="mh-nav__link">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-            Markets
-          </a>
-          <a href="#" class="mh-nav__link">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17l-1.9-5.1L4.5 10l5.6-1.4L12 3z"/><path d="M19 14l.8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.8L19 14z"/></svg>
-            IA
-          </a>
-        </nav>
-      </div>
-      <div class="mh-header__right">
-        <a routerLink="/login" class="mh-link">Sign in</a>
-        <a routerLink="/register" class="mh-btn mh-btn--primary">Sign up — free</a>
-      </div>
-    </div>
-  </header>
-
   <main>
 
     <!-- ---------- HERO ---------- -->
@@ -42,45 +12,44 @@
       <div class="mh-hero__inner">
         <div class="mh-hero__col">
           <span class="mh-eyebrow mh-eyebrow--light">
-            <span class="mh-eyebrow__dot"></span> The room is reading · 214,000 members live
+            <span class="mh-eyebrow__dot"></span> This week — CPI · PMI · FOMC minutes
           </span>
           <h1 class="mh-hero__title">
             Markets,<br />told as a story.
           </h1>
           <p class="mh-hero__lede">
-            A reading room for traders, analysts, and the curious.
-            Share theses, debate calls, follow the room — and the data
-            that proves you right.
+            A real-time financial dashboard and a finance-focused social
+            network, in one account. Live prices, charts, news and a calendar
+            next to the posts, topics and communities.
           </p>
           <div class="mh-hero__cta">
-            <a routerLink="/register" class="mh-btn mh-btn--gradient mh-btn--lg">Join the room</a>
-            <a routerLink="/community" class="mh-btn mh-btn--ghost-light mh-btn--lg">Browse the feed →</a>
+            <a routerLink="/register" class="mh-btn mh-btn--gradient mh-btn--lg">Create a free account</a>
+            <a routerLink="/markets" class="mh-btn mh-btn--ghost-light mh-btn--lg">Explore as a guest →</a>
           </div>
           <div class="mh-hero__proof">
-            <div><span class="mh-num">$1.2T</span><span>in tracked positions</span></div>
-            <div><span class="mh-num">38,109</span><span>theses this quarter</span></div>
-            <div><span class="mh-num">214K</span><span>active members</span></div>
+            <div><span class="mh-num">100K+</span><span>Financial assets, one watchlist</span></div>
+            <div><span class="mh-num">&lt;1s</span><span>Latency, real-time prices</span></div>
+            <div><span class="mh-num">100+</span><span>Countries in the macro calendar</span></div>
           </div>
         </div>
 
         <aside class="mh-hero__card">
           <div class="mh-hero__cardHead">
-            <span class="mh-eyebrow mh-eyebrow--light">Live · The Room</span>
-            <span class="mh-tag mh-tag--time">12:42 NYC</span>
+            <span class="mh-eyebrow">Trending · Community feed</span>
           </div>
           <div class="mh-hero__quote">
-            <p>"NVDA print into the close changes the semis trade — not the AI trade. Three reads on what the room is missing."</p>
+            <p>"NVDA chart just broke the 50-day. Anyone else watching this with options expiry on Friday? Adding a small hedge."</p>
             <div class="mh-hero__author">
               <div class="mh-avatar mh-avatar--m">LK</div>
               <div>
-                <div class="mh-hero__authorName">Lena Kovács</div>
-                <div class="mh-hero__authorMeta">Equity Analyst · 4.8K followers</div>
+                <div class="mh-hero__authorName">Lena K.</div>
+                <div class="mh-hero__authorMeta">Semiconductors Club · public community</div>
               </div>
             </div>
           </div>
           <div class="mh-hero__cardFoot">
-            <span class="mh-pill mh-pill--up">↑ 248 in the room</span>
-            <span class="mh-pill mh-pill--ghost">63 replies</span>
+            <span class="mh-pill mh-pill--up">♥ 248 likes</span>
+            <span class="mh-pill mh-pill--ghost">63 comments</span>
           </div>
         </aside>
       </div>
@@ -91,11 +60,12 @@
       <div class="mh-section__head">
         <div>
           <span class="mh-eyebrow">The community</span>
-          <h2 class="mh-section__title">Where conviction meets pushback.</h2>
+          <h2 class="mh-section__title">Post. Comment. Join a community.<br />Or just read.</h2>
         </div>
         <p class="mh-section__lede">
-          Every thesis on MarketHub has a counter-thesis in the replies.
-          Read what the room is thinking before the close.
+          Switch between Trending and Following. Like, comment, reply.
+          Spin off a private chat from any comment. Join public communities
+          with one click, or request access to a private one.
         </p>
       </div>
 
@@ -116,13 +86,8 @@
               <span class="mh-post__time">· {{ posts[0].time }}</span>
             </div>
             <div class="mh-post__foot">
-              <div class="mh-post__tags">
-                @for (t of posts[0].tags; track t) {
-                  <span class="mh-chip">{{ t }}</span>
-                }
-              </div>
               <div class="mh-post__counts">
-                <span class="mh-pill mh-pill--up">↑ {{ posts[0].room }} in the room</span>
+                <span class="mh-pill mh-pill--up">♥ {{ posts[0].likes }}</span>
                 <span class="mh-post__replies">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
                   {{ posts[0].replies }}
@@ -147,13 +112,8 @@
                   <span class="mh-post__time">· {{ p.time }}</span>
                 </div>
                 <div class="mh-post__foot">
-                  <div class="mh-post__tags">
-                    @for (t of p.tags; track t) {
-                      <span class="mh-chip">{{ t }}</span>
-                    }
-                  </div>
                   <div class="mh-post__counts">
-                    <span class="mh-pill mh-pill--up">↑ {{ p.room }} in the room</span>
+                    <span class="mh-pill mh-pill--up">♥ {{ p.likes }}</span>
                     <span class="mh-post__replies">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
                       {{ p.replies }}
@@ -171,12 +131,13 @@
     <section class="mh-section mh-markets">
       <div class="mh-section__head">
         <div>
-          <span class="mh-eyebrow">The data</span>
-          <h2 class="mh-section__title">Every conversation, anchored<br />to the tape.</h2>
+          <span class="mh-eyebrow">The Markets dashboard</span>
+          <h2 class="mh-section__title">One watchlist.<br />Five asset classes.</h2>
         </div>
         <p class="mh-section__lede">
-          Real-time prices, screeners, calendars, and a global ticker feed
-          threaded into every thread. The numbers are right where the argument is.
+          Crypto, forex, commodities, indices and stocks — all live, all on one
+          watchlist. Click any row to load it into the TradingView chart with
+          indicators, drawing tools and timeframes from minutes to monthly.
         </p>
       </div>
 
@@ -184,7 +145,7 @@
         <div class="mh-markets__card">
           <div class="mh-markets__cardHead">
             <span class="mh-eyebrow">Today's gainers</span>
-            <a routerLink="/markets" class="mh-link mh-link--sm">All markets
+            <a routerLink="/markets" class="mh-link mh-link--sm">Open Markets
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
             </a>
           </div>
@@ -203,7 +164,7 @@
                   </td>
                   <td class="mh-mk__num">{{ r.px }}</td>
                   <td class="mh-mk__num mh-mk__chg t-up">{{ r.chg }}</td>
-                  <td class="mh-mk__pct"><span class="mh-pill mh-pill--up">↑ {{ r.pct }}</span></td>
+                  <td class="mh-mk__pct"><span class="mh-pill mh-pill--up">↑ {{ r.pct.replace('+', '') }}</span></td>
                 </tr>
               }
             </tbody>
@@ -213,7 +174,7 @@
         <div class="mh-markets__card">
           <div class="mh-markets__cardHead">
             <span class="mh-eyebrow">Today's laggards</span>
-            <a routerLink="/markets" class="mh-link mh-link--sm">All markets
+            <a routerLink="/markets" class="mh-link mh-link--sm">Open Markets
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
             </a>
           </div>
@@ -232,7 +193,7 @@
                   </td>
                   <td class="mh-mk__num">{{ r.px }}</td>
                   <td class="mh-mk__num mh-mk__chg t-down">{{ r.chg }}</td>
-                  <td class="mh-mk__pct"><span class="mh-pill mh-pill--down">↓ {{ r.pct }}</span></td>
+                  <td class="mh-mk__pct"><span class="mh-pill mh-pill--down">↓ {{ r.pct.replace('−', '') }}</span></td>
                 </tr>
               }
             </tbody>
@@ -245,26 +206,34 @@
     <section class="mh-section mh-voices">
       <div class="mh-section__head">
         <div>
-          <span class="mh-eyebrow">Voices from the room</span>
-          <h2 class="mh-section__title">Not testimonials.<br />Postscripts.</h2>
+          <span class="mh-eyebrow">Who it's for</span>
+          <h2 class="mh-section__title">Four ways<br />people use MarketHub.</h2>
         </div>
         <p class="mh-section__lede">
-          What members say about MarketHub after they've been here a quarter. We pulled these from their own threads — verbatim, with permission.
+          From a curious beginner watching the prices move next to the conversation,
+          to a community builder running a private group around their niche.
+          One account does both.
         </p>
       </div>
 
       <div class="mh-voices__grid">
         @for (v of voices; track v.name) {
           <figure class="mh-voice" [class.mh-voice--green]="v.accent === 'green'" [class.mh-voice--dark]="v.accent === 'dark'">
-            <span class="mh-voice__mark" aria-hidden="true">"</span>
-            <blockquote class="mh-voice__quote">{{ v.quote }}</blockquote>
-            <figcaption class="mh-voice__cap">
-              <div class="mh-avatar mh-avatar--m" [class.mh-avatar--inverse]="v.accent === 'dark'">{{ v.initials }}</div>
-              <div class="mh-voice__who">
-                <div class="mh-voice__name">{{ v.name }}</div>
-                <div class="mh-voice__role">{{ v.role }}</div>
+            <div class="mh-voice__head">
+              <div class="mh-voice__square mh-voice__square--avatar" [class.mh-voice__square--inverse]="v.accent === 'dark'">
+                {{ v.initials }}
               </div>
-              <div class="mh-voice__meta">{{ v.meta }}</div>
+              <div class="mh-voice__square mh-voice__square--role">
+                <span class="mh-voice__roleLabel">{{ v.role }}</span>
+                <span class="mh-voice__roleMeta">{{ v.meta }}</span>
+              </div>
+            </div>
+            <blockquote class="mh-voice__quote">
+              <span class="mh-voice__mark" aria-hidden="true">"</span>
+              {{ v.quote }}
+            </blockquote>
+            <figcaption class="mh-voice__cap">
+              <span class="mh-voice__name">{{ v.name }}</span>
             </figcaption>
           </figure>
         }
@@ -274,18 +243,18 @@
     <!-- ---------- AI BLOCK ---------- -->
     <section class="mh-section mh-ai">
       <div class="mh-ai__art">
-        <img src="assets/landing/network-pins.jpg" alt="" />
+        <img src="assets/landing/ai-particles.jpg" alt="" />
         <div class="mh-ai__artCaption">
-          <span class="mh-eyebrow mh-eyebrow--light">The network</span>
-          <p>Every member is a pin. Every thread is a thread.</p>
+          <span class="mh-eyebrow mh-eyebrow--light">Warren · the assistant</span>
+          <p>Reads the room with you. Drafts the questions you should be asking.</p>
         </div>
       </div>
 
       <div class="mh-ai__copy">
-        <span class="mh-eyebrow">IA · the assistant</span>
+        <span class="mh-eyebrow">Warren · the assistant</span>
         <h2 class="mh-ai__title">A second opinion,<br />always in the room.</h2>
         <p class="mh-ai__lede">
-          IA reads the room with you. Summarises the open theses on a ticker,
+          Warren reads the room with you. Summarises the open theses on a ticker,
           surfaces the strongest counter-argument, and drafts the questions
           you should be asking before you click buy.
         </p>
@@ -298,58 +267,10 @@
           <div class="mh-ai__msg mh-ai__msg--ia">
             <span class="mh-eyebrow mh-eyebrow--brand">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17l-1.9-5.1L4.5 10l5.6-1.4L12 3z"/><path d="M19 14l.8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.8L19 14z"/></svg>
-              IA · just now
+              Warren · just now
             </span>
             <p>Three live threads. The dominant bear thread (Lena Kovács, 248 upvotes) argues that hyperscaler capex is back-end-loaded and Q3 guidance will need a Q4 reset. The contrarian (T. Renn) says options positioning already prices it in.</p>
-            <div class="mh-ai__chips">
-              <span class="mh-chip mh-chip--ghost">Open the bear thread</span>
-              <span class="mh-chip mh-chip--ghost">Show options positioning</span>
-              <span class="mh-chip mh-chip--ghost">Draft my counter-take</span>
-            </div>
           </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ---------- PRICING ---------- -->
-    <section class="mh-section mh-pricing">
-      <div class="mh-section__head mh-section__head--center">
-        <span class="mh-eyebrow">Membership</span>
-        <h2 class="mh-section__title">Read the room. Free.<br />Beat the room with Pro.</h2>
-      </div>
-
-      <div class="mh-pricing__grid">
-        <div class="mh-plan">
-          <div class="mh-plan__head">
-            <h3 class="mh-plan__name">Reader</h3>
-            <div class="mh-plan__price"><span class="mh-num">$0</span><span class="mh-plan__per">/ forever</span></div>
-            <p class="mh-plan__lede">Everything you need to follow the conversation. No card.</p>
-          </div>
-          <ul class="mh-plan__list">
-            <li>Full community feed and replies</li>
-            <li>Watchlist of up to 25 instruments</li>
-            <li>15-min delayed quotes, full charts</li>
-            <li>IA assistant · 20 prompts / day</li>
-          </ul>
-          <a routerLink="/register" class="mh-btn mh-btn--secondary mh-btn--lg mh-btn--full">Create a free account</a>
-        </div>
-
-        <div class="mh-plan mh-plan--pro">
-          <div class="mh-plan__badge">Most members pick this</div>
-          <div class="mh-plan__head">
-            <h3 class="mh-plan__name">Pro</h3>
-            <div class="mh-plan__price"><span class="mh-num">$18</span><span class="mh-plan__per">/ month, billed yearly</span></div>
-            <p class="mh-plan__lede">For people whose P&amp;L depends on being in the room early.</p>
-          </div>
-          <ul class="mh-plan__list">
-            <li>Everything in Reader</li>
-            <li>Real-time quotes across 38 venues</li>
-            <li>Unlimited watchlists, alerts, screeners</li>
-            <li>IA assistant · unlimited, with portfolio context</li>
-            <li>Publish to the room — verified analyst flair</li>
-          </ul>
-          <a routerLink="/register" class="mh-btn mh-btn--gradient mh-btn--lg mh-btn--full">Start 14 days of Pro</a>
-          <span class="mh-plan__fine">Quotes 15-min delayed on Reader. Not investment advice.</span>
         </div>
       </div>
     </section>
@@ -359,10 +280,9 @@
       <div class="mh-faq__layout">
         <div class="mh-faq__intro">
           <span class="mh-eyebrow">Asked &amp; answered</span>
-          <h2 class="mh-section__title">Things people<br />ask before they join.</h2>
+          <h2 class="mh-section__title">Things people ask<br />before they sign up.</h2>
           <p class="mh-section__lede mh-faq__lede">
-            Still curious? Browse the public feed without an account, or write to
-            <a class="mh-faq__link" href="mailto:hello&#64;markethub.io">hello&#64;markethub.io</a>.
+            Still curious? Browse the platform as a guest — no account needed.
           </p>
         </div>
         <div class="mh-faq__list">
@@ -395,62 +315,25 @@
         </div>
         <div class="mh-finalcta__inner">
           <span class="mh-eyebrow mh-eyebrow--light">
-            <span class="mh-eyebrow__dot"></span> 214,000 members · open right now
+            <span class="mh-eyebrow__dot"></span> This week — CPI · PMI · FOMC minutes
           </span>
-          <h2 class="mh-finalcta__title">The conversation<br />is already happening.</h2>
+          <h2 class="mh-finalcta__title">One place for the<br />signal and the community.</h2>
           <p class="mh-finalcta__lede">
-            Read the room free. Beat the room with Pro. Either way, you'll know what 214,000 traders, analysts, and curious readers are watching this hour.
+            Live prices, charts, calendar and news side by side with the posts,
+            topics and communities where people argue about them. Browse as a
+            guest, or create a free account in under a minute.
           </p>
           <div class="mh-finalcta__cta">
-            <a routerLink="/register" class="mh-btn mh-btn--gradient mh-btn--lg">Join the room — free</a>
-            <a routerLink="/community" class="mh-btn mh-btn--ghost-light mh-btn--lg">Browse without an account →</a>
+            <a routerLink="/register" class="mh-btn mh-btn--gradient mh-btn--lg">Create a free account</a>
+            <a routerLink="/markets" class="mh-btn mh-btn--ghost-light mh-btn--lg">Explore as a guest →</a>
           </div>
           <div class="mh-finalcta__fine">
-            No card. Cancel any time. Quotes 15-min delayed on the free tier. Not investment advice.
+            Email and password only. No card, ever. Not investment advice.
           </div>
         </div>
       </div>
     </section>
 
   </main>
-
-  <!-- ---------- FOOTER (landing-only) ---------- -->
-  <footer class="mh-footer">
-    <div class="mh-footer__inner">
-      <div class="mh-footer__brand">
-        <a routerLink="/" class="mh-logo">
-          <img src="assets/landing/logo-mark-black.png" alt="" />
-          <span>MarketHub</span>
-        </a>
-        <p class="mh-footer__tag">Markets, told as a story.</p>
-      </div>
-      <div class="mh-footer__cols">
-        <div class="mh-footer__col">
-          <span class="mh-eyebrow">Product</span>
-          <a routerLink="/community">Community</a>
-          <a routerLink="/markets">Markets</a>
-          <a href="#">IA assistant</a>
-          <a href="#">Pricing</a>
-        </div>
-        <div class="mh-footer__col">
-          <span class="mh-eyebrow">Company</span>
-          <a href="#">About</a>
-          <a href="#">Careers</a>
-          <a href="#">Press</a>
-          <a href="#">Contact</a>
-        </div>
-        <div class="mh-footer__col">
-          <span class="mh-eyebrow">Legal</span>
-          <a href="#">Terms</a>
-          <a href="#">Privacy</a>
-          <a href="#">Disclosures</a>
-        </div>
-      </div>
-    </div>
-    <div class="mh-footer__fine">
-      <span>© MarketHub 2026</span>
-      <span>Quotes delayed 15-min on free tier · Not investment advice · Available in EN · ES · JA</span>
-    </div>
-  </footer>
 
 </div>

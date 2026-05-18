@@ -52,6 +52,8 @@ Angular SPA serving the MarketHub UI. Runs on port 4200.
         emoji-picker.component.ts → Emoji popover (4 groups, close on outside click/Escape)
       /search-bar
         search-bar.component.ts → Reusable search input with debounced dropdown results (used in community header)
+      /footer
+        footer.component.ts → Shared global footer (rendered on / and /markets only)
     /utils
       color.utils.ts     → getUsernameColor, getInitial (shared by PostCardComponent, CommunityComponent, ProfileComponent)
 

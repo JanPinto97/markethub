@@ -118,13 +118,22 @@ CommunityPrivate, DiscussionTopic, Discussion, DiscussionMessage + User model up
 ⬜ Per-asset detail pages, watchlist, alerts
 
 🔄 Phase 5: AI assistant + Home polish
-✅ Landing page (`/`) — full editorial design from claude.ai/design bundle:
-  hero (emerald-liquid bg + glass quote card), LiveRoom teaser, Markets
-  gainers/laggards, Voices (asymmetric pull-quotes), AI block, Pricing,
-  FAQ accordion, FinalCTA. Owns its own header + footer; global
-  `<app-header />` and `<app-ticker />` are hidden on `/` via `app.ts`
-  `showGlobalChrome()` computed signal. Scroll-reveal via
-  IntersectionObserver. Assets in `frontend/src/assets/landing/`.
+✅ Landing page (`/`) — full editorial design from claude.ai/design bundle
+  (rev 2): Hero ("Markets, told as a story.") with emerald-liquid bg +
+  glass quote card, LiveRoom teaser (Semiconductors Club / Macro topic /
+  FX Traders private community), MarketsTeaser across 5 asset classes
+  (crypto, forex, commodities, indices, stocks), Voices (2x2 persona
+  quotes with a two-square head row), AI block (Warren · the assistant),
+  FAQ accordion (real product Q&A), FinalCTA. Pricing section removed —
+  the product is free. Uses the global `<app-header />`, `<app-ticker />`
+  and the shared `<app-footer />`. Scroll-reveal via IntersectionObserver.
+  Assets in `frontend/src/assets/landing/`.
+✅ Shared `<app-footer />` (`/shared/components/footer/`) — rendered by
+  `app.ts` only on `/` and `/markets`. Visual language from the landing
+  design (Manrope display, Inter body, mh-* tokens) but restricted to
+  links that actually exist: Product (Community / Markets / Assistant),
+  Account (Sign in / Sign up / Settings), Legal (Legal notice / Terms /
+  Privacy / Cookies), brand block, © year + disclosure line.
 ⬜ AI assistant
 
 ## Rules

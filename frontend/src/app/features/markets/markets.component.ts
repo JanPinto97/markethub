@@ -67,7 +67,6 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
   currentCoingeckoId: string = 'bitcoin';
   currentPriceData: any = { c: 0, dp: 0 };
   assetNotSupported: boolean = false;
-  currentYear = new Date().getFullYear();
   selectedDate: Date = new Date();
   lastSentimentUpdate: string = '';
   private clockInterval: any;

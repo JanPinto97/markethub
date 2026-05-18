@@ -1,0 +1,111 @@
+/* ==========================================================
+   Global Footer — shared across Landing (/) and Markets (/markets)
+   Visual language adapted from the landing design (mh-* tokens),
+   restricted to links that actually exist in the app.
+   ========================================================== */
+
+:host {
+  display: block;
+
+  --mh-footer-bg:                #f2f4f6;
+  --mh-footer-ink:               #191c1e;
+  --mh-footer-ink-variant:       #44474d;
+  --mh-footer-ink-muted:         #76849f;
+  --mh-footer-line:              rgba(116, 119, 123, 0.15);
+
+  --mh-font-display:             'Manrope', system-ui, sans-serif;
+  --mh-font-body:                'Inter', system-ui, sans-serif;
+  --mh-tracking-eyebrow:         0.14em;
+  --mh-ease:                     cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mh-footer {
+  background: var(--mh-footer-bg);
+  color: var(--mh-footer-ink);
+  font-family: var(--mh-font-body);
+  border-top: 1px solid var(--mh-footer-line);
+}
+
+.mh-footer * { box-sizing: border-box; }
+.mh-footer a { color: inherit; text-decoration: none; }
+
+.mh-footer__inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 64px 32px 32px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 2.2fr);
+  gap: 64px;
+  align-items: start;
+}
+
+.mh-footer__brand { display: flex; flex-direction: column; gap: 12px; }
+.mh-footer__brand .mh-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+.mh-footer__brand .mh-logo img {
+  height: 28px;
+  width: auto;
+  display: block;
+}
+.mh-footer__tag {
+  font-family: var(--mh-font-display);
+  font-weight: 600;
+  font-size: 17px;
+  line-height: 1.35;
+  letter-spacing: -0.015em;
+  color: var(--mh-footer-ink);
+  margin: 0;
+  max-width: 280px;
+}
+
+.mh-footer__cols {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+}
+.mh-footer__col { display: flex; flex-direction: column; gap: 10px; }
+.mh-footer__col .mh-eyebrow {
+  display: inline-flex;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: var(--mh-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--mh-footer-ink-variant);
+  margin-bottom: 8px;
+}
+.mh-footer__col a {
+  font: 500 14px/1.4 var(--mh-font-body);
+  color: var(--mh-footer-ink-variant);
+  transition: color 220ms var(--mh-ease);
+}
+.mh-footer__col a:hover { color: var(--mh-footer-ink); }
+
+.mh-footer__fine {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 20px 32px 28px;
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  font: 500 12.5px var(--mh-font-body);
+  color: var(--mh-footer-ink-muted);
+  flex-wrap: wrap;
+  border-top: 1px solid var(--mh-footer-line);
+}
+
+@media (max-width: 820px) {
+  .mh-footer__inner {
+    grid-template-columns: 1fr;
+    gap: 36px;
+    padding: 48px 20px 24px;
+  }
+  .mh-footer__cols { grid-template-columns: 1fr 1fr; }
+  .mh-footer__fine { padding: 16px 20px 24px; }
+}
+
+@media (max-width: 520px) {
+  .mh-footer__cols { grid-template-columns: 1fr; gap: 24px; }
+}

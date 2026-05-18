@@ -5,20 +5,19 @@ Source: handoff bundle from claude.ai/design (`Landing Page.html` + `colors_and_
 ## Page scope
 
 - Route `/` — public landing page for non-authenticated users.
-- The landing **owns its own chrome** (header + footer). The global `<app-header />` and `<app-ticker />` in `app.ts` are hidden on `/` via the `showGlobalChrome()` computed signal. There is no global footer in the app shell; the landing renders its own.
+- The landing **uses the global chrome**: `<app-header />` from `app.ts` renders on top, `<app-ticker />` renders below the header, and the shared `<app-footer />` renders at the bottom (the footer is also rendered on `/markets`; everywhere else it is hidden). The landing's own header and footer (from the original claude.ai/design bundle) have been removed.
 
 ## Sections (top → bottom)
 
-1. **Landing header** — sticky, glass-on-scroll. Logo + nav (Community/Markets/IA) + Sign in / Sign up.
-2. **Hero** — full-bleed emerald-liquid background, dark veil, big display headline, lede + dual CTA, 3-stat proof row, glass quote card on the right.
-3. **LiveRoom** — community teaser: 1 featured post (with photo) + 2 stacked posts in a 1.45 / 1 grid.
-4. **MarketsTeaser** — two cards side-by-side (Today's gainers / laggards), monospaced numbers, sparkline.
-5. **Voices** — asymmetric 12-col grid of 4 pull-quote cards (white / emerald / white / navy). Section sits on a tonal lift (`--surface-container-low`), bleeds full-width.
-6. **AIBlock** — IA pitch: portrait art on the left + copy and chat-style mocked exchange on the right.
-7. **Pricing** — centered head; two plan cards (Reader / Pro). Pro plan uses `--primary-container` (deep navy).
-8. **FAQ** — 2-col layout, sticky intro on the left, accordion of 6 items on the right. Single item open at a time, first open by default.
-9. **FinalCTA** — full-width inset card, blue-tickers photo with a navy → emerald gradient veil.
-10. **Landing footer** — brand + tag, 3 link columns (Product / Company / Legal), disclosure line.
+1. **Hero** — full-bleed emerald-liquid background, dark veil, big display headline ("Markets, told as a story."), eyebrow ("This week — CPI · PMI · FOMC minutes"), lede + dual CTA ("Create a free account" / "Explore as a guest →"), 3-stat proof row (100K+ / <1s / 100+), glass quote card on the right with a sample community post.
+2. **LiveRoom** — community teaser: 1 featured post (with photo, Semiconductors Club) + 2 stacked posts (Macro topic + FX Traders private community) in a 1.45 / 1 grid.
+3. **MarketsTeaser** — two cards side-by-side (Today's gainers / laggards), 5 asset classes covered (crypto, forex, commodities, indices, stocks). Monospaced numbers, sparkline per row.
+4. **Voices** — 2x2 grid of 4 pull-quote cards mapped to the four personas (curious beginner, active trader, community builder, anyone). Each card has a two-square head row (avatar + role/meta) at the top and the quote below. Variants: white / emerald / white / navy. Section sits on a tonal lift (`--surface-container-low`), bleeds full-width.
+5. **AIBlock** — Warren assistant pitch: portrait art on the left (`ai-particles.jpg`, rev 2 image) on a dark `#050807` background, with an emerald-tinted glass caption (subtle inset green border, mint eyebrow). Chat-style mocked exchange on the right.
+6. **FAQ** — 2-col layout, sticky intro on the left, accordion of 7 items on the right (real product Q&A: free, guest browsing, asset classes, public vs private, communities, topics, disclaimer). Single item open at a time, first open by default.
+7. **FinalCTA** — full-width inset card, blue-tickers photo with a navy → emerald gradient veil. Eyebrow "This week — CPI · PMI · FOMC minutes", title "One place for the signal and the community."
+
+The global `<app-footer />` is rendered by `app.ts` below the FinalCTA on this route (and on `/markets`). It is a separate shared component, not part of `home.component.*`.
 
 ## Tokens (scoped to this page only)
 
@@ -35,29 +34,26 @@ Class names are prefixed `mh-*` (per the bundle) to avoid collisions with the re
 ## Interactivity
 
 - **Scroll-reveal:** every `.mh-section`, `.mh-hero`, and `.mh-finalcta-wrap` starts with `.mh-reveal`. An `IntersectionObserver` in `ngAfterViewInit` (threshold 0.08, root margin `0 0 -40px 0`) adds `.is-in` once and unobserves.
-- **Header scrolled state:** `@HostListener('window:scroll')` flips a signal; CSS adds `.is-scrolled` (slightly more opaque glass).
 - **FAQ accordion:** single signal `openFaq()` (default 0). Click toggles; CSS uses `grid-template-rows: 0fr → 1fr` for a smooth height transition.
-- **Card hover:** subtle `translateY(-2px)` + ambient shadow on `.mh-post`, `.mh-voice` (voice cards 2 and 4 keep their asymmetric offset on hover).
+- **Card hover:** subtle `translateY(-2px)` + ambient shadow on `.mh-post` and `.mh-voice`.
 
 ## CTAs
 
-- Hero "Join the room" → `/register`
-- Hero "Browse the feed →" → `/community`
-- Pricing Reader "Create a free account" → `/register`
-- Pricing Pro "Start 14 days of Pro" → `/register`
-- Final CTA "Join the room — free" → `/register`
-- Final CTA "Browse without an account →" → `/community`
-- Footer Product links → `/community`, `/markets` (IA and Pricing routes don't exist yet; placeholder `#`).
+- Hero "Create a free account" → `/register`
+- Hero "Explore as a guest →" → `/markets`
+- Final CTA "Create a free account" → `/register`
+- Final CTA "Explore as a guest →" → `/markets`
+- Markets card "Open Markets" links → `/markets`
+- Footer links are owned by the shared `<app-footer />` (see `/shared/components/footer/`) and only reference real routes (`/community`, `/markets`, `/login`, `/register`, `/settings`).
 
 ## Decisions / notes
 
-- The original design's `TickerBar` was explicitly removed by the user in the chat ("Apply comment: Ticker bar removed — the hero now sits directly under the header."). Not re-introduced.
-- The design's "Tweaks panel" (variant switcher) is an authoring tool, not production. Not implemented.
-- Bundle's standalone JSX components were collapsed into one Angular component with `templateUrl` + `styleUrl` — they were already kit-local with no shared state. Splitting back into Angular sub-components would only add overhead.
-- All sample copy (posts, voices, tickers, FAQ) is preserved verbatim from the design — replace with real data when the corresponding APIs are ready.
+- Pricing section removed: MarketHub is fully free, there is no Pro tier in the actual product.
+- Bundle's standalone JSX components were collapsed into one Angular component with `templateUrl` + `styleUrl` — they were already kit-local with no shared state.
+- All sample copy (posts, voices, tickers, FAQ) is preserved verbatim from the new design bundle.
 - Sparklines are inline SVG polylines per row direction (up/down). Real per-asset shapes can be swapped in later from `MarketsService`.
-- Assets that ship in `frontend/src/assets/landing/` from the bundle: `hero-liquid-emerald.jpg`, `network-pins.jpg`, `photo-blue-tickers.jpg`, `photo-candles-bokeh.jpg`, `logo-mark-black.png` (also kept: `logo-mark-white.png`, `logo-wordmark-black.png`, `photo-trader-desk.jpg`, `photo-charts-glasses.jpg` for future use).
+- Assets that ship in `frontend/src/assets/landing/` from the bundle: `hero-liquid-emerald.jpg`, `ai-particles.jpg` (rev 2, replaces `network-pins.jpg` for the AI block), `photo-blue-tickers.jpg`, `photo-candles-bokeh.jpg`, `logo-mark-black.png` (also kept: `logo-mark-white.png`, `logo-wordmark-black.png`, `photo-trader-desk.jpg`, `photo-charts-glasses.jpg`, `network-pins.jpg` for future use).
 
 ## Responsive
 
-Single breakpoint at 820px. Mobile collapses all 2-col grids to 1 column, drops the desktop nav, hides Voices asymmetry, removes FAQ stickiness, and tightens the header.
+Single breakpoint at 820px. Mobile collapses all 2-col grids to 1 column and removes FAQ stickiness. The global header, ticker, and shared footer handle their own responsive collapse.
