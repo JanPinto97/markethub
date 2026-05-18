@@ -129,7 +129,8 @@ interface CommunityJoinResponse {
 }
 
 export interface PendingJoinRequest {
-  id: string;
+  id?: string;
+  _id?: string;
   user: { id?: string; _id?: string; username?: string; avatar?: string } | string;
   message?: string;
   status: 'pending' | 'accepted' | 'rejected';
@@ -147,6 +148,7 @@ interface PrivateCommunityDetailResponse {
     myRole?: string;
     [k: string]: unknown;
   };
+  pendingRequests?: PendingJoinRequest[];
   membership?: { isMember?: boolean; role?: string; myRequestStatus?: string };
   [k: string]: unknown;
 }

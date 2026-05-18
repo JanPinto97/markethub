@@ -401,10 +401,11 @@ export class Agent {
     let pending: { id: string; message?: string }[] = [];
     try {
       const detail = await this.client.getPrivateCommunity(community.id);
-      const list = detail.community?.pendingRequests ?? [];
+      const list = detail.pendingRequests ?? detail.community?.pendingRequests ?? [];
       pending = list
         .filter((r) => r.status === 'pending')
-        .map((r) => ({ id: r.id, message: r.message }));
+        .map((r) => ({ id: (r.id ?? r._id) as string, message: r.message }))
+        .filter((r) => !!r.id);
     } catch (err) {
       console.warn(`[${this.state.username}] getPrivateCommunity failed: ${(err as Error).message}`);
       return;
@@ -415,7 +416,7 @@ export class Agent {
     }
     const batch = pending.slice(0, 3);
     for (const req of batch) {
-      const action: 'accept' | 'reject' = Math.random() < 0.7 ? 'accept' : 'reject';
+      const action: 'accept' | 'reject' = Math.random() < 0.8 ? 'accept' : 'reject';
       try {
         await this.client.handleJoinRequest(community.id, req.id, action);
         console.log(`[${this.state.username}] ${action} request=${req.id} in="${community.name}"`);
