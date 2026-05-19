@@ -118,7 +118,7 @@
         <div class="result-section">
           <h2 class="section-title">Posts ({{ totals().posts }})</h2>
           @for (p of posts(); track p.id) {
-            <a routerLink="/community" class="result-row">
+            <div class="result-row result-row-static">
               @if (p.author.avatar) {
                 <img [src]="p.author.avatar | mediaUrl" class="result-avatar" alt="" />
               } @else {
@@ -128,7 +128,7 @@
               }
               <div class="result-info">
                 <span class="result-primary">
-                  @{{ p.author.username }}
+                  <a [routerLink]="'/profile/' + p.author.username" class="result-author-link">&#64;{{ p.author.username }}</a>
                   <span class="result-dot">·</span>
                   <span class="result-time">{{ relativeTime(p.createdAt) }}</span>
                 </span>
@@ -137,7 +137,7 @@
                   <span class="result-community-badge">in {{ $any(p.community).name || 'Community' }}</span>
                 }
               </div>
-            </a>
+            </div>
           }
           @if (showPosts && activeFilter() === 'all' && totals().posts > 3) {
             <button class="see-more-btn" (click)="setFilter('posts')">See all {{ totals().posts }} posts →</button>

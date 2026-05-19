@@ -58,7 +58,10 @@ export class SearchService {
     return this.api.get<BackendResponse>(`/search?q=${encodeURIComponent(query)}${typeParam}&page=${page}&limit=${limit}`)
       .pipe(map(res => {
         const r = res.results;
-        const users = r.users?.items ?? [];
+        const users = (r.users?.items ?? []).map((u: any) => ({
+          ...u,
+          followerCount: u.followerCount ?? u.followersCount ?? 0,
+        }));
         const posts = r.posts?.items ?? [];
         const communities = r.communities?.items ?? [];
         const totalUsers = r.users?.total ?? 0;

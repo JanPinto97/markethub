@@ -1,6 +1,6 @@
 :host {
   display: block;
-  height: 100vh;
+  height: calc(100vh - var(--header-height));
   background-color: var(--surface);
 }
 
@@ -9,7 +9,8 @@
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100%;
+  min-height: 0;
 }
 
 /* ── Header ── */
@@ -134,7 +135,7 @@
 }
 
 .disc-context-text {
-  font-size: var(--text-body-md);
+  font-size: var(--text-body-lg);
   color: var(--on-surface);
   margin: 0;
   line-height: 1.5;
@@ -165,14 +166,23 @@
   color: var(--on-primary);
 }
 
-/* ── Messages area ── */
+/* ── Messages area (only scroll zone) ── */
 .disc-messages {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: var(--spacing-4);
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-5);
+  gap: var(--spacing-3);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.disc-messages::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 
 .disc-empty {
@@ -189,12 +199,13 @@
   padding: var(--spacing-8) 0;
 }
 
-/* ── Message ── */
+/* ── Message (WhatsApp-style bubbles) ── */
 .disc-msg {
   display: flex;
   gap: var(--spacing-2);
   align-items: flex-start;
   position: relative;
+  max-width: 100%;
 }
 
 .disc-msg-left {
@@ -202,8 +213,9 @@
 }
 
 .disc-msg-body {
-  flex: 1;
-  min-width: 0;
+  position: relative;
+  max-width: 75%;
+  padding: 0;
 }
 
 .disc-msg-head {
@@ -238,9 +250,38 @@
   word-wrap: break-word;
 }
 
+/* ── Own message: WhatsApp right-aligned green bubble ── */
+.disc-msg-own {
+  flex-direction: row-reverse;
+}
+
+.disc-msg-own .disc-msg-body {
+  text-align: right;
+}
+
+.disc-msg-own .disc-msg-head {
+  flex-direction: row-reverse;
+}
+
+.disc-msg-own .disc-msg-author {
+  color: var(--secondary);
+}
+
+.disc-msg-own .disc-reply-quote {
+  border-left: none;
+  border-right: 3px solid var(--secondary);
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+  text-align: left;
+}
+
+.disc-msg-own .disc-reply-btn {
+  right: auto;
+  left: 0;
+}
+
 /* ── Reply quote in message ── */
 .disc-reply-quote {
-  background-color: var(--surface-container-low);
+  background-color: rgba(0, 0, 0, 0.05);
   border-left: 3px solid var(--secondary);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   padding: var(--spacing-1) var(--spacing-2);
@@ -268,7 +309,7 @@
 }
 
 .disc-reply-quote-link:hover {
-  background-color: var(--surface-container);
+  background-color: rgba(0, 0, 0, 0.08);
 }
 
 .disc-msg-highlight {
@@ -306,9 +347,9 @@
 
 /* ── Scroll down button ── */
 .disc-scroll-down {
-  position: fixed;
-  bottom: 80px;
-  right: calc(50% - 340px);
+  position: absolute;
+  bottom: 96px;
+  right: var(--spacing-4);
   width: 40px;
   height: 40px;
   border-radius: var(--radius-full);
@@ -356,7 +397,7 @@
   cursor: not-allowed;
 }
 
-/* ── Input area ── */
+/* ── Input area (anchored to bottom) ── */
 .disc-input-area {
   flex-shrink: 0;
   background-color: var(--surface-container-lowest);
@@ -464,11 +505,11 @@
     max-width: 100%;
   }
 
-  .disc-reply-btn {
-    opacity: 1;
+  .disc-msg-body {
+    max-width: 85%;
   }
 
-  .disc-scroll-down {
-    right: var(--spacing-4);
+  .disc-reply-btn {
+    opacity: 1;
   }
 }

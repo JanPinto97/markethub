@@ -215,7 +215,7 @@
   font-size: 13px;
   color: var(--text-primary, #111);
 }
-.inline-confirm { background: var(--accent-primary, #1d72f3); color: #fff; border-color: transparent; }
+.inline-confirm { background: var(--secondary, #006c49); color: #fff; border-color: transparent; }
 .inline-confirm:disabled { opacity: 0.6; cursor: not-allowed; }
 .inline-cancel:hover { background: var(--surface-hover, #f0f1f3); }
 .inline-error {
@@ -566,7 +566,7 @@
 }
 .modal-cancel { background: var(--surface-card, #fff); color: var(--text-primary, #111); }
 .modal-cancel:hover { background: var(--surface-hover, #f0f1f3); }
-.modal-submit { background: var(--accent-primary, #1d72f3); color: #fff; border-color: transparent; }
+.modal-submit { background: var(--secondary, #006c49); color: #fff; border-color: transparent; }
 .modal-submit:hover { opacity: 0.92; }
 .modal-submit:disabled { opacity: 0.6; cursor: not-allowed; }
 .modal-submit.destructive { background: var(--text-danger, #d32f2f); }

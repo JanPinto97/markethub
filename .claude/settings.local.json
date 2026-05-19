@@ -64,7 +64,8 @@
       "Bash(node -e \"const fs=require\\('fs'\\);const t=fs.readFileSync\\('/tmp/template.json','utf8'\\);const html=JSON.parse\\(t\\);fs.writeFileSync\\('/tmp/landing.html', html\\);console.log\\('Length:', html.length\\);\")",
       "Read(//c/Users/telem/AppData/Local/Temp/**)",
       "Bash(node *)",
-      "Bash(awk NR>=181 && NR<=183 { print NR\": \"length\\($0\\)\" chars\" } *)"
+      "Bash(awk NR>=181 && NR<=183 { print NR\": \"length\\($0\\)\" chars\" } *)",
+      "PowerShell(Copy-Item *)"
     ]
   }
 }
