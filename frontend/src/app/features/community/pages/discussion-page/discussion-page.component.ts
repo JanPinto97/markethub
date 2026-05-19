@@ -241,6 +241,11 @@ export class DiscussionPageComponent implements OnInit, OnDestroy {
   initial(name: string): string { return getInitial(name); }
   initialColor(name: string): string { return getUsernameColor(name); }
 
+  isOwn(msg: DiscussionMessage): boolean {
+    const me = this.auth.currentUser()?.id;
+    return !!me && msg.author._id === me;
+  }
+
   truncateReply(text: string): string {
     return text.length > 80 ? text.slice(0, 80) + '...' : text;
   }

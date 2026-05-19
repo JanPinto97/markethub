@@ -219,3 +219,11 @@ These extend the global system above for the Community page layout.
 - Content: title (link to `/community/t/:slug/p/:postId`), meta ("Posted by @username · time"), text preview (3-line clamp), optional media (300px max height), comment count footer.
 - Three-dot menu: visible on hover (always on mobile), only for owner/mod/superadmin. Delete with confirm + fade-out + toast.
 - Hover: subtle box-shadow on card.
+
+### DiscussionPage — chat layout
+
+- Page fills the viewport below the global header: `height: calc(100vh - var(--header-height))`. Internal flex column with three zones: original-comment block (top, `flex-shrink: 0`), messages area (middle, `flex: 1; overflow-y: auto`, the **only** scroll zone), input area (bottom, `flex-shrink: 0`, always anchored).
+- Original comment block keeps its original neutral styling; only the comment text size is bumped to `--text-body-lg` for legibility.
+- Messages are WhatsApp-style bubbles (max-width 75%, 85% on mobile). Other users: white bubble (`--surface-container-lowest`) with `--outline-variant` border, asymmetric radius `16px 16px 16px 4px`, avatar on the left. Own messages: `disc-msg-own` flips the row (`flex-direction: row-reverse`), hides the avatar, paints the bubble `--secondary-container` with mirrored radius `16px 16px 4px 16px`, and moves the reply button to the left edge. Bubbles align at `flex-end` so multi-line wraps look natural.
+- Reply quotes inside bubbles use a translucent dark tint (`rgba(0,0,0,0.05)`) so they read correctly on both white and green bubbles.
+- Scroll-down button is `position: absolute` inside the page (not `fixed`), so it sits inside the chat column on every viewport width.
