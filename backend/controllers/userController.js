@@ -2,6 +2,7 @@ const User = require('../models/User');
 const PostX = require('../models/PostX');
 const CommunityPublic = require('../models/CommunityPublic');
 const CommunityPrivate = require('../models/CommunityPrivate');
+const { notify } = require('../services/notificationService');
 
 function fail(res, code, message) {
   return res.status(code).json({ success: false, message, code });
@@ -135,6 +136,18 @@ exports.followUser = async (req, res, next) => {
     }
 
     await Promise.all([me.save(), target.save()]);
+
+    if (following) {
+      notify({
+        recipient: target._id,
+        actor: me._id,
+        type: 'follow',
+        title: 'New follower',
+        message: `@${me.username} started following you.`,
+        link: `/profile/${me.username}`,
+      });
+    }
+
     res.json({ success: true, following, followersCount: target.followers.length });
   } catch (err) { next(err); }
 };

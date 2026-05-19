@@ -187,10 +187,20 @@ export class HeaderComponent implements OnInit {
     this.notifOpen.update(v => !v);
     if (this.notifOpen()) {
       this.menuOpen.set(false);
+      this.notifService.refreshFromServer();
     } else {
       // Mark as read when closing manually via toggle
       this.notifService.markAllAsRead();
     }
+  }
+
+  openNotification(event: Event, notif: { id: string; link?: string }) {
+    event.stopPropagation();
+    this.notifService.markOneAsRead(notif.id);
+    if (notif.link) {
+      this.router.navigateByUrl(notif.link);
+    }
+    this.notifOpen.set(false);
   }
 
   markAllAsRead(event: Event) {

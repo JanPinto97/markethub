@@ -4,6 +4,8 @@ const mongoose = require('mongoose');
 const DiscussionTopic = require('../models/DiscussionTopic');
 const PostReddit = require('../models/PostReddit');
 const Comment = require('../models/Comment');
+const User = require('../models/User');
+const { notify } = require('../services/notificationService');
 
 function fail(res, code, message) {
   return res.status(code).json({ success: false, message, code });
@@ -264,6 +266,18 @@ exports.createPostComment = async (req, res, next) => {
     await post.save();
 
     await comment.populate('author', 'username avatar');
+
+    if (post.author.toString() !== req.user.id) {
+      notify({
+        recipient: post.author,
+        actor: req.user.id,
+        type: 'reddit_comment',
+        title: 'New comment on your post',
+        message: `@${comment.author.username} commented: "${text.trim().slice(0, 80)}"`,
+        link: `/community/t/${req.params.slug}/p/${post._id}`,
+      });
+    }
+
     res.status(201).json({ success: true, comment: comment.toPublicJSON() });
   } catch (err) { next(err); }
 };

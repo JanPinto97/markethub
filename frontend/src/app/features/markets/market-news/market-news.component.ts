@@ -287,9 +287,11 @@ export class MarketNewsComponent implements OnInit, OnChanges {
       if (newLatest && newLatest.title !== oldLatestTitle) {
         localStorage.setItem('markethub_news_latest_title', newLatest.title);
         // Triggers the first time or when a new article appears
+        const newsId = newLatest.url ? btoa(encodeURIComponent(newLatest.url)) : null;
         this.notifService.addNotification(
           `Breaking News: ${newLatest.source || 'MarketHub'} 📢`,
-          newLatest.title
+          newLatest.title,
+          newsId ? `/markets/news/${newsId}` : undefined
         );
       }
 

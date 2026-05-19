@@ -1,6 +1,8 @@
 const Discussion = require('../models/Discussion');
 const DiscussionMessage = require('../models/DiscussionMessage');
 const Comment = require('../models/Comment');
+const User = require('../models/User');
+const { notify } = require('../services/notificationService');
 
 exports.checkDiscussion = async (req, res, next) => {
   try {
@@ -45,6 +47,18 @@ exports.createDiscussion = async (req, res, next) => {
 
     const populatedMessage = await DiscussionMessage.findById(message._id)
       .populate('author', 'username avatar');
+
+    if (comment.author.toString() !== req.user.id) {
+      const actor = await User.findById(req.user.id).select('username');
+      notify({
+        recipient: comment.author,
+        actor: req.user.id,
+        type: 'discussion_opened',
+        title: 'New discussion',
+        message: `@${actor?.username || 'someone'} opened a discussion from your comment.`,
+        link: `/community/discussion/${discussion._id}`,
+      });
+    }
 
     res.status(201).json({ success: true, discussion, message: populatedMessage });
   } catch (err) {

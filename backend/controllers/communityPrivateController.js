@@ -4,6 +4,8 @@ const CommunityPrivate = require('../models/CommunityPrivate');
 const CommunityPublic = require('../models/CommunityPublic');
 const PostX = require('../models/PostX');
 const Comment = require('../models/Comment');
+const User = require('../models/User');
+const { notify, notifyMany } = require('../services/notificationService');
 
 function fail(res, code, message) {
   return res.status(code).json({ success: false, message, code });
@@ -117,6 +119,18 @@ exports.requestToJoin = async (req, res, next) => {
     community.joinRequests.push({ user: req.user.id, message: message || '', status: 'pending' });
     await community.save();
 
+    const actor = await User.findById(req.user.id).select('username');
+    const leadersAndMods = community.members
+      .filter(m => m.role === 'leader' || m.role === 'moderator')
+      .map(m => m.user);
+    notifyMany(leadersAndMods, {
+      actor: req.user.id,
+      type: 'community_request',
+      title: 'New join request',
+      message: `@${actor?.username || 'someone'} wants to join ${community.name}.`,
+      link: `/community/p/${community._id}/details`,
+    });
+
     res.json({ success: true, message: 'Join request sent' });
   } catch (err) { next(err); }
 };
@@ -144,6 +158,18 @@ exports.handleJoinRequest = async (req, res, next) => {
     }
 
     await community.save();
+
+    if (action === 'accept') {
+      notify({
+        recipient: request.user,
+        actor: req.user.id,
+        type: 'community_accepted',
+        title: 'Request accepted',
+        message: `You were accepted into ${community.name}.`,
+        link: `/community/p/${community._id}`,
+      });
+    }
+
     res.json({ success: true, action, message: `Request ${action}ed` });
   } catch (err) { next(err); }
 };

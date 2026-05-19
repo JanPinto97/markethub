@@ -14,6 +14,7 @@ const usersRouter = require('./users');
 const searchRouter = require('./search');
 const discussionsRouter = require('./discussions');
 const assistantRouter = require('./assistant');
+const notificationsRouter = require('./notifications');
 
 router.get('/health', (req, res) => {
   res.json({ success: true, message: 'Backend running' });
@@ -32,5 +33,6 @@ router.use('/users', usersRouter);
 router.use('/search', searchRouter);
 router.use('/discussions', discussionsRouter);
 router.use('/assistant', assistantRouter);
+router.use('/notifications', notificationsRouter);
 
 module.exports = router;

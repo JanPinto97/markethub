@@ -5,6 +5,14 @@ const PostReddit = require('../models/PostReddit');
 const Comment = require('../models/Comment');
 const User = require('../models/User');
 const CommunityPrivate = require('../models/CommunityPrivate');
+const DiscussionTopic = require('../models/DiscussionTopic');
+const { notify } = require('../services/notificationService');
+
+function buildPostXLink(post) {
+  if (post.origin === 'public_community' && post.community) return `/community/c/${post.community}`;
+  if (post.origin === 'private_community' && post.community) return `/community/p/${post.community}`;
+  return '/community';
+}
 
 async function findAnyPost(id) {
   const px = await PostX.findById(id);
@@ -107,6 +115,17 @@ exports.likePost = async (req, res, next) => {
     post.trendingScore = PostX.calculateTrendingScore(post);
     await post.save();
 
+    if (liked) {
+      const actor = await User.findById(req.user.id).select('username');
+      notify({
+        recipient: post.author,
+        actor: req.user.id,
+        type: 'post_like',
+        title: 'New like on your post',
+        message: `@${actor?.username || 'someone'} liked your post.`,
+      });
+    }
+
     res.json({ success: true, liked, likesCount: post.likes.length });
   } catch (err) { next(err); }
 };
@@ -162,6 +181,23 @@ exports.createComment = async (req, res, next) => {
     await post.save();
 
     await comment.populate('author', 'username avatar role');
+
+    if (post.author.toString() !== req.user.id) {
+      let link = '';
+      if (postType === 'PostReddit') {
+        const topic = await DiscussionTopic.findById(post.topic).select('slug');
+        if (topic) link = `/community/t/${topic.slug}/p/${post._id}`;
+      }
+      notify({
+        recipient: post.author,
+        actor: req.user.id,
+        type: postType === 'PostReddit' ? 'reddit_comment' : 'post_comment',
+        title: 'New comment on your post',
+        message: `@${comment.author.username} commented: "${text.slice(0, 80)}"`,
+        link,
+      });
+    }
+
     res.status(201).json({ success: true, comment: comment.toPublicJSON() });
   } catch (err) { next(err); }
 };
