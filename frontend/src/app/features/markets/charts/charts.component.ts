@@ -19,6 +19,7 @@ import { catchError, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SmartMarketService } from '../services/smart-market.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { NotificationService } from '../../../core/services/notification.service';
 import {
   searchMarketsSymbols,
   getShorthandSymbol,
@@ -57,6 +58,7 @@ export class ChartsComponent implements OnInit, OnDestroy, AfterViewInit {
   private readonly router = inject(Router);
   private readonly smartMarket = inject(SmartMarketService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly notificationService = inject(NotificationService);
 
   private readonly finnhubKey = 'd7jo9s9r01qu1n4fg3pgd7jo9s9r01qu1n4fg3q0';
   private readonly coinGeckoApiKey = 'CG-T7BjzNAbWJhwFMvvbj4sM8Mp';
@@ -689,7 +691,13 @@ export class ChartsComponent implements OnInit, OnDestroy, AfterViewInit {
         
         // El re-montaje síncrono suele ser más estable si el contenedor está en el DOM
         this.mountTradingView();
-        this.toast.show(`Indicator applied: ${studyId.split('@')[0]}`, 'success');
+        
+        const studyName = studyId.split('@')[0];
+        this.toast.show(`Indicator applied: ${studyName}`, 'success');
+        this.notificationService.addNotification(
+          'Indicator Applied 📊',
+          `Successfully applied the ${studyName} indicator on the ${this.displaySymbol} chart.`
+        );
       } catch (e) {
         console.error('Error applying indicator:', e);
         this.mountTradingView();

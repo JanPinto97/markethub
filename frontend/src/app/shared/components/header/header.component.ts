@@ -1,6 +1,8 @@
 import { Component, DestroyRef, ElementRef, HostListener, inject, OnInit, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { DatePipe } from '@angular/common';
 import { AuthService } from '../../../core/services/auth.service';
+import { NotificationService } from '../../../core/services/notification.service';
 import { MediaUrlPipe } from '../../pipes/media-url.pipe';
 import { getUsernameColor, getInitial } from '../../utils/color.utils';
 
@@ -122,19 +124,21 @@ function computeBadge(market: MarketSchedule): MarketBadge {
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive, MediaUrlPipe],
+  imports: [RouterLink, RouterLinkActive, MediaUrlPipe, DatePipe],
   templateUrl: './header.component.html',
   styleUrl: './header.component.css'
 })
 export class HeaderComponent implements OnInit {
   auth = inject(AuthService);
+  notifService = inject(NotificationService);
   private router = inject(Router);
   private host = inject(ElementRef<HTMLElement>);
   private destroyRef = inject(DestroyRef);
 
   menuOpen = signal(false);
   mobileMenuOpen = signal(false);
-  hasUnreadNotifications = signal(false);
+  notifOpen = signal(false);
+  
   marketBadges = signal<MarketBadge[]>([]);
   expandedBadge = signal<string | null>(null);
 
@@ -167,12 +171,43 @@ export class HeaderComponent implements OnInit {
   toggleMenu(event: Event) {
     event.stopPropagation();
     this.menuOpen.update(v => !v);
+    if (this.menuOpen()) {
+      this.closeNotifications();
+    }
   }
 
   toggleMobileMenu(event: Event) {
     event.stopPropagation();
     this.mobileMenuOpen.update(v => !v);
     if (!this.mobileMenuOpen()) this.expandedBadge.set(null);
+  }
+
+  toggleNotifications(event: Event) {
+    event.stopPropagation();
+    this.notifOpen.update(v => !v);
+    if (this.notifOpen()) {
+      this.menuOpen.set(false);
+    } else {
+      // Mark as read when closing manually via toggle
+      this.notifService.markAllAsRead();
+    }
+  }
+
+  markAllAsRead(event: Event) {
+    event.stopPropagation();
+    this.notifService.markAllAsRead();
+  }
+
+  clearAll(event: Event) {
+    event.stopPropagation();
+    this.notifService.clearAll();
+  }
+
+  closeNotifications() {
+    if (this.notifOpen()) {
+      this.notifOpen.set(false);
+      this.notifService.markAllAsRead();
+    }
   }
 
   toggleBadge(label: string) {
@@ -186,11 +221,19 @@ export class HeaderComponent implements OnInit {
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent) {
     const target = event.target as Node;
-    if (this.menuOpen() && !this.host.nativeElement.contains(target)) {
-      this.menuOpen.set(false);
+    
+    // Check if clicked outside of header component entirely
+    if (!this.host.nativeElement.contains(target)) {
+      if (this.menuOpen()) this.menuOpen.set(false);
+      if (this.mobileMenuOpen()) this.mobileMenuOpen.set(false);
+      if (this.notifOpen()) this.closeNotifications();
+      return;
     }
-    if (this.mobileMenuOpen() && !this.host.nativeElement.contains(target)) {
-      this.mobileMenuOpen.set(false);
+
+    // Inside header but outside notification wrap
+    const notifWrap = this.host.nativeElement.querySelector('.notif-wrap');
+    if (this.notifOpen() && notifWrap && !notifWrap.contains(target)) {
+      this.closeNotifications();
     }
   }
 
@@ -198,6 +241,7 @@ export class HeaderComponent implements OnInit {
   onEscape() {
     this.menuOpen.set(false);
     this.mobileMenuOpen.set(false);
+    this.closeNotifications();
   }
 
   goToProfile() {

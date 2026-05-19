@@ -324,11 +324,33 @@
 
                     <!-- Alert Column -->
                     <div class="w-full md:w-96 flex flex-col gap-4">
-                      <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 group hover:border-[#006c49]/30 transition-all duration-300">
-                        <div class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-emerald-50 group-hover:text-[#006c49] transition-colors">
-                          <span class="material-symbols-outlined text-[20px]">notifications_active</span>
+                      <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col gap-4 group hover:border-[#006c49]/30 transition-all duration-300">
+                        <div class="flex items-center gap-4">
+                          <div class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-emerald-50 group-hover:text-[#006c49] transition-colors" [class.bg-emerald-50]="hasAlert(event.id)" [class.text-[#006c49]]="hasAlert(event.id)">
+                            <span class="material-symbols-outlined text-[20px]">{{ hasAlert(event.id) ? 'notifications_active' : 'notifications' }}</span>
+                          </div>
+                          <div class="flex flex-col">
+                            <span class="text-[10px] font-black uppercase tracking-widest text-slate-500">{{ hasAlert(event.id) ? 'Alert Configured' : 'Set alert for this event' }}</span>
+                            <span *ngIf="hasAlert(event.id)" class="text-[10px] font-bold text-emerald-600 mt-0.5">
+                              {{ getAlertMinutes(event.id) === 0 ? 'Trigger at time' : 'Trigger ' + getAlertMinutes(event.id) + ' min before' }}
+                            </span>
+                          </div>
                         </div>
-                        <span class="text-[10px] font-black uppercase tracking-widest text-slate-500">Set alert for this event</span>
+                        
+                        <div class="flex flex-wrap gap-2 pt-3 border-t border-slate-100">
+                          <button type="button" (click)="setEventAlert(event, 0)" class="px-3 py-1.5 rounded text-[9px] font-black uppercase tracking-wider transition-all" [ngClass]="isAlertSelected(event.id, 0) ? 'bg-[#006c49] text-white' : 'bg-slate-50 hover:bg-slate-100 text-slate-600'">
+                            At time
+                          </button>
+                          <button type="button" (click)="setEventAlert(event, 5)" class="px-3 py-1.5 rounded text-[9px] font-black uppercase tracking-wider transition-all" [ngClass]="isAlertSelected(event.id, 5) ? 'bg-[#006c49] text-white' : 'bg-slate-50 hover:bg-slate-100 text-slate-600'">
+                            5 min
+                          </button>
+                          <button type="button" (click)="setEventAlert(event, 15)" class="px-3 py-1.5 rounded text-[9px] font-black uppercase tracking-wider transition-all" [ngClass]="isAlertSelected(event.id, 15) ? 'bg-[#006c49] text-white' : 'bg-slate-50 hover:bg-slate-100 text-slate-600'">
+                            15 min
+                          </button>
+                          <button type="button" *ngIf="hasAlert(event.id)" (click)="cancelEventAlert(event)" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded text-[9px] font-black uppercase tracking-wider transition-all ml-auto">
+                            Cancel
+                          </button>
+                        </div>
                       </div>
 
                       <button type="button" (click)="askWarren(event)"

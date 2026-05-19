@@ -7,6 +7,7 @@ import { environment } from '../../../../environments/environment';
 
 import { NewsArticleComponent } from './news-article/news-article';
 import { MarketsContextService } from '../../../core/services/markets-context.service';
+import { NotificationService } from '../../../core/services/notification.service';
 
 @Component({
   selector: 'app-market-news',
@@ -47,6 +48,7 @@ export class MarketNewsComponent implements OnInit, OnChanges {
   @Output() articleFromOverviewConsumed = new EventEmitter<void>();
 
   private marketsContext = inject(MarketsContextService);
+  private notifService = inject(NotificationService);
 
   constructor(private http: HttpClient, private cdr: ChangeDetectorRef) {}
 
@@ -280,6 +282,17 @@ export class MarketNewsComponent implements OnInit, OnChanges {
         .filter(n => this.isFinancialRelevant(n))
         .sort((a, b) => b.time - a.time);
       
+      const oldLatestTitle = localStorage.getItem('markethub_news_latest_title');
+      const newLatest = this.fullNews[0];
+      if (newLatest && newLatest.title !== oldLatestTitle) {
+        localStorage.setItem('markethub_news_latest_title', newLatest.title);
+        // Triggers the first time or when a new article appears
+        this.notifService.addNotification(
+          `Breaking News: ${newLatest.source || 'MarketHub'} 📢`,
+          newLatest.title
+        );
+      }
+
       this.savePersistence();
       this.filterNews();
       this.marketsContext.setNews(this.fullNews);

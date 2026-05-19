@@ -7,6 +7,7 @@ import { of } from 'rxjs';
 import { MarketsContextService } from '../../../core/services/markets-context.service';
 import { environment } from '../../../../environments/environment';
 import { AssistantPopupService } from '../../../core/services/assistant-popup.service';
+import { NotificationService } from '../../../core/services/notification.service';
 
 @Component({
   selector: 'app-economic-calendar',
@@ -48,6 +49,7 @@ export class EconomicCalendarComponent implements OnInit {
 
   private marketsContext = inject(MarketsContextService);
   private assistantPopup = inject(AssistantPopupService);
+  private notifService = inject(NotificationService);
 
   askWarren(event: any) {
     const eventName = event?.event || 'this release';
@@ -621,5 +623,44 @@ export class EconomicCalendarComponent implements OnInit {
     if (impactStr === 'medium' || impactStr === 'med') return 2;
     if (impactStr === 'low') return 1;
     return 0;
+  }
+
+  // --- Economic Alert Helpers ---
+  hasAlert(eventId: any): boolean {
+    const stringId = String(eventId);
+    return this.notifService.activeAlerts().some(a => a.eventId === stringId);
+  }
+
+  getAlertMinutes(eventId: any): number {
+    const stringId = String(eventId);
+    const alert = this.notifService.activeAlerts().find(a => a.eventId === stringId);
+    return alert ? alert.offsetMinutes : 0;
+  }
+
+  isAlertSelected(eventId: any, minutes: number): boolean {
+    const stringId = String(eventId);
+    const alert = this.notifService.activeAlerts().find(a => a.eventId === stringId);
+    return alert ? alert.offsetMinutes === minutes : false;
+  }
+
+  setEventAlert(event: any, minutes: number) {
+    const stringId = String(event.id);
+    const eventTime = new Date(event.time);
+    
+    // Si ya existe una alerta para este evento, primero la eliminamos
+    this.notifService.removeCalendarAlert(stringId);
+
+    // Añadimos la nueva alerta
+    this.notifService.addCalendarAlert(
+      stringId,
+      event.event,
+      eventTime,
+      minutes
+    );
+  }
+
+  cancelEventAlert(event: any) {
+    const stringId = String(event.id);
+    this.notifService.removeCalendarAlert(stringId);
   }
 }
