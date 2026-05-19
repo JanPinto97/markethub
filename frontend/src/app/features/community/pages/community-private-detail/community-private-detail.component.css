@@ -581,6 +581,8 @@
 
   .community-banner {
     flex-direction: column;
+    align-items: center;
+    text-align: center;
     padding: var(--spacing-4);
   }
 
@@ -588,6 +590,11 @@
     flex-direction: column;
     align-items: center;
     text-align: center;
+    width: 100%;
+  }
+
+  .banner-info {
+    width: 100%;
   }
 
   .community-name { justify-content: center; }

@@ -839,6 +839,7 @@
   top: calc(100% + var(--spacing-2));
   right: 0;
   width: 320px;
+  max-width: calc(100vw - var(--spacing-4));
   max-height: 400px;
   background-color: var(--surface-container-lowest);
   border-radius: var(--radius-md);
@@ -848,6 +849,21 @@
   z-index: 1200;
   animation: menu-in 0.15s ease-out;
   overflow: hidden;
+}
+
+@media (max-width: 1023px) {
+  .notif-dropdown {
+    position: fixed;
+    top: calc(var(--header-height) + var(--spacing-2));
+    right: var(--spacing-2);
+    left: auto;
+    width: min(360px, calc(100vw - var(--spacing-4)));
+    max-height: calc(100vh - var(--header-height) - var(--spacing-4));
+  }
+}
+
+.notif-wrap-mobile {
+  position: static;
 }
 
 .notif-header {

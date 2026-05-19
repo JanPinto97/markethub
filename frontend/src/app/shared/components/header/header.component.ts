@@ -187,6 +187,7 @@ export class HeaderComponent implements OnInit {
     this.notifOpen.update(v => !v);
     if (this.notifOpen()) {
       this.menuOpen.set(false);
+      this.mobileMenuOpen.set(false);
       this.notifService.refreshFromServer();
     } else {
       // Mark as read when closing manually via toggle
@@ -240,10 +241,14 @@ export class HeaderComponent implements OnInit {
       return;
     }
 
-    // Inside header but outside notification wrap
-    const notifWrap = this.host.nativeElement.querySelector('.notif-wrap');
-    if (this.notifOpen() && notifWrap && !notifWrap.contains(target)) {
-      this.closeNotifications();
+    // Inside header but outside ALL notification wraps (desktop + mobile)
+    if (this.notifOpen()) {
+      const notifWraps = this.host.nativeElement.querySelectorAll('.notif-wrap');
+      let insideAny = false;
+      notifWraps.forEach((el: Element) => {
+        if (el.contains(target)) insideAny = true;
+      });
+      if (!insideAny) this.closeNotifications();
     }
   }
 

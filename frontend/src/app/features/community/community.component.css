@@ -681,6 +681,16 @@
   background-color: var(--surface-container-high);
 }
 
+/* ── SIDEBAR TOGGLES (mobile only) ── */
+.sidebar-toggle {
+  display: none;
+}
+
+/* ── DRAWER CLOSE ARROW (mobile only) ── */
+.drawer-close {
+  display: none;
+}
+
 /* ── DRAWER OVERLAY ── */
 .drawer-overlay {
   display: none;
@@ -735,8 +745,87 @@
     background-color: rgba(0, 0, 0, 0.4);
   }
 
+  /* Right sidebar becomes a drawer */
   .sidebar-right {
-    display: none;
+    display: flex;
+    position: fixed;
+    top: 0;
+    right: 0;
+    z-index: 200;
+    width: 280px;
+    height: 100vh;
+    background-color: var(--surface-container-lowest);
+    padding-top: calc(var(--header-height) + var(--spacing-2));
+    transform: translateX(100%);
+    transition: transform 200ms ease;
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.1);
+  }
+
+  .sidebar-right.drawer-open {
+    transform: translateX(0);
+  }
+
+  /* Floating sidebar toggles */
+  .sidebar-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    bottom: calc(var(--spacing-4) + env(safe-area-inset-bottom, 0px));
+    z-index: 140;
+    width: 48px;
+    height: 48px;
+    border: none;
+    border-radius: var(--radius-full);
+    background: var(--gradient-primary, linear-gradient(135deg, #006c49, #4edea3));
+    color: var(--on-primary, #fff);
+    cursor: pointer;
+    box-shadow: 0 10px 24px rgba(13, 28, 50, 0.18);
+    transition: transform 0.15s ease, opacity 0.15s ease;
+  }
+
+  .sidebar-toggle:active {
+    transform: scale(0.95);
+  }
+
+  .sidebar-toggle-left {
+    left: var(--spacing-4);
+  }
+
+  .sidebar-toggle-right {
+    right: var(--spacing-4);
+  }
+
+  /* Floating close arrows attached to the open drawer */
+  .drawer-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 210;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: var(--radius-full);
+    background-color: var(--surface-container-lowest, #fff);
+    color: var(--on-surface, #191c1e);
+    cursor: pointer;
+    box-shadow: 0 6px 16px rgba(13, 28, 50, 0.18);
+    transition: transform 0.15s ease;
+  }
+
+  .drawer-close:active {
+    transform: translateY(-50%) scale(0.92);
+  }
+
+  .drawer-close-left {
+    left: calc(280px - 18px);
+  }
+
+  .drawer-close-right {
+    right: calc(280px - 18px);
   }
 
   .feed-central {

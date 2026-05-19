@@ -58,6 +58,7 @@ export class CommunityComponent implements OnInit, AfterViewInit, OnDestroy {
   emojiPickerOpen = signal(false);
 
   drawerOpen = signal(false);
+  rightDrawerOpen = signal(false);
 
   showCreateCommunityModal = signal(false);
   showTopicSearchPopup = signal(false);
@@ -359,6 +360,12 @@ export class CommunityComponent implements OnInit, AfterViewInit, OnDestroy {
 
   toggleDrawer() {
     this.drawerOpen.update(v => !v);
+    if (this.drawerOpen()) this.rightDrawerOpen.set(false);
+  }
+
+  toggleRightDrawer() {
+    this.rightDrawerOpen.update(v => !v);
+    if (this.rightDrawerOpen()) this.drawerOpen.set(false);
   }
 
   requireAuth(): boolean {
