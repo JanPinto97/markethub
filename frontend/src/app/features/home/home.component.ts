@@ -63,6 +63,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
   private priceInterval: any;
+  private subs: any[] = [];
 
   openFaq = signal(0);
 
@@ -122,6 +123,10 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   losers: MarketRow[] = [];
 
   ngOnInit() {
+    this.subs.push(this.smartMarket.getStocksPricesBatch().subscribe());
+    this.subs.push(this.smartMarket.getForexPricesBatch([]).subscribe());
+    this.subs.push(this.smartMarket.getCryptoPrices([]).subscribe());
+
     this.hydratePrices();
     this.priceInterval = setInterval(() => {
       this.hydratePrices();
@@ -144,7 +149,10 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     const updatedAssets: (MarketRow & { rawPct: number })[] = [];
 
     this.assetPool.forEach(asset => {
-      const cached = this.smartMarket.getCachedPrice(asset.apiSym);
+      let cached = this.smartMarket.getCachedPrice(asset.apiSym);
+      if ((!cached || cached.c === 0) && asset.coingeckoId) {
+        cached = this.smartMarket.getCachedPrice(asset.coingeckoId);
+      }
       if (cached && cached.c > 0) {
         const rawPct = cached.dp;
         const isUp = rawPct >= 0;
@@ -317,5 +325,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.priceInterval) {
       clearInterval(this.priceInterval);
     }
+    this.subs.forEach(s => s.unsubscribe());
   }
 }

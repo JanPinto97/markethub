@@ -135,7 +135,7 @@ export class SmartMarketService implements OnDestroy {
    */
   getForexPricesBatch(symbols: string[]): Observable<any> {
     if (!this.masterForex$) {
-      const masterSet = ['EUR/USD', 'GBP/USD', 'USD/JPY', 'XAU/USD', 'XAG/USD'];
+      const masterSet = ['EUR/USD', 'GBP/USD', 'USD/JPY', 'XAU/USD', 'XAG/USD', 'AUD/USD', 'USD/CAD', 'XPT/USD'];
       const symbolsString = masterSet.join(',');
 
       this.masterForex$ = timer(0, this.REFRESH_FOREX_BATCH).pipe(
@@ -170,7 +170,10 @@ export class SmartMarketService implements OnDestroy {
    */
   getStocksPricesBatch(): Observable<any> {
     if (!this.masterStocks$) {
-      const masterSet = ['SPY', 'QQQ', 'DIA', 'AAPL', 'TSLA', 'NFLX', 'USO'];
+      const masterSet = [
+        'SPY', 'QQQ', 'DIA', 'AAPL', 'TSLA', 'NFLX', 'USO',
+        'NVDA', 'AMZN', 'GOOGL', 'META', 'AMD', 'INTC', 'V', 'JPM', 'DIS', 'COIN', 'NKE'
+      ];
       
       // Llamada espaciada cada 30s. 7 calls/30s = 14 req/min (Bien por debajo de las 60 req/min de Finnhub)
       this.masterStocks$ = timer(0, 30000).pipe(
@@ -214,7 +217,7 @@ export class SmartMarketService implements OnDestroy {
    */
   getCryptoPrices(cryptoIds: string[]): Observable<any> {
     if (!this.masterCrypto$) {
-      const masterSet = ['bitcoin', 'ethereum', 'solana', 'binancecoin', 'ripple', 'cardano', 'dogecoin', 'polkadot'];
+      const masterSet = ['bitcoin', 'ethereum', 'solana', 'binancecoin', 'ripple', 'cardano', 'dogecoin', 'polkadot', 'chainlink'];
       const ids = masterSet.join(',');
       const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true&x_cg_demo_api_key=${this.COINGECKO_KEY}`;
 
