@@ -26,7 +26,7 @@
     </nav>
   </div>
 
-  <main class="overview-main max-w-[1920px] mx-auto grid-cols-12 gap-8" [ngClass]="activeTab === 'overview' ? 'grid' : 'hidden'">
+  <main class="overview-main max-w-[1920px] mx-auto grid-cols-12 gap-8" [ngClass]="activeTab === 'overview' ? 'grid' : 'hidden'" [class.animate-fade-in]="activeTab === 'overview'">
 
     <!-- LEFT SECTION (8 Columns): Search, Chart & News Impact -->
     <section class="col-span-12 lg:col-span-8 flex flex-col gap-8">
@@ -336,14 +336,14 @@
   <!-- Economic Calendar Tab -->
   <app-economic-calendar [style.display]="activeTab === 'calendar' ? 'block' : 'none'"></app-economic-calendar>
 
-  <div [style.display]="activeTab === 'news' ? 'block' : 'none'" class="news-tab-wrapper">
+  <div [style.display]="activeTab === 'news' ? 'block' : 'none'" class="news-tab-wrapper" [class.animate-fade-in]="activeTab === 'news'">
     <app-market-news
       [articleFromOverview]="pendingNewsArticle"
       (articleFromOverviewConsumed)="clearPendingNewsArticle()"
     ></app-market-news>
   </div>
 
-  <div *ngIf="activeTab === 'charts'" class="charts-tab-shell">
+  <div *ngIf="activeTab === 'charts'" class="charts-tab-shell animate-fade-in">
     <app-charts></app-charts>
   </div>
 </div>

@@ -73,21 +73,49 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   private io?: IntersectionObserver;
 
   assetPool = [
-    { sym: 'NVDA',    apiSym: 'NVDA',    name: 'NVIDIA · Stock',          tvSymbol: 'NVDA',           source: 'finnhub' },
-    { sym: 'TSLA',    apiSym: 'TSLA',    name: 'Tesla · Stock',           tvSymbol: 'TSLA',           source: 'finnhub' },
-    { sym: 'S&P 500', apiSym: 'SPY',     name: 'S&P 500 · Index',         tvSymbol: 'SPY',            source: 'finnhub' },
-    { sym: 'XAU',     apiSym: 'XAU/USD', name: 'Gold spot · Commodity',   tvSymbol: 'OANDA:XAUUSD',   source: 'twelvedata' },
+    // --- Tus 15 activos originales ---
+    { sym: 'NVDA',    apiSym: 'NVDA',    name: 'NVIDIA · Stock',           tvSymbol: 'NVDA',           source: 'finnhub' },
+    { sym: 'TSLA',    apiSym: 'TSLA',    name: 'Tesla · Stock',            tvSymbol: 'TSLA',           source: 'finnhub' },
+    { sym: 'S&P 500', apiSym: 'SPY',     name: 'S&P 500 · Index',          tvSymbol: 'SPY',            source: 'finnhub' },
+    { sym: 'XAU',     apiSym: 'XAU/USD', name: 'Gold spot · Commodity',    tvSymbol: 'OANDA:XAUUSD',   source: 'twelvedata' },
     { sym: 'BTC',     apiSym: 'BTC/USD', name: 'Bitcoin · Crypto',        tvSymbol: 'BINANCE:BTCUSD', source: 'coingecko', coingeckoId: 'bitcoin' },
-    { sym: 'WTI',     apiSym: 'USO',     name: 'Crude Oil · Commodity',   tvSymbol: 'TVC:USOIL',      source: 'finnhub_synthetic_wti' },
+    { sym: 'WTI',     apiSym: 'USO',     name: 'Crude Oil · Commodity',    tvSymbol: 'TVC:USOIL',      source: 'finnhub_synthetic_wti' },
     { sym: 'ETH',     apiSym: 'ETH/USD', name: 'Ethereum · Crypto',       tvSymbol: 'BINANCE:ETHUSD', source: 'coingecko', coingeckoId: 'ethereum' },
     { sym: 'EURUSD',  apiSym: 'EUR/USD', name: 'Euro / US Dollar · Forex',tvSymbol: 'FX:EURUSD',      source: 'twelvedata' },
-    { sym: 'AAPL',    apiSym: 'AAPL',    name: 'Apple · Stock',           tvSymbol: 'AAPL',           source: 'finnhub' },
-    { sym: 'MSFT',    apiSym: 'MSFT',    name: 'Microsoft · Stock',       tvSymbol: 'MSFT',           source: 'finnhub' },
+    { sym: 'AAPL',    apiSym: 'AAPL',    name: 'Apple · Stock',            tvSymbol: 'AAPL',           source: 'finnhub' },
+    { sym: 'MSFT',    apiSym: 'MSFT',    name: 'Microsoft · Stock',        tvSymbol: 'MSFT',           source: 'finnhub' },
     { sym: 'QQQ',     apiSym: 'QQQ',     name: 'NASDAQ 100 · Index',      tvSymbol: 'QQQ',            source: 'finnhub' },
     { sym: 'GBPUSD',  apiSym: 'GBP/USD', name: 'GBP / USD · Forex',       tvSymbol: 'FX:GBPUSD',      source: 'twelvedata' },
     { sym: 'SOL',     apiSym: 'SOL/USD', name: 'Solana · Crypto',         tvSymbol: 'BINANCE:SOLUSD', source: 'coingecko', coingeckoId: 'solana' },
     { sym: 'XAG',     apiSym: 'XAG/USD', name: 'Silver spot · Commodity', tvSymbol: 'OANDA:XAGUSD',   source: 'twelvedata' },
-    { sym: 'AMZN',    apiSym: 'AMZN',    name: 'Amazon · Stock',          tvSymbol: 'AMZN',           source: 'finnhub' }
+    { sym: 'AMZN',    apiSym: 'AMZN',    name: 'Amazon · Stock',           tvSymbol: 'AMZN',           source: 'finnhub' },
+
+    // --- NUEVOS: 20 Activos populares añadidos ---
+    // Acciones e Índices (Finnhub)
+    { sym: 'GOOGL',   apiSym: 'GOOGL',   name: 'Alphabet · Stock',         tvSymbol: 'GOOGL',          source: 'finnhub' },
+    { sym: 'META',    apiSym: 'META',    name: 'Meta Platforms · Stock',   tvSymbol: 'META',           source: 'finnhub' },
+    { sym: 'NFLX',    apiSym: 'NFLX',    name: 'Netflix · Stock',          tvSymbol: 'NFLX',           source: 'finnhub' },
+    { sym: 'AMD',     apiSym: 'AMD',     name: 'AMD · Stock',              tvSymbol: 'AMD',            source: 'finnhub' },
+    { sym: 'INTC',    apiSym: 'INTC',    name: 'Intel · Stock',            tvSymbol: 'INTC',           source: 'finnhub' },
+    { sym: 'V',       apiSym: 'V',       name: 'Visa · Stock',             tvSymbol: 'V',              source: 'finnhub' },
+    { sym: 'JPM',     apiSym: 'JPM',     name: 'JPMorgan Chase · Stock',   tvSymbol: 'JPM',            source: 'finnhub' },
+    { sym: 'DIS',     apiSym: 'DIS',     name: 'Disney · Stock',           tvSymbol: 'DIS',            source: 'finnhub' },
+    { sym: 'COIN',    apiSym: 'COIN',    name: 'Coinbase · Stock',         tvSymbol: 'COIN',           source: 'finnhub' },
+    { sym: 'NKE',     apiSym: 'NKE',     name: 'Nike · Stock',             tvSymbol: 'NKE',            source: 'finnhub' },
+    { sym: 'DIA',     apiSym: 'DIA',     name: 'Dow Jones · Index',        tvSymbol: 'DIA',            source: 'finnhub' },
+    
+    // Criptomonedas (Coingecko)
+    { sym: 'XRP',     apiSym: 'XRP/USD', name: 'Ripple · Crypto',          tvSymbol: 'BINANCE:XRPUSD', source: 'coingecko', coingeckoId: 'ripple' },
+    { sym: 'ADA',     apiSym: 'ADA/USD', name: 'Cardano · Crypto',         tvSymbol: 'BINANCE:ADAUSD', source: 'coingecko', coingeckoId: 'cardano' },
+    { sym: 'DOGE',    apiSym: 'DOGE/USD',name: 'Dogecoin · Crypto',        tvSymbol: 'BINANCE:DOGEUSD',source: 'coingecko', coingeckoId: 'dogecoin' },
+    { sym: 'BNB',     apiSym: 'BNB/USD', name: 'BNB · Crypto',             tvSymbol: 'BINANCE:BNBUSD', source: 'coingecko', coingeckoId: 'binancecoin' },
+    { sym: 'LINK',    apiSym: 'LINK/USD',name: 'Chainlink · Crypto',       tvSymbol: 'BINANCE:LINKUSD',source: 'coingecko', coingeckoId: 'chainlink' },
+
+    // Forex y Materias Primas (Twelvedata)
+    { sym: 'USDJPY',  apiSym: 'USD/JPY', name: 'USD / JPY · Forex',        tvSymbol: 'FX:USDJPY',      source: 'twelvedata' },
+    { sym: 'AUDUSD',  apiSym: 'AUD/USD', name: 'AUD / USD · Forex',        tvSymbol: 'FX:AUDUSD',      source: 'twelvedata' },
+    { sym: 'USDCAD',  apiSym: 'USD/CAD', name: 'USD / CAD · Forex',        tvSymbol: 'FX:USDCAD',      source: 'twelvedata' },
+    { sym: 'XPT',     apiSym: 'XPT/USD', name: 'Platinum · Commodity',     tvSymbol: 'OANDA:XPTUSD',   source: 'twelvedata' }
   ];
 
   gainers: MarketRow[] = [];
@@ -149,14 +177,17 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     });
 
     if (updatedAssets.length > 0) {
-      // Ordenar por rendimiento de mayor a menor
-      updatedAssets.sort((a, b) => b.rawPct - a.rawPct);
-      
-      // Top 4 ganadores (mayor porcentaje)
-      this.gainers = updatedAssets.slice(0, 4);
-      
-      // Top 4 perdedores (menor porcentaje, invertimos para ver el peor de todos primero)
-      this.losers = updatedAssets.slice(-4).reverse();
+      // Filtrar y ordenar ganadores reales (rawPct > 0)
+      const validGainers = updatedAssets
+        .filter(asset => asset.rawPct > 0)
+        .sort((a, b) => b.rawPct - a.rawPct);
+      this.gainers = validGainers.slice(0, 4);
+
+      // Filtrar y ordenar perdedores reales (rawPct < 0)
+      const validLosers = updatedAssets
+        .filter(asset => asset.rawPct < 0)
+        .sort((a, b) => a.rawPct - b.rawPct); // El más negativo primero
+      this.losers = validLosers.slice(0, 4);
     }
   }
 
