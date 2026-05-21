@@ -22,17 +22,25 @@ async function run() {
   await mongoose.connect(process.env.MONGO_URI);
   console.log(`MongoDB connected: ${mongoose.connection.host}`);
 
+  const superadminUsername = process.env.SUPERADMIN_USERNAME || 'superadmin';
+  const superadminEmail = process.env.SUPERADMIN_EMAIL || 'superadmin@markethub.com';
+  const superadminPassword = process.env.SUPERADMIN_PASSWORD || 'SuperAdmin123!';
+
+  const moderatorUsername = process.env.MODERATOR_USERNAME || 'moderator';
+  const moderatorEmail = process.env.MODERATOR_EMAIL || 'moderator@markethub.com';
+  const moderatorPassword = process.env.MODERATOR_PASSWORD || 'Moderator123!';
+
   await upsertUser({
-    username: process.env.SUPERADMIN_USERNAME,
-    email: process.env.SUPERADMIN_EMAIL,
-    password: process.env.SUPERADMIN_PASSWORD,
+    username: superadminUsername,
+    email: superadminEmail,
+    password: superadminPassword,
     role: 'superadmin',
   });
 
   await upsertUser({
-    username: process.env.MODERATOR_USERNAME,
-    email: process.env.MODERATOR_EMAIL,
-    password: process.env.MODERATOR_PASSWORD,
+    username: moderatorUsername,
+    email: moderatorEmail,
+    password: moderatorPassword,
     role: 'moderator',
   });
 
