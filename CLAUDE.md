@@ -136,6 +136,11 @@ CommunityPrivate, DiscussionTopic, Discussion, DiscussionMessage + User model up
   Privacy / Cookies), brand block, © year + disclosure line.
 ⬜ AI assistant
 
+🔄 Phase 6: Kubernetes Deployment
+✅ Dockerfiles de producción para Frontend (multi-etapa + Nginx) y Backend (Node.js/Express)
+✅ Configuración de Nginx para Frontend enrutando peticiones `/api` al ClusterIP del Backend (`10.96.8.20`)
+✅ Manifiestos de Kubernetes locales (`k8s/`): Base de Datos (`1-database.yaml` con NFS PVC), Backend (`2-backend.yaml` con cuotas, variables, `imagePullPolicy: Never` y `nodeSelector: kube0`) y Frontend (`3-frontend.yaml` con ClusterIP estática `10.96.8.101`, `imagePullPolicy: Never` y `nodeSelector: kube0`)
+
 ## Rules
 
 - ALWAYS REMEMBER THE USER TO COMMIT CHANGES ONCE A FEATURE IS COMPLETED.

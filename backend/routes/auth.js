@@ -22,7 +22,7 @@ function signRefresh(user) {
 function setRefreshCookie(res, token) {
   res.cookie('refreshToken', token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: false,
     sameSite: 'lax',
     maxAge: REFRESH_COOKIE_MAX_AGE,
   });

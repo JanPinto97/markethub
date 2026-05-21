@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deployment
+  namespace: grup8
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: markethub-frontend
+  template:
+    metadata:
+      labels:
+        app: markethub-frontend
+    spec:
+      containers:
+      - name: frontend
+        image: jasonokoro10/markethub-frontend:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+        resources: # OBLIGATORIO
+          requests:
+            memory: "100Mi"
+            cpu: "100m"
+          limits:
+            memory: "250Mi"
+            cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: clusterip-grup8
+  namespace: grup8
+spec:
+  type: ClusterIP
+  selector:
+    app: markethub-frontend
+  ports:
+    - port: 80
+      targetPort: 80
+  clusterIP: 10.96.8.101 # ESTA ES LA IP CLAVE DEL MANUAL

@@ -2,6 +2,7 @@ import { Injectable, computed, signal, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, tap, map, switchMap, catchError } from 'rxjs';
 import { User } from '../models/user.model';
+import { environment } from '../../../environments/environment';
 
 interface AuthResponse { success: boolean; accessToken: string; user: User; }
 interface RefreshResponse { success: boolean; accessToken: string; }
@@ -10,7 +11,7 @@ interface MeResponse { success: boolean; user: User; }
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private http = inject(HttpClient);
-  private baseUrl = 'http://localhost:3000/api/v1';
+  private baseUrl = environment.apiUrl;
   private accessToken: string | null = null;
 
   readonly currentUser = signal<User | null>(null);

@@ -18,6 +18,7 @@ import { PostX } from '../community/services/community.service';
 import { getInitial, getUsernameColor } from '../../shared/utils/color.utils';
 import { ProfileService, UserProfile, UserSummary } from './profile.service';
 import { MediaUrlPipe } from '../../shared/pipes/media-url.pipe';
+import { environment } from '../../../environments/environment';
 
 type FollowersTab = 'followers' | 'following';
 
@@ -291,6 +292,6 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   mediaUrlFull(url?: string): string {
     if (!url) return '';
     if (url.startsWith('http')) return url;
-    return `http://localhost:3000${url}`;
+    return `${environment.apiOrigin}${url}`;
   }
 }

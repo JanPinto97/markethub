@@ -4,6 +4,7 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { CommunityService, PostReddit } from '../../services/community.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { getUsernameColor, getInitial } from '../../../../shared/utils/color.utils';
+import { environment } from '../../../../../environments/environment';
 
 @Component({
   selector: 'app-post-reddit-card',
@@ -59,7 +60,7 @@ export class PostRedditCardComponent {
 
   get mediaUrlFull(): string {
     if (!this.post.mediaUrl) return '';
-    return `http://localhost:3000${this.post.mediaUrl}`;
+    return `${environment.apiOrigin}${this.post.mediaUrl}`;
   }
 
   get detailLink(): string {
