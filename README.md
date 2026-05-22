@@ -91,13 +91,24 @@ docker-compose exec backend sh
 docker-compose exec mongo mongosh markethub
 ```
 
-**Seed discussion topics (required for the Community page topics):**
+**Seed the database (reviewer / first-time setup):**
 
 ```bash
-docker-compose exec backend npm run seed:topics
+docker-compose exec backend npm run seed         # superadmin + moderator users
+docker-compose exec backend npm run seed:topics  # fixed list of discussion topics
+docker-compose exec backend npm run seed:demo    # demo communities, posts, comments + uploaded images
 ```
 
-Run this once after the database is up. It populates the fixed list of discussion topics (Macro, Crypto, Trading, etc.) used by the Community section.
+`seed:demo` restores a frozen MongoDB dump (`backend/seed/demo-data.archive.gz`)
+plus the bundled uploads tarball, so reviewers see the application populated with
+realistic content without needing Ollama or running `seed:dev`.
+
+Advanced (only for regenerating the demo dump from a dev environment with content
+already loaded via `seed:dev`):
+
+```bash
+docker-compose exec backend npm run seed:generate-dump
+```
 
 **Reset the database only (keep node_modules):**
 

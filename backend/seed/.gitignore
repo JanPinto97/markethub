@@ -1,0 +1,2 @@
+# Force-track the generated demo dumps in this folder
+!*.gz

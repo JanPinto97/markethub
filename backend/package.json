@@ -9,7 +9,9 @@
     "dev": "nodemon server.js",
     "seed": "node scripts/seed.js",
     "seed:topics": "node scripts/seedTopics.js",
-    "seed:dev": "node seeders/dev-data.seeder.js"
+    "seed:dev": "node seeders/dev-data.seeder.js",
+    "seed:demo": "node scripts/seed-demo.js",
+    "seed:generate-dump": "node scripts/generate-demo-dump.js"
   },
   "keywords": [],
   "author": "",
