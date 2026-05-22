@@ -4,8 +4,7 @@ import { Router } from '@angular/router';
 import { catchError, switchMap, throwError } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 import { ToastService } from '../services/toast.service';
-
-const API_ORIGIN = 'http://localhost:3000';
+import { environment } from '../../../environments/environment';
 
 function addToken(req: HttpRequest<unknown>, token: string | null): HttpRequest<unknown> {
   if (!token) return req;
@@ -13,7 +12,7 @@ function addToken(req: HttpRequest<unknown>, token: string | null): HttpRequest<
 }
 
 function isInternal(url: string): boolean {
-  return url.startsWith('/api/') || url.startsWith(API_ORIGIN);
+  return url.startsWith('/api/') || (environment.apiOrigin ? url.startsWith(environment.apiOrigin) : true);
 }
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {

@@ -6,6 +6,7 @@ import { AssistantPopupService } from '../../../../core/services/assistant-popup
 import { CommunityService, DiscussionTopicFull, PostReddit } from '../../services/community.service';
 import { PostRedditCommentSectionComponent } from '../../components/post-reddit-comment-section/post-reddit-comment-section.component';
 import { getUsernameColor, getInitial } from '../../../../shared/utils/color.utils';
+import { environment } from '../../../../../environments/environment';
 
 @Component({
   selector: 'app-post-reddit-detail',
@@ -95,7 +96,7 @@ export class PostRedditDetailComponent implements OnInit {
   mediaUrlFull(): string {
     const p = this.post();
     if (!p?.mediaUrl) return '';
-    return `http://localhost:3000${p.mediaUrl}`;
+    return `${environment.apiOrigin}${p.mediaUrl}`;
   }
 
   isOwner(): boolean {

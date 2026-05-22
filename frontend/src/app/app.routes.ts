@@ -83,6 +83,7 @@ export const routes: Routes = [
   },
   {
     path: 'assistant',
+    canActivate: [authGuard],
     loadComponent: () => import('./features/assistant/assistant.component').then(m => m.AssistantComponent)
   },
   {

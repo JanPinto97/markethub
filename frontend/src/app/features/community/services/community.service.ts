@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, Subject, map, of } from 'rxjs';
 import { ApiService } from '../../../core/services/api.service';
+import { environment } from '../../../../environments/environment';
 
 export interface Community {
   id: string;
@@ -219,7 +220,7 @@ const STORAGE_KEY = 'mh_pinned_topics';
 export class CommunityService {
   private api = inject(ApiService);
   private http = inject(HttpClient);
-  private baseUrl = 'http://localhost:3000/api/v1';
+  private baseUrl = environment.apiUrl;
 
   // ── Communities ──
   getMyCommunities(): Observable<Community[]> {

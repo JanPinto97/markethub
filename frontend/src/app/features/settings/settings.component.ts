@@ -21,6 +21,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 import { User } from '../../core/models/user.model';
 import { getInitial, getUsernameColor } from '../../shared/utils/color.utils';
+import { environment } from '../../../environments/environment';
 
 interface ProfileUpdateResponse {
   success: boolean;
@@ -47,7 +48,7 @@ export class SettingsComponent implements AfterViewInit {
   private destroyRef = inject(DestroyRef);
 
   private toastSvc = inject(ToastService);
-  private baseUrl = 'http://localhost:3000/api/v1';
+  private baseUrl = environment.apiUrl;
 
   @ViewChild('bioInput') bioInput?: ElementRef<HTMLTextAreaElement>;
 
@@ -140,9 +141,9 @@ export class SettingsComponent implements AfterViewInit {
     this.accountForm.patchValue({ email: this.initialEmail }, { emitEvent: false });
 
     const avatarUrl = user.avatar || '';
-    this.currentAvatarUrl.set(avatarUrl.startsWith('/uploads') ? `http://localhost:3000${avatarUrl}` : avatarUrl);
+    this.currentAvatarUrl.set(avatarUrl.startsWith('/uploads') ? `${environment.apiOrigin}${avatarUrl}` : avatarUrl);
     const coverUrl = user.coverImage || '';
-    this.currentCoverUrl.set(coverUrl.startsWith('/uploads') ? `http://localhost:3000${coverUrl}` : coverUrl);
+    this.currentCoverUrl.set(coverUrl.startsWith('/uploads') ? `${environment.apiOrigin}${coverUrl}` : coverUrl);
     this.usernameValue.set(this.initialProfile.username);
     this.bioLength.set(this.initialProfile.bio.length);
     this.avatarFile = null;

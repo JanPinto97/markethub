@@ -1,7 +1,7 @@
 export const environment = {
-  production: false,
-  apiUrl: 'http://localhost:3000/api/v1',
-  apiOrigin: 'http://localhost:3000',
+  production: true,
+  apiUrl: '/api/v1',
+  apiOrigin: '',
   finnhubKey: 'd7jo9s9r01qu1n4fg3pgd7jo9s9r01qu1n4fg3q0',
   newsDataKey: 'pub_51b0bb5e9a054ff19dbd2272f643fef5',
   marketauxKey: 'TUzZlehn8kwZmGgBBbQW4Rmzds6ZRYLwwRdd8VO1',
@@ -16,4 +16,3 @@ export const environment = {
   ],
   coingeckoKey: 'CG-T7BjzNAbWJhwFMvvbj4sM8Mp'
 };
-

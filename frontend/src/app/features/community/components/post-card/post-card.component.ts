@@ -5,6 +5,7 @@ import { CommunityService, PostX, PostComment, CommunityRole } from '../../servi
 import { ToastService } from '../../../../core/services/toast.service';
 import { getUsernameColor, getInitial } from '../../../../shared/utils/color.utils';
 import { MediaUrlPipe } from '../../../../shared/pipes/media-url.pipe';
+import { environment } from '../../../../../environments/environment';
 
 @Component({
   selector: 'app-post-card',
@@ -98,7 +99,7 @@ export class PostCardComponent {
 
   get mediaUrlFull(): string {
     if (!this.post.mediaUrl) return '';
-    return `http://localhost:3000${this.post.mediaUrl}`;
+    return `${environment.apiOrigin}${this.post.mediaUrl}`;
   }
 
   relativeTime(date: string): string {

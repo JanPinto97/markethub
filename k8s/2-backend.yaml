@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+  namespace: grup8
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: markethub-backend
+  template:
+    metadata:
+      labels:
+        app: markethub-backend
+    spec:
+      containers:
+      - name: backend
+        image: jasonokoro10/markethub-backend:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3000
+        env:
+        - name: MONGO_URI
+          value: "mongodb://10.96.8.10:27017/markethub"
+        - name: JWT_SECRET
+          value: "3rufjdoif3jpruhdsine29o4mri321klfdfhpq32enkcxzrs"
+        - name: JWT_REFRESH_SECRET
+          value: "r3f1eshk3y9zx8vbn4mq7wertyuiopasdfghjklcxz1029384756"
+        - name: NODE_ENV
+          value: "production"
+        - name: GEMINI_API_KEY
+          value: "TU_GEMINI_API_KEY_PLACEHOLDER"
+        - name: FINNHUB_API_KEY
+          value: "d7jo9s9r01qu1n4fg3pgd7jo9s9r01qu1n4fg3q0"
+        - name: TWELVE_DATA_API_KEY
+          value: "b21b5589fbce4aada1a45a82a7bbbbf0"
+        - name: FRONTEND_URL
+          value: "http://grup8.infla.cat"
+        - name: GOOGLE_CLIENT_ID
+          value: "TU_GOOGLE_CLIENT_ID_PLACEHOLDER"
+        - name: GOOGLE_CLIENT_SECRET
+          value: "TU_GOOGLE_CLIENT_SECRET_PLACEHOLDER"
+        - name: GOOGLE_CALLBACK_URL
+          value: "http://grup8.infla.cat/api/v1/auth/google/callback"
+        resources: # OBLIGATORIO
+          requests:
+            memory: "250Mi"
+            cpu: "150m"
+          limits:
+            memory: "500Mi"
+            cpu: "300m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: grup8
+spec:
+  type: ClusterIP
+  selector:
+    app: markethub-backend
+  ports:
+    - port: 3000
+      targetPort: 3000
+  clusterIP: 10.96.8.20 # IP interna reservada para tu Backend
