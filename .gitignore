@@ -23,3 +23,14 @@ Thumbs.db
 
 # Docker
 docker-compose.override.yml
+
+# Claude
+CLAUDE.md
+**/CLAUDE.md
+.claude/
+.claudeignore
+
+# Internal docs (not for distribution)
+COMMUNITY.md
+content.md
+context.md

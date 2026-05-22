@@ -1,89 +1,90 @@
 # MarketHub
 
-Financial web portal and social network. Users share market analysis, follow the
-economic calendar, and interact in communities (X-style and Reddit-style discussions).
+Portal web financer i xarxa social. Els usuaris comparteixen anàlisi de mercats,
+segueixen el calendari econòmic i interactuen en comunitats.
 
 ## Stack
 
-- **Frontend:** Angular 21 (standalone components, signals), TypeScript 5.9, custom CSS + CSS variables, Tailwind CDN as complement
-- **Backend:** Node.js 20 + Express 5, MongoDB 7 + Mongoose 9, JWT auth (access in memory, refresh httpOnly cookie)
-- **Infrastructure:** Docker + docker-compose
-- **External APIs (Markets):** Finnhub, Twelve Data, CoinGecko, TradingView widgets
+- **Frontend:** Angular 21 (standalone components, signals), TypeScript 5.9, CSS custom + variables CSS, Tailwind via CDN com a complement
+- **Backend:** Node.js 20 + Express 5, MongoDB 7 + Mongoose 9, autenticació JWT (access en memòria, refresh en cookie httpOnly)
+- **Infraestructura:** Docker + docker-compose
+- **APIs externes (Markets):** Finnhub, Twelve Data, CoinGecko, widgets de TradingView
 
-## Repo structure
+## Estructura del repositori
 
 ```
-/frontend           → Angular SPA (port 4200)
-/backend            → Express API (port 3000), MVC (models/controllers/routes/middleware)
-/docker-compose.yml → mongo + backend + frontend services
-/.env.example       → environment template
-/CLAUDE.md          → root project context
-/COMMUNITY.md       → full Community page functional specification
-/frontend/CLAUDE.md → frontend-specific context
-/backend/CLAUDE.md  → backend-specific context
+/frontend           → SPA Angular (port 4200)
+/backend            → API Express (port 3000), MVC (models/controllers/routes/middleware)
+/seeder             → seeders externs basats en Ollama (generació de contingut amb IA)
+/docker-compose.yml → serveis mongo + backend + frontend
+/package-lock.json  → lockfile de dependències a nivell d'arrel
+/.env.example       → plantilla de variables d'entorn
+/.gitignore         → fitxers i carpetes ignorats per git
+/README.md          → aquest fitxer
 ```
 
-## Running
+## Posada en marxa
 
-### Docker (recommended)
+### Docker (recomanat)
 
-The stack defines 3 services in `docker-compose.yml`: `mongo`, `backend`, `frontend`.
-Source folders are bind-mounted for live reload (`./backend:/app`, `./frontend:/app`),
-and `node_modules` are kept inside anonymous volumes (`/app/node_modules`) so the host
-versions don't override the container's.
+L'stack defineix 3 serveis al `docker-compose.yml`: `mongo`, `backend` i `frontend`.
+Les carpetes de codi es munten amb bind-mount per tenir live reload
+(`./backend:/app`, `./frontend:/app`) i els `node_modules` es guarden en volums
+anònims (`/app/node_modules`) perquè les versions del host no sobreescriguin les
+del contenidor.
 
-**First-time start (or after pulling new code):**
+**Primer arrencada (o després de fer pull de codi nou):**
 
 ```bash
-cp .env.example .env       # then edit values (JWT secrets, Google OAuth, etc.)
+cp .env.example .env       # després edita els valors (JWT secrets, Google OAuth, etc.)
 docker-compose up --build
 ```
 
-Services start at:
+Els serveis arrenquen a:
 
 - Frontend → http://localhost:4200
 - Backend → http://localhost:3000
 - MongoDB → localhost:27017 (db: `markethub`)
 
-**Subsequent runs (no dependency or Dockerfile changes):**
+**Arrencades posteriors (sense canvis a dependències ni Dockerfile):**
 
 ```bash
 docker-compose up
 ```
 
-**Stop:**
+**Aturar:**
 
 ```bash
-docker-compose down                # stops containers, keeps volumes (DB + node_modules persist)
-docker-compose down -v             # ⚠️ also wipes volumes — you'll lose MongoDB data
+docker-compose down                # para contenidors, manté volums (BD + node_modules persisteixen)
+docker-compose down -v             # ⚠️ també esborra volums — perdràs les dades de MongoDB
 ```
 
-**After adding/removing a dependency in `backend/package.json` or `frontend/package.json`:**
+**Després d'afegir o treure una dependència a `backend/package.json` o `frontend/package.json`:**
 
-The anonymous `node_modules` volume is not refreshed by `--build` alone.
-You must either drop it or install inside the running container:
+El volum anònim de `node_modules` no es refresca només amb `--build`. Has de
+treure'l o instal·lar dins del contenidor en marxa:
 
 ```bash
-# Option A — recreate the node_modules volume cleanly (recommended)
+# Opció A — recrear el volum de node_modules net (recomanat)
 docker-compose down
-docker volume ls | grep _node_modules            # find the exact volume name
-docker volume rm <markethub_backend_node_modules>  # repeat for frontend if needed
+docker volume ls | grep _node_modules            # busca el nom exacte del volum
+docker volume rm <markethub_backend_node_modules>  # repeteix per frontend si cal
 docker-compose up --build
 
-# Option B — install live in the running container (quick fix)
+# Opció B — instal·lar directament al contenidor en marxa (solució ràpida)
 docker-compose exec backend npm install
 docker-compose exec frontend npm install
 docker-compose restart backend frontend
 ```
 
-**Rebuild a single service:**
+**Reconstruir un sol servei:**
 
 ```bash
 docker-compose up --build backend
 docker-compose up --build frontend
 ```
 
-**Logs and shell:**
+**Logs i shell:**
 
 ```bash
 docker-compose logs -f backend
@@ -91,30 +92,31 @@ docker-compose exec backend sh
 docker-compose exec mongo mongosh markethub
 ```
 
-**Seed the database (reviewer / first-time setup):**
+**Carregar dades de demo (revisor / primer setup):**
 
 ```bash
 docker-compose exec backend npm run seed:demo
 ```
 
-`seed:demo` restores a frozen MongoDB dump (`backend/seed/demo-data.archive.gz`)
-**including users, topics, communities, posts, comments and notifications**, plus
-the bundled uploads tarball. After running it the app is fully populated and ready
-to browse — no need to run `seed` or `seed:topics` separately.
+`seed:demo` restaura un dump congelat de MongoDB (`backend/seed/demo-data.archive.gz`)
+**incloent usuaris, topics, comunitats, posts, comentaris i notificacions**, més
+el tarball d'uploads (imatges pujades). Després d'executar-lo l'aplicació queda
+totalment poblada i a punt per navegar — no cal executar `seed` ni `seed:topics`
+per separat.
 
-Demo accounts (all with password `Test1234!`): `alice_trader`, `bob_crypto`,
+Comptes de demo (tots amb contrasenya `Test1234!`): `alice_trader`, `bob_crypto`,
 `carol_quant`, `david_value`, `eve_scalper`, `frank_macro`, `grace_whale`,
-`henry_analyst`. Superadmin/moderator accounts use the credentials embedded in
-the dump.
+`henry_analyst`. Els comptes de superadmin i moderator utilitzen les credencials
+incrustades al dump.
 
-Advanced (only for regenerating the demo dump from a dev environment with content
-already loaded via `seed:dev`):
+Avançat (només per regenerar el dump des d'un entorn de desenvolupament amb
+contingut ja carregat via `seed:dev`):
 
 ```bash
 docker-compose exec backend npm run seed:generate-dump
 ```
 
-**Reset the database only (keep node_modules):**
+**Reiniciar només la base de dades (mantenint node_modules):**
 
 ```bash
 docker-compose down
@@ -122,40 +124,40 @@ docker volume rm <markethub_mongo_data>
 docker-compose up
 ```
 
-### Local dev (without Docker)
+### Desenvolupament local (sense Docker)
 
 ```bash
-cd backend && npm install && npm run dev   # nodemon, requires Mongo on localhost:27017
+cd backend && npm install && npm run dev   # nodemon, requereix Mongo a localhost:27017
 cd frontend && npm install && ng serve     # port 4200
 ```
 
 **Seeders:**
 
 ```bash
-cd seeder && npm run bootstrap 5   # seeders, requires Mongo on localhost:27017 and Ollama running
-cd seeder && npm run orchestrate       # seeders, requires Mongo on localhost:27017 and Ollama running
+cd seeder && npm run bootstrap 5   # seeders, requereix Mongo a localhost:27017 i Ollama en marxa
+cd seeder && npm run orchestrate   # seeders, requereix Mongo a localhost:27017 i Ollama en marxa
 ```
 
-## Environment variables
+## Variables d'entorn
 
-Copy `.env.example` to `.env` and fill in values. The backend loads `.env` from the
-project root via dotenv.
+Copia `.env.example` a `.env` i omple els valors. El backend carrega `.env` des de
+l'arrel del projecte via dotenv.
 
-Required variables:
+Variables obligatòries:
 
 - `PORT`, `MONGO_URI`, `NODE_ENV`
 - `JWT_SECRET`, `JWT_REFRESH_SECRET`
-- `SUPERADMIN_*`, `MODERATOR_*` (used by seeders)
+- `SUPERADMIN_*`, `MODERATOR_*` (utilitzades pels seeders)
 
-Optional (Google OAuth — without these the `Continue with Google` button returns 503,
-but email/password login still works):
+Opcionals (Google OAuth — sense això el botó `Continue with Google` retorna 503,
+però el login amb email/contrasenya segueix funcionant):
 
-- `FRONTEND_URL` (default `http://localhost:4200`)
+- `FRONTEND_URL` (per defecte `http://localhost:4200`)
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
-- `GOOGLE_CALLBACK_URL` (must match the redirect URI registered in Google Cloud
-  Console — typically `http://localhost:3000/api/v1/auth/google/callback`)
+- `GOOGLE_CALLBACK_URL` (ha de coincidir amb l'URI de redirecció registrat a la
+  Google Cloud Console — típicament `http://localhost:3000/api/v1/auth/google/callback`)
 
-After editing `.env`, restart the backend container so it picks up the new values:
+Després d'editar `.env`, reinicia el contenidor del backend perquè agafi els nous valors:
 
 ```bash
 docker-compose restart backend
@@ -163,44 +165,45 @@ docker-compose restart backend
 
 ## API
 
-All routes are prefixed with `/api/v1`. See `backend/CLAUDE.md` for the full endpoint list.
+Totes les rutes estan prefixades amb `/api/v1`.
 
-- **Success response:** `{ success: true, ... }`
-- **Error response:** `{ success: false, message, code }`
+- **Resposta correcta:** `{ success: true, ... }`
+- **Resposta d'error:** `{ success: false, message, code }`
 
-## Page routes
+## Rutes de pàgina
 
-| Path                                   | Access                     |
-| -------------------------------------- | -------------------------- |
-| `/`                                    | Landing (public)           |
-| `/markets`                             | Markets dashboard          |
-| `/community`                           | Community feed             |
-| `/community/c/:id`                     | Public community detail    |
-| `/community/p/:id`                     | Private community (auth)   |
-| `/community/p/:id/details`             | Members/requests (auth)    |
-| `/community/t/:slug`                   | Discussion topic           |
-| `/community/t/:slug/p/:postId`         | PostReddit detail          |
-| `/community/discussion/new/:commentId` | Open new discussion (auth) |
-| `/community/discussion/:discussionId`  | Discussion thread (auth)   |
-| `/profile/:username`                   | Public user profile        |
-| `/search`                              | Full search results        |
-| `/settings`                            | Private settings (auth)    |
-| `/login`, `/register`                  | Auth forms                 |
+| Ruta                                   | Accés                          |
+| -------------------------------------- | ------------------------------ |
+| `/`                                    | Landing (pública)              |
+| `/markets`                             | Panell de mercats              |
+| `/community`                           | Feed de Community              |
+| `/community/c/:id`                     | Detall comunitat pública       |
+| `/community/p/:id`                     | Comunitat privada (auth)       |
+| `/community/p/:id/details`             | Membres/sol·licituds (auth)    |
+| `/community/t/:slug`                   | Topic de discussió             |
+| `/community/t/:slug/p/:postId`         | Detall de PostReddit           |
+| `/community/discussion/new/:commentId` | Obrir nova discussió (auth)    |
+| `/community/discussion/:discussionId`  | Fil de discussió (auth)        |
+| `/profile/:username`                   | Perfil públic d'usuari         |
+| `/search`                              | Resultats de cerca complets    |
+| `/settings`                            | Configuració privada (auth)    |
+| `/login`, `/register`                  | Formularis d'autenticació      |
 
-## Project status
+## Estat del projecte
 
-- **Phase 1: Infrastructure** — Done
-- **Phase 2: Authentication** — Done
-- **Phase 3: Community** — Mostly done (feed, public/private communities, topics, profiles, search, discussions, discover popup)
-- **Phase 4: Markets** — In progress (Overview with live tickers from 3 APIs, Economic Calendar)
-- **Phase 5: AI assistant + Home polish** — Pending
+**Projecte finalitzat ✅**
 
-## Conventions
+- **Fase 1: Infraestructura** — Completada
+- **Fase 2: Autenticació** — Completada
+- **Fase 3: Community** — Completada (feed, comunitats públiques/privades, topics, perfils, cerca, discussions, popup de discover, notificacions)
+- **Fase 4: Markets** — Completada (Overview amb tickers en directe de 3 APIs, calendari econòmic, news, charts)
+- **Fase 5: Assistent d'IA + Polit de la Home** — Completada (landing editorial, footer, assistent Warren)
 
-- Angular: standalone components, signals for state when possible, lazy-loaded routes
-- Backend: async/await + `next(err)` error propagation, MVC layout
-- TypeScript strict mode
-- Custom CSS + variables in `frontend/src/styles/variables.css` (Tailwind via CDN allowed)
-- No Bootstrap or other CSS frameworks
+## Convencions
 
-See `CLAUDE.md` and `COMMUNITY.md` for detailed conventions and the community spec.
+- Angular: standalone components, signals per a l'estat sempre que sigui possible, rutes lazy-loaded
+- Backend: async/await + propagació d'errors via `next(err)`, estructura MVC
+- TypeScript en mode strict
+- CSS custom + variables a `frontend/src/styles/variables.css` (Tailwind via CDN permès)
+- Sense Bootstrap ni cap altre framework CSS
+
