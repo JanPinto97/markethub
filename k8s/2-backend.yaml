@@ -29,7 +29,7 @@ spec:
         - name: NODE_ENV
           value: "production"
         - name: GEMINI_API_KEY
-          value: "AIzaSyDt4PzrWyoiJcAqMT7FRwC028Bb2G37cPY"
+          value: "TU_GEMINI_API_KEY_PLACEHOLDER"
         - name: FINNHUB_API_KEY
           value: "d7jo9s9r01qu1n4fg3pgd7jo9s9r01qu1n4fg3q0"
         - name: TWELVE_DATA_API_KEY
@@ -39,7 +39,7 @@ spec:
         - name: GOOGLE_CLIENT_ID
           value: "TU_GOOGLE_CLIENT_ID_PLACEHOLDER"
         - name: GOOGLE_CLIENT_SECRET
-          value: "TU_GOOGLE_CLIENT_ID_PLACEHOLDER"
+          value: "TU_GOOGLE_CLIENT_SECRET_PLACEHOLDER"
         - name: GOOGLE_CALLBACK_URL
           value: "http://grup8.infla.cat/api/v1/auth/google/callback"
         resources: # OBLIGATORIO
