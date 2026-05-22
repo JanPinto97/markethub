@@ -664,6 +664,13 @@ export class MarketsComponent implements OnInit, AfterViewInit, OnDestroy {
             this.currentPriceData = { c: price, dp: dp || 0, timestamp: new Date().getTime() };
             this.smartMarket.updateCache(this.currentApiSymbol, price, dp || 0);
             this.cdr.detectChanges();
+          } else if (!this.currentPriceData.c || this.currentPriceData.c === 0) {
+            // Fallback a localStorage si la API no devuelve datos y no tenemos precio actual
+            const cached = this.smartMarket.getCachedPrice(this.currentApiSymbol);
+            if (cached && cached.c > 0) {
+              this.currentPriceData = { c: cached.c, dp: cached.dp, timestamp: cached.t };
+              this.cdr.detectChanges();
+            }
           }
         });
 
