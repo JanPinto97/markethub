@@ -45,7 +45,7 @@ if (GOOGLE_ENABLED) passport.use(new GoogleStrategy(
         username,
         email,
         googleId: profile.id,
-        avatar: '',
+        avatar: (profile.photos && profile.photos[0] && profile.photos[0].value) || '',
         role: 'user',
         passwordHash: '',
       });
