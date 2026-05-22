@@ -94,14 +94,18 @@ docker-compose exec mongo mongosh markethub
 **Seed the database (reviewer / first-time setup):**
 
 ```bash
-docker-compose exec backend npm run seed         # superadmin + moderator users
-docker-compose exec backend npm run seed:topics  # fixed list of discussion topics
-docker-compose exec backend npm run seed:demo    # demo communities, posts, comments + uploaded images
+docker-compose exec backend npm run seed:demo
 ```
 
 `seed:demo` restores a frozen MongoDB dump (`backend/seed/demo-data.archive.gz`)
-plus the bundled uploads tarball, so reviewers see the application populated with
-realistic content without needing Ollama or running `seed:dev`.
+**including users, topics, communities, posts, comments and notifications**, plus
+the bundled uploads tarball. After running it the app is fully populated and ready
+to browse — no need to run `seed` or `seed:topics` separately.
+
+Demo accounts (all with password `Test1234!`): `alice_trader`, `bob_crypto`,
+`carol_quant`, `david_value`, `eve_scalper`, `frank_macro`, `grace_whale`,
+`henry_analyst`. Superadmin/moderator accounts use the credentials embedded in
+the dump.
 
 Advanced (only for regenerating the demo dump from a dev environment with content
 already loaded via `seed:dev`):

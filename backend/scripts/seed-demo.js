@@ -28,8 +28,6 @@ try {
     `--archive=${ARCHIVE}`,
     '--gzip',
     '--drop',
-    '--nsExclude=markethub.users',
-    '--nsExclude=markethub.discussiontopics',
   ], { stdio: 'inherit' });
 } catch (err) {
   fail(`mongorestore failed: ${err.message}`);

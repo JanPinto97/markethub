@@ -25,8 +25,6 @@ try {
     `--uri=${MONGO_URI}`,
     `--archive=${ARCHIVE}`,
     '--gzip',
-    '--excludeCollection=users',
-    '--excludeCollection=discussiontopics',
   ], { stdio: 'inherit' });
 } catch (err) {
   fail(`mongodump failed: ${err.message}`);
