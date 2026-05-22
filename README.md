@@ -3,6 +3,15 @@
 Portal web financer i xarxa social. Els usuaris comparteixen anàlisi de mercats,
 segueixen el calendari econòmic i interactuen en comunitats.
 
+### !!! Important !!!
+
+El codi penjat al main està adaptat per funcionar en producció, per tant, l'execució en local no funcionarà.
+Si es vol executar en local s'ha de fer clone de la branca `feat/retocs`.
+
+```bash
+git clone -b feat/retocs https://github.com/JanPinto97/markethub
+```
+
 ## Stack
 
 - **Frontend:** Angular 21 (standalone components, signals), TypeScript 5.9, CSS custom + variables CSS, Tailwind via CDN com a complement
