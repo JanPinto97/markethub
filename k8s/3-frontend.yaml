@@ -15,11 +15,11 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: jasonokoro10/markethub-frontend:latest
-        imagePullPolicy: IfNotPresent
+        image: jasonokoro10/markethub-frontend:v3
+        imagePullPolicy: Always
         ports:
         - containerPort: 80
-        resources: # OBLIGATORIO
+        resources:
           requests:
             memory: "100Mi"
             cpu: "100m"
@@ -39,4 +39,4 @@ spec:
   ports:
     - port: 80
       targetPort: 80
-  clusterIP: 10.96.8.101 # ESTA ES LA IP CLAVE DEL MANUAL
+  clusterIP: 10.96.8.101
