@@ -1,6 +1,7 @@
 import { Component, ViewChild, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ChatCoreComponent } from './chat-core/chat-core.component';
+import { randomId } from '../../shared/utils/uuid';
 
 @Component({
   selector: 'app-assistant',
@@ -12,7 +13,7 @@ import { ChatCoreComponent } from './chat-core/chat-core.component';
 export class AssistantComponent {
   @ViewChild('chat') chat?: ChatCoreComponent;
 
-  sessionId = signal(crypto.randomUUID());
+  sessionId = signal(randomId());
 
   hasMessages(): boolean {
     return (this.chat?.messages() ?? []).length > 0;
@@ -20,6 +21,6 @@ export class AssistantComponent {
 
   newChat() {
     this.chat?.newChat();
-    this.sessionId.set(crypto.randomUUID());
+    this.sessionId.set(randomId());
   }
 }

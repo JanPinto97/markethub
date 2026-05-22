@@ -1,4 +1,5 @@
 import { Injectable, signal } from '@angular/core';
+import { randomId } from '../../shared/utils/uuid';
 
 export interface AttachedField {
   label: string;
@@ -27,7 +28,7 @@ export class AssistantPopupService {
     this.request.set({
       initialMessage: opts.initialMessage,
       attachedContext: opts.attachedContext,
-      sessionId: crypto.randomUUID(),
+      sessionId: randomId(),
     });
     this.isOpen.set(true);
   }

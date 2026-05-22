@@ -19,6 +19,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { ApiService } from '../../../core/services/api.service';
 import { MarketsContextService } from '../../../core/services/markets-context.service';
 import { AttachedContextCard } from '../../../core/services/assistant-popup.service';
+import { randomId } from '../../../shared/utils/uuid';
 
 interface ChatMessage {
   id: string;
@@ -268,13 +269,13 @@ export class ChatCoreComponent implements AfterViewChecked, OnInit, OnChanges {
     if (!this.canSend()) return;
     const text = this.draft().trim();
     const userMsg: ChatMessage = {
-      id: crypto.randomUUID(),
+      id: randomId(),
       role: 'user',
       text,
       createdAt: Date.now(),
     };
     const assistantMsg: ChatMessage = {
-      id: crypto.randomUUID(),
+      id: randomId(),
       role: 'assistant',
       text: '',
       createdAt: Date.now(),
